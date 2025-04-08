@@ -16,19 +16,19 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 
     init {
         activity.getAlertDialogBuilder()
-            .setPositiveButton(R.string.ok, null)
-            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(org.fossify.commons.R.string.ok, null)
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(binding.root, this, R.string.create_new) { alertDialog ->
+                activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.create_new) { alertDialog ->
                     alertDialog.showKeyboard(binding.itemTitle)
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
                         val name = binding.itemTitle.value
                         if (name.isEmpty()) {
-                            activity.toast(R.string.empty_name)
+                            activity.toast(org.fossify.commons.R.string.empty_name)
                         } else if (name.isAValidFilename()) {
                             val newPath = "$path/$name"
                             if (activity.getDoesFilePathExist(newPath)) {
-                                activity.toast(R.string.name_taken)
+                                activity.toast(org.fossify.commons.R.string.name_taken)
                                 return@OnClickListener
                             }
 
@@ -42,7 +42,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
                                 }
                             }
                         } else {
-                            activity.toast(R.string.invalid_name)
+                            activity.toast(org.fossify.commons.R.string.invalid_name)
                         }
                     })
                 }
@@ -58,7 +58,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 
                 val documentFile = activity.getDocumentFile(path.getParentPath())
                 if (documentFile == null) {
-                    val error = String.format(activity.getString(R.string.could_not_create_folder), path)
+                    val error = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_folder), path)
                     activity.showErrorToast(error)
                     callback(false)
                     return@handleSAFDialog
@@ -77,7 +77,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
                         if (activity.createAndroidSAFDirectory(path)) {
                             success(alertDialog)
                         } else {
-                            val error = String.format(activity.getString(R.string.could_not_create_folder), path)
+                            val error = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_folder), path)
                             activity.showErrorToast(error)
                             callback(false)
                         }
@@ -113,7 +113,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
                         if (activity.createAndroidSAFFile(path)) {
                             success(alertDialog)
                         } else {
-                            val error = String.format(activity.getString(R.string.could_not_create_file), path)
+                            val error = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), path)
                             activity.showErrorToast(error)
                             callback(false)
                         }
@@ -128,7 +128,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 
                         val documentFile = activity.getDocumentFile(path.getParentPath())
                         if (documentFile == null) {
-                            val error = String.format(activity.getString(R.string.could_not_create_file), path)
+                            val error = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), path)
                             activity.showErrorToast(error)
                             callback(false)
                             return@handleSAFDialog

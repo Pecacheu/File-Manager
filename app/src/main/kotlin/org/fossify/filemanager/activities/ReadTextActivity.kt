@@ -58,10 +58,10 @@ class ReadTextActivity : SimpleActivity() {
             setupMaterialScrollListener(readTextHolder, readTextToolbar)
         }
 
-        searchQueryET = findViewById(R.id.search_query)
-        searchPrevBtn = findViewById(R.id.search_previous)
-        searchNextBtn = findViewById(R.id.search_next)
-        searchClearBtn = findViewById(R.id.search_clear)
+        searchQueryET = findViewById(org.fossify.commons.R.id.search_query)
+        searchPrevBtn = findViewById(org.fossify.commons.R.id.search_previous)
+        searchNextBtn = findViewById(org.fossify.commons.R.id.search_next)
+        searchClearBtn = findViewById(org.fossify.commons.R.id.search_clear)
 
         if (checkAppSideloading()) {
             return
@@ -117,7 +117,7 @@ class ReadTextActivity : SimpleActivity() {
             isSearchActive -> closeSearch()
             hasUnsavedChanges && System.currentTimeMillis() - lastSavePromptTS > SAVE_DISCARD_PROMPT_INTERVAL -> {
                 lastSavePromptTS = System.currentTimeMillis()
-                ConfirmationAdvancedDialog(this, "", R.string.save_before_closing, R.string.save, R.string.discard) {
+                ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.save_before_closing, org.fossify.commons.R.string.save, org.fossify.commons.R.string.discard) {
                     if (it) {
                         saveText(true)
                     } else {
@@ -185,7 +185,7 @@ class ReadTextActivity : SimpleActivity() {
                         saveTextContent(it, shouldExitAfterSaving, shouldOverwriteOriginalText)
                     }
                 } else {
-                    toast(R.string.no_storage_permissions)
+                    toast(org.fossify.commons.R.string.no_storage_permissions)
                 }
             }
         }
@@ -195,7 +195,7 @@ class ReadTextActivity : SimpleActivity() {
         if (outputStream != null) {
             val currentText = binding.readTextView.text.toString()
             outputStream.bufferedWriter().use { it.write(currentText) }
-            toast(R.string.file_saved)
+            toast(org.fossify.commons.R.string.file_saved)
             hideKeyboard()
 
             if (shouldOverwriteOriginalText) {
@@ -206,7 +206,7 @@ class ReadTextActivity : SimpleActivity() {
                 super.onBackPressed()
             }
         } else {
-            toast(R.string.unknown_error_occurred)
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
         }
     }
 
@@ -253,7 +253,7 @@ class ReadTextActivity : SimpleActivity() {
                     ""
                 }
             } else {
-                toast(R.string.unknown_error_occurred)
+                toast(org.fossify.commons.R.string.unknown_error_occurred)
                 ""
             }
         } else {

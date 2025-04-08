@@ -131,9 +131,9 @@ class DecompressItemsAdapter(activity: SimpleActivity, var listItems: MutableLis
     }
 
     private fun initDrawables() {
-        folderDrawable = resources.getColoredDrawableWithColor(R.drawable.ic_folder_vector, properPrimaryColor)
+        folderDrawable = resources.getColoredDrawableWithColor(org.fossify.commons.R.drawable.ic_folder_vector, properPrimaryColor)
         folderDrawable.alpha = 180
-        fileDrawable = resources.getDrawable(R.drawable.ic_file_generic)
+        fileDrawable = resources.getDrawable(org.fossify.commons.R.drawable.ic_file_generic)
         fileDrawables = getFilePlaceholderDrawables(activity)
     }
 }

@@ -24,11 +24,11 @@ class ManageFavoritesAdapter(
         setupDragListener(true)
     }
 
-    override fun getActionMenuId() = R.menu.cab_remove_only
+    override fun getActionMenuId() = org.fossify.commons.R.menu.cab_remove_only
 
     override fun actionItemPressed(id: Int) {
         when (id) {
-            R.id.cab_remove -> removeSelection()
+            org.fossify.commons.R.id.cab_remove -> removeSelection()
         }
     }
 
@@ -91,7 +91,7 @@ class ManageFavoritesAdapter(
             setOnMenuItemClickListener { item ->
                 val eventTypeId = favorite.hashCode()
                 when (item.itemId) {
-                    R.id.cab_remove -> {
+                    org.fossify.commons.R.id.cab_remove -> {
                         executeItemMenuOperation(eventTypeId) {
                             removeSelection()
                         }

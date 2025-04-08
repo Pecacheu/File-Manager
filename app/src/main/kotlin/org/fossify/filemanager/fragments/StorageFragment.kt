@@ -89,9 +89,9 @@ class StorageFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
             volumes[volumeName] = volumeBinding
             volumeBinding.apply {
                 if (volumeName == PRIMARY_VOLUME_NAME) {
-                    storageName.setText(R.string.internal)
+                    storageName.setText(org.fossify.commons.R.string.internal)
                 } else {
-                    storageName.setText(R.string.sd_card)
+                    storageName.setText(org.fossify.commons.R.string.sd_card)
                 }
 
                 totalSpace.text = String.format(context.getString(R.string.total_storage), "…")
@@ -148,12 +148,12 @@ class StorageFragment(context: Context, attributeSet: AttributeSet) : MyViewPage
         context.updateTextColors(binding.root)
 
         val properPrimaryColor = context.getProperPrimaryColor()
-        val redColor = context.resources.getColor(R.color.md_red_700)
-        val greenColor = context.resources.getColor(R.color.md_green_700)
-        val lightBlueColor = context.resources.getColor(R.color.md_light_blue_700)
-        val yellowColor = context.resources.getColor(R.color.md_yellow_700)
-        val tealColor = context.resources.getColor(R.color.md_teal_700)
-        val pinkColor = context.resources.getColor(R.color.md_pink_700)
+        val redColor = context.resources.getColor(org.fossify.commons.R.color.md_red_700)
+        val greenColor = context.resources.getColor(org.fossify.commons.R.color.md_green_700)
+        val lightBlueColor = context.resources.getColor(org.fossify.commons.R.color.md_light_blue_700)
+        val yellowColor = context.resources.getColor(org.fossify.commons.R.color.md_yellow_700)
+        val tealColor = context.resources.getColor(org.fossify.commons.R.color.md_teal_700)
+        val pinkColor = context.resources.getColor(org.fossify.commons.R.color.md_pink_700)
 
         volumes.entries.forEach { (it, volumeBinding) ->
             getSizes(it)

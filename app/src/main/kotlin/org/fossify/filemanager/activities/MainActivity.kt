@@ -218,7 +218,7 @@ class MainActivity : SimpleActivity() {
 
             findItem(R.id.column_count).isVisible = currentViewType == VIEW_TYPE_GRID && currentFragment !is StorageFragment
 
-            findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(R.bool.hide_google_relations)
+            findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)
             findItem(R.id.settings).isVisible = !isCreateDocumentIntent
             findItem(R.id.about).isVisible = !isCreateDocumentIntent
         }
@@ -321,7 +321,7 @@ class MainActivity : SimpleActivity() {
                     initFileManager(!hadPermission)
                 }
             } else {
-                toast(R.string.no_storage_permissions)
+                toast(org.fossify.commons.R.string.no_storage_permissions)
                 finish()
             }
         }
@@ -334,7 +334,7 @@ class MainActivity : SimpleActivity() {
             callback(true)
         } else {
             if (isRPlus()) {
-                ConfirmationAdvancedDialog(this, "", R.string.access_storage_prompt, R.string.ok, 0, false) { success ->
+                ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt, org.fossify.commons.R.string.ok, 0, false) { success ->
                     if (success) {
                         isAskingPermissions = true
                         actionOnPermission = callback
@@ -432,10 +432,10 @@ class MainActivity : SimpleActivity() {
 
         mTabsToShow.forEachIndexed { index, value ->
             if (config.showTabs and value != 0) {
-                binding.mainTabsHolder.newTab().setCustomView(R.layout.bottom_tablayout_item).apply {
-                    customView?.findViewById<ImageView>(R.id.tab_item_icon)?.setImageDrawable(getTabIcon(index))
-                    customView?.findViewById<TextView>(R.id.tab_item_label)?.text = getTabLabel(index)
-                    AutofitHelper.create(customView?.findViewById(R.id.tab_item_label))
+                binding.mainTabsHolder.newTab().setCustomView(org.fossify.commons.R.layout.bottom_tablayout_item).apply {
+                    customView?.findViewById<ImageView>(org.fossify.commons.R.id.tab_item_icon)?.setImageDrawable(getTabIcon(index))
+                    customView?.findViewById<TextView>(org.fossify.commons.R.id.tab_item_label)?.text = getTabLabel(index)
+                    AutofitHelper.create(customView?.findViewById(org.fossify.commons.R.id.tab_item_label))
                     binding.mainTabsHolder.addTab(this)
                 }
             }
@@ -475,8 +475,8 @@ class MainActivity : SimpleActivity() {
 
     private fun getTabIcon(position: Int): Drawable {
         val drawableId = when (position) {
-            0 -> R.drawable.ic_folder_vector
-            1 -> R.drawable.ic_clock_vector
+            0 -> org.fossify.commons.R.drawable.ic_folder_vector
+            1 -> org.fossify.commons.R.drawable.ic_clock_vector
             else -> R.drawable.ic_storage_vector
         }
 
@@ -485,9 +485,9 @@ class MainActivity : SimpleActivity() {
 
     private fun getTabLabel(position: Int): String {
         val stringId = when (position) {
-            0 -> R.string.files_tab
+            0 -> org.fossify.commons.R.string.files_tab
             1 -> R.string.recents
-            else -> R.string.storage
+            else -> org.fossify.commons.R.string.storage
         }
 
         return resources.getString(stringId)
@@ -550,7 +550,7 @@ class MainActivity : SimpleActivity() {
     private fun changeColumnCount() {
         val items = ArrayList<RadioItem>()
         for (i in 1..MAX_COLUMN_COUNT) {
-            items.add(RadioItem(i, resources.getQuantityString(R.plurals.column_counts, i, i)))
+            items.add(RadioItem(i, resources.getQuantityString(org.fossify.commons.R.plurals.column_counts, i, i)))
         }
 
         val currentColumnCount = config.fileColumnCnt
@@ -628,15 +628,15 @@ class MainActivity : SimpleActivity() {
         val licenses = LICENSE_GLIDE or LICENSE_PATTERN or LICENSE_REPRINT or LICENSE_GESTURE_VIEWS or LICENSE_AUTOFITTEXTVIEW or LICENSE_ZIP4J
 
         val faqItems = arrayListOf(
-            FAQItem(R.string.faq_3_title_commons, R.string.faq_3_text_commons),
-            FAQItem(R.string.faq_9_title_commons, R.string.faq_9_text_commons)
+            FAQItem(org.fossify.commons.R.string.faq_3_title_commons, org.fossify.commons.R.string.faq_3_text_commons),
+            FAQItem(org.fossify.commons.R.string.faq_9_title_commons, org.fossify.commons.R.string.faq_9_text_commons)
         )
 
-        if (!resources.getBoolean(R.bool.hide_google_relations)) {
-            faqItems.add(FAQItem(R.string.faq_2_title_commons, R.string.faq_2_text_commons))
-            faqItems.add(FAQItem(R.string.faq_6_title_commons, R.string.faq_6_text_commons))
-            faqItems.add(FAQItem(R.string.faq_7_title_commons, R.string.faq_7_text_commons))
-            faqItems.add(FAQItem(R.string.faq_10_title_commons, R.string.faq_10_text_commons))
+        if (!resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)) {
+            faqItems.add(FAQItem(org.fossify.commons.R.string.faq_2_title_commons, org.fossify.commons.R.string.faq_2_text_commons))
+            faqItems.add(FAQItem(org.fossify.commons.R.string.faq_6_title_commons, org.fossify.commons.R.string.faq_6_text_commons))
+            faqItems.add(FAQItem(org.fossify.commons.R.string.faq_7_title_commons, org.fossify.commons.R.string.faq_7_text_commons))
+            faqItems.add(FAQItem(org.fossify.commons.R.string.faq_10_title_commons, org.fossify.commons.R.string.faq_10_text_commons))
         }
 
         startAboutActivity(R.string.app_name, licenses, BuildConfig.VERSION_NAME, faqItems, true)
@@ -736,11 +736,11 @@ class MainActivity : SimpleActivity() {
         val icons = ArrayList<Int>()
 
         if (showTabs and TAB_FILES != 0) {
-            icons.add(R.drawable.ic_folder_vector)
+            icons.add(org.fossify.commons.R.drawable.ic_folder_vector)
         }
 
         if (showTabs and TAB_RECENT_FILES != 0) {
-            icons.add(R.drawable.ic_clock_filled_vector)
+            icons.add(org.fossify.commons.R.drawable.ic_clock_filled_vector)
         }
 
         if (showTabs and TAB_STORAGE_ANALYSIS != 0) {
@@ -755,11 +755,11 @@ class MainActivity : SimpleActivity() {
         val icons = ArrayList<Int>()
 
         if (showTabs and TAB_FILES != 0) {
-            icons.add(R.drawable.ic_folder_outline_vector)
+            icons.add(org.fossify.commons.R.drawable.ic_folder_outline_vector)
         }
 
         if (showTabs and TAB_RECENT_FILES != 0) {
-            icons.add(R.drawable.ic_clock_vector)
+            icons.add(org.fossify.commons.R.drawable.ic_clock_vector)
         }
 
         if (showTabs and TAB_STORAGE_ANALYSIS != 0) {

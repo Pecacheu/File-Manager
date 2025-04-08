@@ -376,7 +376,7 @@ class ItemsAdapter(
                     .diskCacheStrategy(DiskCacheStrategy.NONE)
                     .fitCenter()
 
-                val size = activity.resources.getDimension(R.dimen.shortcut_size).toInt()
+                val size = activity.resources.getDimension(org.fossify.commons.R.dimen.shortcut_size).toInt()
                 val builder = Glide.with(activity)
                     .asDrawable()
                     .load(getImagePathToLoad(path))
@@ -520,14 +520,14 @@ class ItemsAdapter(
     }
 
     private fun copyMoveRootItems(files: ArrayList<FileDirItem>, destinationPath: String, isCopyOperation: Boolean) {
-        activity.toast(R.string.copying)
+        activity.toast(org.fossify.commons.R.string.copying)
         ensureBackgroundThread {
             val fileCnt = files.size
             RootHelpers(activity).copyMoveFiles(files, destinationPath, isCopyOperation) {
                 when (it) {
-                    fileCnt -> activity.toast(R.string.copying_success)
-                    0 -> activity.toast(R.string.copy_failed)
-                    else -> activity.toast(R.string.copying_success_partial)
+                    fileCnt -> activity.toast(org.fossify.commons.R.string.copying_success)
+                    0 -> activity.toast(org.fossify.commons.R.string.copy_failed)
+                    else -> activity.toast(org.fossify.commons.R.string.copying_success_partial)
                 }
 
                 activity.runOnUiThread {
@@ -541,7 +541,7 @@ class ItemsAdapter(
     private fun compressSelection() {
         val firstPath = getFirstSelectedItemPath()
         if (activity.isPathOnOTG(firstPath)) {
-            activity.toast(R.string.unknown_error_occurred)
+            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
             return
         }
 
@@ -576,7 +576,7 @@ class ItemsAdapter(
     private fun decompressSelection() {
         val firstPath = getFirstSelectedItemPath()
         if (activity.isPathOnOTG(firstPath)) {
-            activity.toast(R.string.unknown_error_occurred)
+            activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
             return
         }
 
@@ -624,7 +624,7 @@ class ItemsAdapter(
                     }
                 } catch (zipException: ZipException) {
                     if (zipException.type == ZipException.Type.WRONG_PASSWORD) {
-                        activity.showErrorToast(activity.getString(R.string.invalid_password))
+                        activity.showErrorToast(activity.getString(org.fossify.commons.R.string.invalid_password))
                     } else {
                         activity.showErrorToast(zipException)
                     }
@@ -686,7 +686,7 @@ class ItemsAdapter(
     private fun extractEntry(newPath: String, entry: LocalFileHeader, zipInputStream: ZipInputStream) {
         if (entry.isDirectory) {
             if (!activity.createDirectorySync(newPath) && !activity.getDoesFilePathExist(newPath)) {
-                val error = String.format(activity.getString(R.string.could_not_create_file), newPath)
+                val error = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), newPath)
                 activity.showErrorToast(error)
             }
         } else {
@@ -796,10 +796,10 @@ class ItemsAdapter(
             val items = if (itemsCnt == 1) {
                 "\"${getFirstSelectedItemPath().getFilenameFromPath()}\""
             } else {
-                resources.getQuantityString(R.plurals.delete_items, itemsCnt, itemsCnt)
+                resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
             }
 
-            val question = String.format(resources.getString(R.string.deletion_confirmation), items)
+            val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), items)
             ConfirmationDialog(activity, question) {
                 deleteFiles()
             }
@@ -967,7 +967,7 @@ class ItemsAdapter(
 
     private fun getChildrenCnt(item: FileDirItem): String {
         val children = item.children
-        return activity.resources.getQuantityString(R.plurals.items, children, children)
+        return activity.resources.getQuantityString(org.fossify.commons.R.plurals.items, children, children)
     }
 
     private fun getOTGPublicPath(itemToLoad: String) =
@@ -998,9 +998,9 @@ class ItemsAdapter(
     }
 
     fun initDrawables() {
-        folderDrawable = resources.getColoredDrawableWithColor(R.drawable.ic_folder_vector, properPrimaryColor)
+        folderDrawable = resources.getColoredDrawableWithColor(org.fossify.commons.R.drawable.ic_folder_vector, properPrimaryColor)
         folderDrawable.alpha = 180
-        fileDrawable = resources.getDrawable(R.drawable.ic_file_generic)
+        fileDrawable = resources.getDrawable(org.fossify.commons.R.drawable.ic_file_generic)
         fileDrawables = getFilePlaceholderDrawables(activity)
     }
 

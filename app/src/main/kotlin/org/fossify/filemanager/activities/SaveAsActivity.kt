@@ -23,7 +23,7 @@ class SaveAsActivity : SimpleActivity() {
             FilePickerDialog(this, pickFile = false, showHidden = config.shouldShowHidden(), showFAB = true, showFavoritesButton = true) {
                 val destination = it
                 handleSAFDialog(destination) {
-                    toast(R.string.saving)
+                    toast(org.fossify.commons.R.string.saving)
                     ensureBackgroundThread {
                         try {
                             if (!getDoesFilePathExist(destination)) {
@@ -44,7 +44,7 @@ class SaveAsActivity : SimpleActivity() {
                             val outputStream = getFileOutputStreamSync(destinationPath, mimeType, null)!!
                             inputStream!!.copyTo(outputStream)
                             rescanPaths(arrayListOf(destinationPath))
-                            toast(R.string.file_saved)
+                            toast(org.fossify.commons.R.string.file_saved)
                             finish()
                         } catch (e: Exception) {
                             showErrorToast(e)
@@ -54,7 +54,7 @@ class SaveAsActivity : SimpleActivity() {
                 }
             }
         } else {
-            toast(R.string.unknown_error_occurred)
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
             finish()
         }
     }

@@ -54,7 +54,7 @@ class DecompressActivity : SimpleActivity() {
 
         uri = intent.data
         if (uri == null) {
-            toast(R.string.unknown_error_occurred)
+            toast(org.fossify.commons.R.string.unknown_error_occurred)
             return
         }
 
@@ -226,7 +226,7 @@ class DecompressActivity : SimpleActivity() {
             } catch (passwordException: ZipException) {
                 if (passwordException.type == Type.WRONG_PASSWORD) {
                     if (password != null) {
-                        toast(getString(R.string.invalid_password))
+                        toast(getString(org.fossify.commons.R.string.invalid_password))
                         passwordDialog?.clearPassword()
                     } else {
                         runOnUiThread {

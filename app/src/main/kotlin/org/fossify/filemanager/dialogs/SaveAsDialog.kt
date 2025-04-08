@@ -47,17 +47,17 @@ class SaveAsDialog(
         }
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(R.string.ok, null)
-            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(org.fossify.commons.R.string.ok, null)
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(binding.root, this, R.string.save_as) { alertDialog ->
+                activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.save_as) { alertDialog ->
                     alertDialog.showKeyboard(binding.filenameValue)
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                         val filename = binding.filenameValue.value
                         val extension = binding.extensionValue.value
 
                         if (filename.isEmpty()) {
-                            activity.toast(R.string.filename_cannot_be_empty)
+                            activity.toast(org.fossify.commons.R.string.filename_cannot_be_empty)
                             return@setOnClickListener
                         }
 
@@ -68,12 +68,12 @@ class SaveAsDialog(
 
                         val newPath = "$realPath/$newFilename"
                         if (!newFilename.isAValidFilename()) {
-                            activity.toast(R.string.filename_invalid_characters)
+                            activity.toast(org.fossify.commons.R.string.filename_invalid_characters)
                             return@setOnClickListener
                         }
 
                         if (!hidePath && activity.getDoesFilePathExist(newPath)) {
-                            val title = String.format(activity.getString(R.string.file_already_exists_overwrite), newFilename)
+                            val title = String.format(activity.getString(org.fossify.commons.R.string.file_already_exists_overwrite), newFilename)
                             ConfirmationDialog(activity, title) {
                                 callback(newPath, newFilename)
                                 alertDialog.dismiss()

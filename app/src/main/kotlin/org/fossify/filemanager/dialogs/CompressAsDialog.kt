@@ -35,8 +35,8 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
         }
 
         activity.getAlertDialogBuilder()
-            .setPositiveButton(R.string.ok, null)
-            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(org.fossify.commons.R.string.ok, null)
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
             .apply {
                 activity.setupDialogStuff(binding.root, this, R.string.compress_as) { alertDialog ->
                     alertDialog.showKeyboard(binding.filenameValue)
@@ -46,16 +46,16 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
                         if (binding.passwordProtect.isChecked) {
                             password = binding.password.value
                             if (password.isEmpty()) {
-                                activity.toast(R.string.empty_password_new)
+                                activity.toast(org.fossify.commons.R.string.empty_password_new)
                                 return@OnClickListener
                             }
                         }
                         when {
-                            name.isEmpty() -> activity.toast(R.string.empty_name)
+                            name.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
                             name.isAValidFilename() -> {
                                 val newPath = "$realPath/$name.zip"
                                 if (activity.getDoesFilePathExist(newPath)) {
-                                    activity.toast(R.string.name_taken)
+                                    activity.toast(org.fossify.commons.R.string.name_taken)
                                     return@OnClickListener
                                 }
 
@@ -63,7 +63,7 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
                                 callback(newPath, password)
                             }
 
-                            else -> activity.toast(R.string.invalid_name)
+                            else -> activity.toast(org.fossify.commons.R.string.invalid_name)
                         }
                     })
                 }

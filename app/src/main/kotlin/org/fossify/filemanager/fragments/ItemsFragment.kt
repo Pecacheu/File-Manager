@@ -189,7 +189,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet) : MyViewPagerF
                     activity?.runOnUiThread { hideProgressBar() }
                     activity?.handleAndroidSAFDialog(path, openInSystemAppAllowed = true) {
                         if (!it) {
-                            activity?.toast(R.string.no_storage_permissions)
+                            activity?.toast(org.fossify.commons.R.string.no_storage_permissions)
                             return@handleAndroidSAFDialog
                         }
                         val getProperChildCount = context!!.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
@@ -422,7 +422,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet) : MyViewPagerF
             if (it) {
                 refreshFragment()
             } else {
-                activity?.toast(R.string.unknown_error_occurred)
+                activity?.toast(org.fossify.commons.R.string.unknown_error_occurred)
             }
         }
     }

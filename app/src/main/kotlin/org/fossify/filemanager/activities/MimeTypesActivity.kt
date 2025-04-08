@@ -64,7 +64,7 @@ class MimeTypesActivity : SimpleActivity(), ItemOperationsListener {
                 ARCHIVES -> R.string.archives
                 OTHERS -> R.string.others
                 else -> {
-                    toast(R.string.unknown_error_occurred)
+                    toast(org.fossify.commons.R.string.unknown_error_occurred)
                     finish()
                     return
                 }
@@ -124,7 +124,7 @@ class MimeTypesActivity : SimpleActivity(), ItemOperationsListener {
         deleteFiles(files, false) {
             if (!it) {
                 runOnUiThread {
-                    toast(R.string.unknown_error_occurred)
+                    toast(org.fossify.commons.R.string.unknown_error_occurred)
                 }
             }
         }
@@ -186,7 +186,7 @@ class MimeTypesActivity : SimpleActivity(), ItemOperationsListener {
     private fun changeColumnCount() {
         val items = ArrayList<RadioItem>()
         for (i in 1..MAX_COLUMN_COUNT) {
-            items.add(RadioItem(i, resources.getQuantityString(R.plurals.column_counts, i, i)))
+            items.add(RadioItem(i, resources.getQuantityString(org.fossify.commons.R.plurals.column_counts, i, i)))
         }
 
         val currentColumnCount = config.fileColumnCnt
@@ -229,7 +229,7 @@ class MimeTypesActivity : SimpleActivity(), ItemOperationsListener {
         (searchMenuItem!!.actionView as SearchView).apply {
             setSearchableInfo(searchManager.getSearchableInfo(componentName))
             isSubmitButtonEnabled = false
-            queryHint = getString(R.string.search)
+            queryHint = getString(org.fossify.commons.R.string.search)
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String) = false
 

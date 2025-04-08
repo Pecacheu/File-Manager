@@ -46,9 +46,9 @@ abstract class MyViewPagerFragment<BINDING : MyViewPagerFragment.InnerBinding>(c
 
     fun updateIsCreateDocumentIntent(isCreateDocumentIntent: Boolean) {
         val iconId = if (isCreateDocumentIntent) {
-            R.drawable.ic_check_vector
+            org.fossify.commons.R.drawable.ic_check_vector
         } else {
-            R.drawable.ic_plus_vector
+            org.fossify.commons.R.drawable.ic_plus_vector
         }
 
         this.isCreateDocumentIntent = isCreateDocumentIntent
@@ -68,7 +68,7 @@ abstract class MyViewPagerFragment<BINDING : MyViewPagerFragment.InnerBinding>(c
             (activity as SimpleActivity).deleteFiles(files, hasFolder) {
                 if (!it) {
                     activity!!.runOnUiThread {
-                        activity!!.toast(R.string.unknown_error_occurred)
+                        activity!!.toast(org.fossify.commons.R.string.unknown_error_occurred)
                     }
                 }
             }
