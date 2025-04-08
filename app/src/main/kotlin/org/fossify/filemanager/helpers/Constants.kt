@@ -46,33 +46,18 @@ const val PRIMARY_VOLUME_NAME = "external_primary"
 
 // what else should we count as an audio except "audio/*" mimetype
 val extraAudioMimeTypes = arrayListOf("application/ogg")
-val extraDocumentMimeTypes = arrayListOf(
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/javascript"
-)
+val extraDocumentMimeTypes = arrayListOf("application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/javascript")
 
-val archiveMimeTypes = arrayListOf(
-    "application/zip",
-    "application/octet-stream",
-    "application/json",
-    "application/x-tar",
-    "application/x-rar-compressed",
-    "application/x-zip-compressed",
-    "application/x-7z-compressed",
-    "application/x-compressed",
-    "application/x-gzip",
-    "application/java-archive",
-    "multipart/x-zip"
-)
+val archiveMimeTypes = arrayListOf("application/zip", "application/octet-stream", "application/json", "application/x-tar", "application/x-rar-compressed",
+	"application/x-zip-compressed", "application/x-7z-compressed", "application/x-compressed", "application/x-gzip", "application/java-archive",
+	"multipart/x-zip")
 
 fun getListItemsFromFileDirItems(fileDirItems: ArrayList<FileDirItem>): ArrayList<ListItem> {
-    val listItems = ArrayList<ListItem>()
-    fileDirItems.forEach {
-        val listItem = ListItem(it.path, it.name, false, 0, it.size, it.modified, false, false)
-        listItems.add(listItem)
-    }
-    return listItems
+	val listItems = ArrayList<ListItem>()
+	fileDirItems.forEach {
+		val listItem = ListItem(it.path, it.name, false, 0, it.size, it.modified, false, false)
+		listItems.add(listItem)
+	}
+	return listItems
 }

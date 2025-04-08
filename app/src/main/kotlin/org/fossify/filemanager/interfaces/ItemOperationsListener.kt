@@ -3,19 +3,19 @@ package org.fossify.filemanager.interfaces
 import org.fossify.commons.models.FileDirItem
 
 interface ItemOperationsListener {
-    fun refreshFragment()
+	fun refreshFragment()
 
-    fun deleteFiles(files: ArrayList<FileDirItem>)
+	fun deleteFiles(files: ArrayList<FileDirItem>)
 
-    fun selectedPaths(paths: ArrayList<String>)
+	fun selectedPaths(paths: ArrayList<String>)
 
-    fun setupDateTimeFormat()
+	fun setupDateTimeFormat()
 
-    fun setupFontSize()
+	fun setupFontSize()
 
-    fun toggleFilenameVisibility()
+	fun toggleFilenameVisibility()
 
-    fun columnCountChanged()
+	fun columnCountChanged()
 
-    fun finishActMode()
+	fun finishActMode()
 }

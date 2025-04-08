@@ -10,52 +10,52 @@ import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogChangeViewTypeBinding
 import org.fossify.filemanager.extensions.config
 
-class ChangeViewTypeDialog(val activity: BaseSimpleActivity, val path: String = "", showFolderCheck: Boolean = true, val callback: () -> Unit) {
-    private var binding: DialogChangeViewTypeBinding
-    private var config = activity.config
+class ChangeViewTypeDialog(val activity: BaseSimpleActivity, val path: String = "", showFolderCheck: Boolean = true, val callback: ()->Unit) {
+	private var binding: DialogChangeViewTypeBinding
+	private var config = activity.config
 
-    init {
-        binding = DialogChangeViewTypeBinding.inflate(activity.layoutInflater).apply {
-            val currViewType = config.getFolderViewType(this@ChangeViewTypeDialog.path)
-            val viewToCheck = if (currViewType == VIEW_TYPE_GRID) {
-                changeViewTypeDialogRadioGrid.id
-            } else {
-                changeViewTypeDialogRadioList.id
-            }
+	init {
+		binding = DialogChangeViewTypeBinding.inflate(activity.layoutInflater).apply {
+			val currViewType = config.getFolderViewType(this@ChangeViewTypeDialog.path)
+			val viewToCheck = if(currViewType == VIEW_TYPE_GRID) {
+				changeViewTypeDialogRadioGrid.id
+			} else {
+				changeViewTypeDialogRadioList.id
+			}
 
-            changeViewTypeDialogRadio.check(viewToCheck)
-            if (!showFolderCheck) {
-                useForThisFolderDivider.beGone()
-                changeViewTypeDialogUseForThisFolder.beGone()
-            }
+			changeViewTypeDialogRadio.check(viewToCheck)
+			if(!showFolderCheck) {
+				useForThisFolderDivider.beGone()
+				changeViewTypeDialogUseForThisFolder.beGone()
+			}
 
-            changeViewTypeDialogUseForThisFolder.apply {
-                isChecked = config.hasCustomViewType(this@ChangeViewTypeDialog.path)
-            }
-        }
+			changeViewTypeDialogUseForThisFolder.apply {
+				isChecked = config.hasCustomViewType(this@ChangeViewTypeDialog.path)
+			}
+		}
 
-        activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
-            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
-            .apply {
-                activity.setupDialogStuff(binding.root, this)
-            }
-    }
+		activity.getAlertDialogBuilder()
+			.setPositiveButton(org.fossify.commons.R.string.ok) {dialog, which -> dialogConfirmed()}
+			.setNegativeButton(org.fossify.commons.R.string.cancel, null)
+			.apply {
+				activity.setupDialogStuff(binding.root, this)
+			}
+	}
 
-    private fun dialogConfirmed() {
-        val viewType = if (binding.changeViewTypeDialogRadio.checkedRadioButtonId == binding.changeViewTypeDialogRadioGrid.id) {
-            VIEW_TYPE_GRID
-        } else {
-            VIEW_TYPE_LIST
-        }
+	private fun dialogConfirmed() {
+		val viewType = if(binding.changeViewTypeDialogRadio.checkedRadioButtonId == binding.changeViewTypeDialogRadioGrid.id) {
+			VIEW_TYPE_GRID
+		} else {
+			VIEW_TYPE_LIST
+		}
 
-        if (binding.changeViewTypeDialogUseForThisFolder.isChecked) {
-            config.saveFolderViewType(this.path, viewType)
-        } else {
-            config.removeFolderViewType(this.path)
-            config.viewType = viewType
-        }
+		if(binding.changeViewTypeDialogUseForThisFolder.isChecked) {
+			config.saveFolderViewType(this.path, viewType)
+		} else {
+			config.removeFolderViewType(this.path)
+			config.viewType = viewType
+		}
 
-        callback()
-    }
+		callback()
+	}
 }

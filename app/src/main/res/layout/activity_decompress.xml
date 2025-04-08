@@ -1,43 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/decompress_coordinator"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:id="@+id/decompress_coordinator"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/decompress_toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/color_primary"
-        app:menu="@menu/menu_decompress"
-        app:title="@string/decompress"
-        app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
+	<com.google.android.material.appbar.MaterialToolbar
+		android:id="@+id/decompress_toolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="@color/color_primary"
+		app:menu="@menu/menu_decompress"
+		app:title="@string/decompress"
+		app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle"/>
 
-    <RelativeLayout
-        android:id="@+id/decompress_wrapper"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="?attr/actionBarSize"
-        android:fillViewport="true"
-        android:scrollbars="none">
+	<RelativeLayout
+		android:id="@+id/decompress_wrapper"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="?attr/actionBarSize"
+		android:fillViewport="true"
+		android:scrollbars="none">
 
-        <org.fossify.commons.views.MyRecyclerView
-            android:id="@+id/decompress_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingTop="@dimen/small_margin"
-            android:scrollbars="none"
-            app:layoutManager="org.fossify.commons.views.MyLinearLayoutManager" />
+		<org.fossify.commons.views.MyRecyclerView
+			android:id="@+id/decompress_list"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:clipToPadding="false"
+			android:paddingTop="@dimen/small_margin"
+			android:scrollbars="none"
+			app:layoutManager="org.fossify.commons.views.MyLinearLayoutManager"/>
+	</RelativeLayout>
 
-    </RelativeLayout>
-
-    <com.google.android.material.progressindicator.CircularProgressIndicator
-        android:id="@+id/progress_indicator"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:indeterminate="true"
-        android:visibility="gone" />
+	<com.google.android.material.progressindicator.CircularProgressIndicator
+		android:id="@+id/progress_indicator"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_gravity="center"
+		android:indeterminate="true"
+		android:visibility="gone"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
