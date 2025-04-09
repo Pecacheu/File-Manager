@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Komprimace selhala</string>
 	<string name="decompressing_failed">Rozbalení selhalo</string>
 	<string name="manage_favorites">Spravovat oblíbené</string>
-	<string name="go_to_favorite">Přejít na oblíbené</string>
 	<string name="favorites_activity_placeholder">Přidejte často používané složky mezi oblíbené pro jednoduchý přístup odkudkoli.</string>
 	<string name="file_editor">Editor souborů</string>
 	<string name="storage_analysis">Analýza úložiště</string>

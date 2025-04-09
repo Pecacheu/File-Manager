@@ -64,9 +64,10 @@ import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.util.Locale
 
-class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.StorageInnerBinding>(context, attributeSet),
+private val SIZE_DIVIDER = 100000
+
+class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
 	ItemOperationsListener {
-	private val SIZE_DIVIDER = 100000
 	private var allDeviceListItems = ArrayList<ListItem>()
 	private var lastSearchedText = ""
 	private lateinit var binding: StorageFragmentBinding
@@ -75,7 +76,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	override fun onFinishInflate() {
 		super.onFinishInflate()
 		binding = StorageFragmentBinding.bind(this)
-		innerBinding = StorageInnerBinding(binding)
+		innerBinding = BaseInnerBinding(binding)
 	}
 
 	override fun setupFragment(activity: SimpleActivity) {

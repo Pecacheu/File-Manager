@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Σφάλμα Συμπίεσης</string>
 	<string name="decompressing_failed">Σφάλμα Αποσυμπίεσης</string>
 	<string name="manage_favorites">Διαχείριση Αγαπημένων</string>
-	<string name="go_to_favorite">Μετάβαση στα Αγαπημένα</string>
 	<string name="favorites_activity_placeholder">Μπορείτε να προσθέσετε φακέλους που χρησιμοποιούνται συχνά στα Αγαπημένα για εύκολη πρόσβαση από οπουδήποτε.</string>
 	<string name="file_editor">Επεξεργαστής αρχείων</string>
 	<string name="storage_analysis">Ανάλυση Αποθήκευσης</string>

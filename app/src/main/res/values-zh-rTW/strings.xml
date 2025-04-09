@@ -27,7 +27,6 @@
 	<string name="compressing_failed">壓縮失敗</string>
 	<string name="decompressing_failed">解壓縮失敗</string>
 	<string name="manage_favorites">管理我的最愛</string>
-	<string name="go_to_favorite">前往我的最愛</string>
 	<string name="favorites_activity_placeholder">你可以將經常使用的資料夾加入我的最愛，方便從任何地方開啟。</string>
 	<string name="file_editor">檔案編輯器</string>
 	<string name="storage_analysis">儲存空間分析</string>

@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Komprimiranje neuspješno</string>
 	<string name="decompressing_failed">Dekomprimiranje neuspješno</string>
 	<string name="manage_favorites">Upravljaj favoritima</string>
-	<string name="go_to_favorite">Idi na favorite</string>
 	<string name="favorites_activity_placeholder">Možeš dodavati često korištene mape u favorite za jednostavan pristup s bilo kojeg mjesta.</string>
 	<string name="file_editor">Uređivač datoteka</string>
 	<string name="storage_analysis">Analiza spremišta</string>

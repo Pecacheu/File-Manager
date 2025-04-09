@@ -34,7 +34,6 @@
 	<string name="decompression_successful">Deskonprimatzea behar bezala burutu da</string>
 	<string name="compressing_failed">Trinkotzeak huts egin du</string>
 	<string name="decompress">Deskonprimatu</string>
-	<string name="go_to_favorite">Joan gogokoetara</string>
 	<string name="archives">Artxiboak</string>
 	<string name="storage_free">librea</string>
 	<string name="total_storage">Biltegiratze osoa: %s</string>

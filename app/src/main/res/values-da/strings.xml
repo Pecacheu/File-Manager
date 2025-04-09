@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Komprimering mislykkedes</string>
 	<string name="decompressing_failed">Dekomprimering mislykkedes</string>
 	<string name="manage_favorites">Håndter favoritter</string>
-	<string name="go_to_favorite">Gå til favorit</string>
 	<string name="favorites_activity_placeholder">Du kan tilføje ofte benyttede mapper til favoritter, så du hurtigt kan finde dem igen.</string>
 	<string name="file_editor">Fileditor</string>
 	<string name="storage_analysis">Lagersanalyse</string>

@@ -29,7 +29,6 @@
 	<string name="compressing_failed">压缩失败</string>
 	<string name="decompressing_failed">解压缩失败</string>
 	<string name="manage_favorites">管理收藏</string>
-	<string name="go_to_favorite">前往收藏</string>
 	<string name="favorites_activity_placeholder">您可以将经常访问的文件夹添加至收藏便于从任意位置快速访问。</string>
 	<string name="file_editor">文件编辑器</string>
 	<string name="storage_analysis">存储分析</string>

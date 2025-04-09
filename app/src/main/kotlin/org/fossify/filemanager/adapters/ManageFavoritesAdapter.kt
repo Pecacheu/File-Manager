@@ -9,7 +9,6 @@ import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.setupViewBackground
 import org.fossify.commons.interfaces.RefreshRecyclerViewListener
 import org.fossify.commons.views.MyRecyclerView
-import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ItemManageFavoriteBinding
 import org.fossify.filemanager.extensions.config
 

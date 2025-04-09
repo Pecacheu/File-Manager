@@ -1,5 +1,6 @@
 package org.fossify.filemanager.helpers
 
+import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
@@ -21,7 +22,6 @@ const val FILE_COLUMN_CNT = "file_column_cnt"
 const val FILE_LANDSCAPE_COLUMN_CNT = "file_landscape_column_cnt"
 const val DISPLAY_FILE_NAMES = "display_file_names"
 const val SHOW_TABS = "show_tabs"
-const val WAS_STORAGE_ANALYSIS_TAB_ADDED = "was_storage_analysis_tab_added"
 
 // open as
 const val OPEN_AS_DEFAULT = 0
@@ -31,7 +31,7 @@ const val OPEN_AS_AUDIO = 3
 const val OPEN_AS_VIDEO = 4
 const val OPEN_AS_OTHER = 5
 
-const val ALL_TABS_MASK = TAB_FILES or TAB_RECENT_FILES or TAB_STORAGE_ANALYSIS
+const val ALL_TABS_MASK = TAB_FILES or TAB_FAVORITES or TAB_RECENT_FILES or TAB_STORAGE_ANALYSIS
 
 const val IMAGES = "images"
 const val VIDEOS = "videos"

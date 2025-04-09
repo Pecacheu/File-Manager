@@ -3,6 +3,7 @@ package org.fossify.filemanager.dialogs
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.setupDialogStuff
+import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
@@ -19,6 +20,7 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
 	init {
 		tabs.apply {
 			put(TAB_FILES, R.id.manage_visible_tabs_files)
+			put(TAB_FAVORITES, R.id.manage_visible_tabs_favorites)
 			put(TAB_RECENT_FILES, R.id.manage_visible_tabs_recent_files)
 			put(TAB_STORAGE_ANALYSIS, R.id.manage_visible_tabs_storage_analysis)
 		}
@@ -39,15 +41,10 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
 	private fun dialogConfirmed() {
 		var result = 0
 		for((key, value) in tabs) {
-			if(binding.root.findViewById<MyAppCompatCheckbox>(value).isChecked) {
-				result += key
-			}
+			if(binding.root.findViewById<MyAppCompatCheckbox>(value).isChecked) result += key
 		}
 
-		if(result == 0) {
-			result = ALL_TABS_MASK
-		}
-
+		if(result == 0) result = ALL_TABS_MASK
 		activity.config.showTabs = result
 	}
 }

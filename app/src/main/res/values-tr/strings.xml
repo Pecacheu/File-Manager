@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Sıkıştırma başarısız</string>
 	<string name="decompressing_failed">Çözme başarısız</string>
 	<string name="manage_favorites">Gözdeleri yönet</string>
-	<string name="go_to_favorite">Gözdeye git</string>
 	<string name="favorites_activity_placeholder">Sık kullanılan klasörleri her yerden kolay erişmek için gözdelere ekleyebilirsiniz.</string>
 	<string name="file_editor">Dosya Düzenleyici</string>
 	<string name="storage_analysis">Depolama analizi</string>

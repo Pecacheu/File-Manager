@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Compression ratée</string>
 	<string name="decompressing_failed">Décompression ratée</string>
 	<string name="manage_favorites">Gérer les favoris</string>
-	<string name="go_to_favorite">Aller au favori</string>
 	<string name="favorites_activity_placeholder">Vous pouvez ajouter des dossiers souvent utilisés comme favoris pour y avoir accès rapidement depuis n\'importe où.</string>
 	<string name="file_editor">Éditeur de fichier</string>
 	<string name="storage_analysis">Analyse du stockage</string>

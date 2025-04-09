@@ -28,7 +28,6 @@
 	<string name="compressing_failed">Komprimering mislyktes</string>
 	<string name="decompressing_failed">Dekomprimering mislyktes</string>
 	<string name="manage_favorites">Håndter favoritter</string>
-	<string name="go_to_favorite">Gå til favoritt</string>
 	<string name="favorites_activity_placeholder">Du kan legge til ofte brukte mapper i favoritter, for enkel tilgang fra hvor som helst.</string>
 	<string name="file_editor">Filredigerer</string>
 	<string name="images">Bilder</string>

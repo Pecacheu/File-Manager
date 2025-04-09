@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Komprimeringen misslyckades</string>
 	<string name="decompressing_failed">Uppackningen misslyckades</string>
 	<string name="manage_favorites">Hantera favoriter</string>
-	<string name="go_to_favorite">Gå till favorit</string>
 	<string name="favorites_activity_placeholder">Du kan lägga till ofta använda mappar i favoriter för enkel åtkomst överallt.</string>
 	<string name="file_editor">Filredigerare</string>
 	<string name="storage_analysis">Lagringsanalys</string>

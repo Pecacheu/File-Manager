@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Þjöppun mistókst</string>
 	<string name="decompressing_failed">Afþjöppun mistókst</string>
 	<string name="manage_favorites">Stjórna eftirlæti</string>
-	<string name="go_to_favorite">Fara í eftirlæti</string>
 	<string name="favorites_activity_placeholder">Þú getur sett möppur í eftirlæti til að auðvelda aðgang hvaðan sem er.</string>
 	<string name="file_editor">Skráaritill</string>
 	<string name="storage_analysis">Geymslugreining</string>

@@ -33,7 +33,6 @@
 	<string name="decompress">Descompactar</string>
 	<string name="compression_successful">Compactação terminada</string>
 	<string name="decompression_successful">Descompactação terminada</string>
-	<string name="go_to_favorite">Ir para favorito</string>
 	<string name="favorites_activity_placeholder">Pode adicionar pastas como favoritos para um acesso mais rápido.</string>
 	<string name="compress_as">Compactar como</string>
 	<string name="compressing">A compactar…</string>

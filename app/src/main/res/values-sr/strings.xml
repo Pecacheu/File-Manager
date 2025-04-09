@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Компресовање није успело</string>
 	<string name="decompressing_failed">Декомпресија није успела</string>
 	<string name="manage_favorites">Управљајте омиљеним</string>
-	<string name="go_to_favorite">Иди на фаворите</string>
 	<string name="favorites_activity_placeholder">Често коришћене фасцикле можете да додате у фаворите за лак приступ са било ког места.</string>
 	<string name="file_editor">Уређивач датотека</string>
 	<string name="storage_analysis">Анализа складиштења</string>

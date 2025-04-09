@@ -3,6 +3,7 @@ package org.fossify.filemanager.fragments
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.RelativeLayout
+import androidx.viewbinding.ViewBinding
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
 import org.fossify.commons.models.FileDirItem
@@ -100,15 +101,11 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 		val itemsFab: MyFloatingActionButton?
 	}
 
+	open class BaseInnerBinding(val binding: ViewBinding): InnerBinding {
+		override val itemsFab: MyFloatingActionButton? = null
+	}
+
 	class ItemsInnerBinding(val binding: ItemsFragmentBinding): InnerBinding {
 		override val itemsFab: MyFloatingActionButton = binding.itemsFab
-	}
-
-	class RecentsInnerBinding(val binding: RecentsFragmentBinding): InnerBinding {
-		override val itemsFab: MyFloatingActionButton? = null
-	}
-
-	class StorageInnerBinding(val binding: StorageFragmentBinding): InnerBinding {
-		override val itemsFab: MyFloatingActionButton? = null
 	}
 }

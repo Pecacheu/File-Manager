@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Compresión fallida</string>
 	<string name="decompressing_failed">Descompresión fallida</string>
 	<string name="manage_favorites">Administrar favoritos</string>
-	<string name="go_to_favorite">Ir a favoritos</string>
 	<string name="favorites_activity_placeholder">Puede agregar carpetas de uso frecuente a favoritos para facilitar el acceso desde cualquier lugar.</string>
 	<string name="file_editor">Editor de archivos</string>
 	<string name="storage_analysis">Análisis de almacenamiento</string>

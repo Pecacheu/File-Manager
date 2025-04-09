@@ -89,6 +89,7 @@ import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.models.RadioItem
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.activities.SplashActivity
 import org.fossify.filemanager.databinding.ItemDirGridBinding
@@ -128,7 +129,6 @@ class ItemsAdapter(
 	canHaveIndividualViewType: Boolean = true,
 	itemClick: (Any)->Unit,
 ): MyRecyclerViewAdapter(activity, recyclerView, itemClick), RecyclerViewFastScroller.OnPopupTextUpdate {
-
 	private lateinit var fileDrawable: Drawable
 	private lateinit var folderDrawable: Drawable
 	private var fileDrawables = HashMap<String, Drawable>()
@@ -175,16 +175,12 @@ class ItemsAdapter(
 			findItem(R.id.cab_open_as).isVisible = isOneFileSelected()
 			findItem(R.id.cab_set_as).isVisible = isOneFileSelected()
 			findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
-
 			checkHideBtnVisibility(this)
 		}
 	}
 
 	override fun actionItemPressed(id: Int) {
-		if(selectedKeys.isEmpty()) {
-			return
-		}
-
+		if(selectedKeys.isEmpty()) return
 		when(id) {
 			R.id.cab_confirm_selection -> confirmSelection()
 			R.id.cab_rename -> displayRenameDialog()
@@ -234,7 +230,6 @@ class ItemsAdapter(
 
 	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
 		val binding = Binding.getByItemViewType(viewType, isListViewType).inflate(layoutInflater, parent, false)
-
 		return createViewHolder(binding.root)
 	}
 
@@ -263,7 +258,6 @@ class ItemsAdapter(
 				unhiddenCnt++
 			}
 		}
-
 		menu.findItem(R.id.cab_hide).isVisible = unhiddenCnt > 0
 		menu.findItem(R.id.cab_unhide).isVisible = hiddenCnt > 0
 	}
@@ -271,11 +265,8 @@ class ItemsAdapter(
 	private fun confirmSelection() {
 		if(selectedKeys.isNotEmpty()) {
 			val paths = getSelectedFileDirItems().asSequence().filter {!it.isDirectory}.map {it.path}.toMutableList() as ArrayList<String>
-			if(paths.isEmpty()) {
-				finishActMode()
-			} else {
-				listener?.selectedPaths(paths)
-			}
+			if(paths.isEmpty()) finishActMode()
+			else listener?.selectedPaths(paths)
 		}
 	}
 
@@ -289,19 +280,17 @@ class ItemsAdapter(
 					config.moveFavorite(oldPath, it)
 					activity.runOnUiThread {
 						listener?.refreshFragment()
+						(activity as? MainActivity)?.updateFavsList()
 						finishActMode()
 					}
 				}
 			}
-
 			fileDirItems.any {it.isDirectory} -> RenameItemsDialog(activity, paths) {
 				activity.runOnUiThread {
 					listener?.refreshFragment()
 					finishActMode()
 				}
-			}
-
-			else -> RenameDialog(activity, paths, false) {
+			} else -> RenameDialog(activity, paths, false) {
 				activity.runOnUiThread {
 					listener?.refreshFragment()
 					finishActMode()
@@ -736,7 +725,7 @@ class ItemsAdapter(
 							}
 						} else {
 							val mainFile = File(mainFilePath)
-							for(file in mainFile.listFiles()) {
+							for(file in mainFile.listFiles()!!) {
 								name = file.path.relativizeWith(base)
 								if(activity.getIsPathDirectory(file.absolutePath)) {
 									queue.push(file.absolutePath)
@@ -815,9 +804,8 @@ class ItemsAdapter(
 				activity.runOnUiThread {
 					removeSelectedItems(positions)
 					listener?.deleteFiles(files)
-					positions.forEach {
-						listItems.removeAt(it)
-					}
+					positions.forEach {listItems.removeAt(it)}
+					(activity as? MainActivity)?.updateFavsList()
 				}
 			}
 		}

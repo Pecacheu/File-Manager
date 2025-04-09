@@ -29,9 +29,10 @@ import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
-class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.RecentsInnerBinding>(context, attributeSet),
+private const val RECENTS_LIMIT = 50
+
+class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
 	ItemOperationsListener {
-	private val RECENTS_LIMIT = 50
 	private var filesIgnoringSearch = ArrayList<ListItem>()
 	private var lastSearchedText = ""
 	private var zoomListener: MyRecyclerView.MyZoomListener? = null
@@ -40,7 +41,7 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	override fun onFinishInflate() {
 		super.onFinishInflate()
 		binding = RecentsFragmentBinding.bind(this)
-		innerBinding = RecentsInnerBinding(binding)
+		innerBinding = BaseInnerBinding(binding)
 	}
 
 	override fun setupFragment(activity: SimpleActivity) {

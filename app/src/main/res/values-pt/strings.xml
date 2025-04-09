@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Falha ao compactar</string>
 	<string name="decompressing_failed">Falha ao descompactar</string>
 	<string name="manage_favorites">Gerir favoritos</string>
-	<string name="go_to_favorite">Ir para favorito</string>
 	<string name="favorites_activity_placeholder">Pode adicionar pastas como favoritos para um acesso mais rápido.</string>
 	<string name="file_editor">Editor de ficheiros</string>
 	<string name="storage_analysis">Análise ao armazenamento</string>

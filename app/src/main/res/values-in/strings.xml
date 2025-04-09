@@ -28,7 +28,6 @@
 	<string name="compressing_failed">Gagal mengompres</string>
 	<string name="decompressing_failed">Gagal dekompresi</string>
 	<string name="manage_favorites">Kelola favorit</string>
-	<string name="go_to_favorite">Buka favorit</string>
 	<string name="favorites_activity_placeholder">Anda bisa menambahkan folder yang sering digunakan ke favorit untuk kemudahan akses dari mana saja.</string>
 	<string name="file_editor">Penyunting File</string>
 	<string name="storage_analysis">Analisis penyimpanan</string>

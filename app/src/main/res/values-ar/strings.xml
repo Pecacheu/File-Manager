@@ -23,7 +23,6 @@
 	<string name="compressing_failed">أخفق الضغط</string>
 	<string name="decompressing_failed">أخفق إلغاء الضغط</string>
 	<string name="manage_favorites">إدارة المفضلة</string>
-	<string name="go_to_favorite">الذهاب الى المفضلة</string>
 	<string name="favorites_activity_placeholder">يمكنك إضافة المجلدات المستخدمة بشكل متكرر إلى المفضلة لسهولة الوصول إليها من أي مكان.</string>
 	<string name="file_editor">محرر الملفات</string>
 	<string name="storage_analysis">تحليل التخزين</string>

@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Impossibile comprimere</string>
 	<string name="decompressing_failed">Impossibile decomprimere</string>
 	<string name="manage_favorites">Gestisci i preferiti</string>
-	<string name="go_to_favorite">Vai al preferito</string>
 	<string name="favorites_activity_placeholder">Si possono aggiungere le cartelle usate frequentemente ai preferiti, per un rapido accesso da qualsiasi posizione.</string>
 	<string name="file_editor">Editor dei file</string>
 	<string name="storage_analysis">Analisi dello stoccaggio</string>

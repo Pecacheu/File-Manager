@@ -20,7 +20,6 @@
 	<string name="compressing_failed">Sıxışdırma alınmadı</string>
 	<string name="decompressing_failed">Çıxarma alınmadı</string>
 	<string name="manage_favorites">Sevimliləri idarə et</string>
-	<string name="go_to_favorite">Sevimlilərə get</string>
 	<string name="favorites_activity_placeholder">Tez-tez istifadə olunan qovluqlara sürətli əlçatanlıq üçün sevimlilərə əlavə edə bilərsiniz.</string>
 	<string name="file_editor">Fayl Redaktəsi</string>
 	<string name="enable_root_access">Root icazəsini aktivləşdir</string>

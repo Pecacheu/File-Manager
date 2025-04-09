@@ -28,7 +28,6 @@
 	<string name="compressing_failed">Fout bij inpakken</string>
 	<string name="decompressing_failed">Fout bij uitpakken</string>
 	<string name="manage_favorites">Favorieten beheren</string>
-	<string name="go_to_favorite">Naar favoriet gaan</string>
 	<string name="favorites_activity_placeholder">Voeg vaak gebruikte mappen toe aan de favorieten voor snelle toegang vanuit ieder scherm.</string>
 	<string name="file_editor">Bewerken</string>
 	<string name="storage_analysis">Opslaganalyse</string>

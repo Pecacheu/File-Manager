@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Не удалось сжать</string>
 	<string name="decompressing_failed">Не удалось извлечь</string>
 	<string name="manage_favorites">Настроить избранное</string>
-	<string name="go_to_favorite">Открыть избранное</string>
 	<string name="favorites_activity_placeholder">Вы можете добавить часто используемые папки в избранное для быстрого доступа к ним.</string>
 	<string name="file_editor">Редактор файлов</string>
 	<string name="storage_analysis">Анализ хранилища</string>

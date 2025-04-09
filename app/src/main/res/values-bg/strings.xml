@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Неуспешно компресиране</string>
 	<string name="decompressing_failed">Неуспешно декомпресиране</string>
 	<string name="manage_favorites">Управление на любими</string>
-	<string name="go_to_favorite">Към любими</string>
 	<string name="favorites_activity_placeholder">Можете да добавяте често използвани папки към любими за лесен достъп от всякъде.</string>
 	<string name="file_editor">Файлов редактор</string>
 	<string name="storage_analysis">Анализ на съхранението</string>

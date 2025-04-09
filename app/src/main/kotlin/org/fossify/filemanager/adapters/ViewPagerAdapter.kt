@@ -6,17 +6,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.viewpager.widget.PagerAdapter
 import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
-import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
 import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.SimpleActivity
-import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.fragments.MyViewPagerFragment
 
 class ViewPagerAdapter(val activity: SimpleActivity, val tabsToShow: ArrayList<Int>): PagerAdapter() {
-	override fun instantiateItem(container: ViewGroup, position: Int): Any {
-		val layout = getFragment(position)
+	override fun instantiateItem(container: ViewGroup, idx: Int): Any {
+		val layout = getFragment(idx)
 		val view = activity.layoutInflater.inflate(layout, container, false)
 		container.addView(view)
 
@@ -25,18 +24,10 @@ class ViewPagerAdapter(val activity: SimpleActivity, val tabsToShow: ArrayList<I
 			val isGetContentIntent = activity.intent.action == Intent.ACTION_GET_CONTENT || activity.intent.action == Intent.ACTION_PICK
 			val isCreateDocumentIntent = activity.intent.action == Intent.ACTION_CREATE_DOCUMENT
 			val allowPickingMultipleIntent = activity.intent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-			val getContentMimeType = if(isGetContentIntent) {
-				activity.intent.type?:""
-			} else {
-				""
-			}
+			val getContentMimeType = if(isGetContentIntent) activity.intent.type?:"" else ""
 
 			val passedExtraMimeTypes = activity.intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
-			val extraMimeTypes = if(isGetContentIntent && passedExtraMimeTypes != null) {
-				passedExtraMimeTypes
-			} else {
-				null
-			}
+			val extraMimeTypes = if(isGetContentIntent && passedExtraMimeTypes != null) passedExtraMimeTypes else null
 
 			this.isGetRingtonePicker = isPickRingtoneIntent
 			this.isPickMultipleIntent = allowPickingMultipleIntent
@@ -55,25 +46,16 @@ class ViewPagerAdapter(val activity: SimpleActivity, val tabsToShow: ArrayList<I
 		container.removeView(item as View)
 	}
 
-	override fun getCount() = tabsToShow.filter {it and activity.config.showTabs != 0}.size
+	override fun getCount() = tabsToShow.size
 
 	override fun isViewFromObject(view: View, item: Any) = view == item
 
-	private fun getFragment(position: Int): Int {
-		val showTabs = activity.config.showTabs
-		val fragments = arrayListOf<Int>()
-		if(showTabs and TAB_FILES != 0) {
-			fragments.add(R.layout.items_fragment)
+	private fun getFragment(idx: Int): Int {
+		return when(tabsToShow[idx]) {
+			TAB_FILES -> R.layout.items_fragment
+			TAB_FAVORITES -> R.layout.favorites_fragment
+			TAB_RECENT_FILES -> R.layout.recents_fragment
+			else -> R.layout.storage_fragment
 		}
-
-		if(showTabs and TAB_RECENT_FILES != 0) {
-			fragments.add(R.layout.recents_fragment)
-		}
-
-		if(showTabs and TAB_STORAGE_ANALYSIS != 0) {
-			fragments.add(R.layout.storage_fragment)
-		}
-
-		return fragments[position]
 	}
 }

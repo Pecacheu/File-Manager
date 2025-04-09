@@ -29,7 +29,6 @@
 	<string name="compressing_failed">圧縮できませんでした</string>
 	<string name="decompressing_failed">解凍できませんでした</string>
 	<string name="manage_favorites">お気に入りを管理</string>
-	<string name="go_to_favorite">お気に入りを開く</string>
 	<string name="favorites_activity_placeholder">よく使うフォルダをお気に入りに追加すると、どこからでも簡単にアクセスできます。</string>
 	<string name="file_editor">ファイル エディター</string>
 	<string name="storage_analysis">ストレージ解析</string>

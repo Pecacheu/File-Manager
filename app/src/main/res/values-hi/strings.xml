@@ -28,7 +28,6 @@
 	<string name="compressing_failed">संपीड़न विफल</string>
 	<string name="decompressing_failed">अवसाद विफल</string>
 	<string name="manage_favorites">पसंदीदा प्रबंधित करें</string>
-	<string name="go_to_favorite">पसंदीदा के जाओ</string>
 	<string name="favorites_activity_placeholder">आप कहीं से भी आसानी से पहुंच के लिए पसंदीदा में अक्सर इस्तेमाल किए जाने वाले फ़ोल्डर जोड़ सकते हैं।</string>
 	<string name="file_editor">फाइल संपादक</string>
 	<string name="enable_root_access">रूट एक्सेस</string>

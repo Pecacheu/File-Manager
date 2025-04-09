@@ -26,7 +26,6 @@
 	<string name="select_audio_file">Bonvolu elekti sondosieron</string>
 	<string name="invert_colors">Inversigi kolorojn</string>
 	<string name="manage_favorites">Administri plej ŝatatajn</string>
-	<string name="go_to_favorite">Iri al plej ŝatata</string>
 	<string name="favorites_activity_placeholder">Vi povas aldoni ofte uzatajn dosierujojn al viaj plej ŝatataj por facile atingi ilin el ie ajn.</string>
 	<string name="archives">Arkivoj</string>
 	<string name="storage_free">libera</string>

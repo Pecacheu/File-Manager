@@ -4,14 +4,12 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
-import android.graphics.drawable.Drawable
 import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.provider.Settings
-import android.widget.ImageView
+import android.util.Log
 import android.widget.TextView
 import androidx.viewpager.widget.ViewPager
 import com.stericson.RootTools.RootTools
@@ -23,7 +21,6 @@ import org.fossify.commons.extensions.appLockManager
 import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.checkWhatsNew
 import org.fossify.commons.extensions.getBottomNavigationBackgroundColor
-import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.getFilePublicUri
 import org.fossify.commons.extensions.getMimeType
 import org.fossify.commons.extensions.getProperBackgroundColor
@@ -35,11 +32,9 @@ import org.fossify.commons.extensions.handleHiddenFolderPasswordProtection
 import org.fossify.commons.extensions.hasOTGConnected
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.humanizePath
 import org.fossify.commons.extensions.internalStoragePath
 import org.fossify.commons.extensions.isPathOnOTG
 import org.fossify.commons.extensions.isPathOnSD
-import org.fossify.commons.extensions.launchMoreAppsFromUsIntent
 import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.extensions.onTabSelectionChanged
 import org.fossify.commons.extensions.sdCardPath
@@ -54,6 +49,7 @@ import org.fossify.commons.helpers.LICENSE_PATTERN
 import org.fossify.commons.helpers.LICENSE_REPRINT
 import org.fossify.commons.helpers.LICENSE_ZIP4J
 import org.fossify.commons.helpers.PERMISSION_WRITE_STORAGE
+import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
@@ -75,11 +71,13 @@ import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.fragments.ItemsFragment
 import org.fossify.filemanager.fragments.MyViewPagerFragment
 import org.fossify.filemanager.fragments.RecentsFragment
+import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.fragments.StorageFragment
 import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
 import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
+import androidx.core.net.toUri
 
 class MainActivity: SimpleActivity() {
 	companion object {
@@ -104,18 +102,15 @@ class MainActivity: SimpleActivity() {
 		setContentView(binding.root)
 		appLaunched(BuildConfig.APPLICATION_ID)
 		setupOptionsMenu()
-		refreshMenuItems()
-		mTabsToShow = getTabsList()
 
-		if(!config.wasStorageAnalysisTabAdded) {
-			config.wasStorageAnalysisTabAdded = true
-			if(config.showTabs and TAB_STORAGE_ANALYSIS == 0) {
-				config.showTabs += TAB_STORAGE_ANALYSIS
-			}
+		if(config.lastVersion < 3) {
+			if(config.showTabs and TAB_STORAGE_ANALYSIS == 0) config.showTabs += TAB_STORAGE_ANALYSIS
+			if(config.showTabs and TAB_FAVORITES == 0) config.showTabs += TAB_FAVORITES
 		}
 
 		storeStateVariables()
-		setupTabs()
+		setupTabs(getTabsToShow())
+		refreshMenuItems()
 
 		updateMaterialActivityViews(binding.mainCoordinator, null, useTransparentNavigation = false, useTopSearchMenu = true)
 
@@ -131,18 +126,20 @@ class MainActivity: SimpleActivity() {
 	override fun onResume() {
 		super.onResume()
 		if(mStoredShowTabs != config.showTabs) {
-			config.lastUsedViewPagerPage = 0
+			config.lastUsedViewPagerPage = TAB_FILES
 			System.exit(0)
 			return
 		}
 
 		refreshMenuItems()
 		updateMenuColors()
+		updateFavsList(true)
 		setupTabColors()
 
 		getAllFragments().forEach {
 			it?.onResume(getProperTextColor())
 		}
+		//TODO Files tab can still go blank if rotating while on other tab
 
 		if(mStoredFontSize != config.fontSize) {
 			getAllFragments().forEach {
@@ -164,7 +161,7 @@ class MainActivity: SimpleActivity() {
 	override fun onPause() {
 		super.onPause()
 		storeStateVariables()
-		config.lastUsedViewPagerPage = binding.mainViewPager.currentItem
+		config.lastUsedViewPagerPage = tabIdxToId(binding.mainViewPager.currentItem)
 	}
 
 	override fun onDestroy() {
@@ -176,9 +173,9 @@ class MainActivity: SimpleActivity() {
 		val currentFragment = getCurrentFragment()
 		if(binding.mainMenu.isSearchOpen) {
 			binding.mainMenu.closeSearch()
-		} else if(currentFragment is RecentsFragment || currentFragment is StorageFragment) {
+		} else if(currentFragment !is ItemsFragment) {
 			super.onBackPressed()
-		} else if((currentFragment as ItemsFragment).getBreadcrumbs().getItemCount() <= 1) {
+		} else if(currentFragment.getBreadcrumbs().getItemCount() <= 1) {
 			if(!wasBackJustPressed && config.pressBackTwice) {
 				wasBackJustPressed = true
 				toast(R.string.press_back_again)
@@ -207,18 +204,17 @@ class MainActivity: SimpleActivity() {
 
 			findItem(R.id.add_favorite).isVisible = currentFragment is ItemsFragment && !favorites.contains(currentFragment.currentPath)
 			findItem(R.id.remove_favorite).isVisible = currentFragment is ItemsFragment && favorites.contains(currentFragment.currentPath)
-			findItem(R.id.go_to_favorite).isVisible = currentFragment is ItemsFragment && favorites.isNotEmpty()
 
-			findItem(R.id.toggle_filename).isVisible = currentViewType == VIEW_TYPE_GRID && currentFragment !is StorageFragment
+			findItem(R.id.toggle_filename).isVisible = currentViewType == VIEW_TYPE_GRID &&
+				currentFragment !is StorageFragment && currentFragment !is FavoritesFragment
+
 			findItem(R.id.go_home).isVisible = currentFragment is ItemsFragment && currentFragment.currentPath != config.homeFolder
 			findItem(R.id.set_as_home).isVisible = currentFragment is ItemsFragment && currentFragment.currentPath != config.homeFolder
 
 			findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden() && currentFragment !is StorageFragment
 			findItem(R.id.stop_showing_hidden).isVisible = config.temporarilyShowHidden && currentFragment !is StorageFragment
-
 			findItem(R.id.column_count).isVisible = currentViewType == VIEW_TYPE_GRID && currentFragment !is StorageFragment
 
-			findItem(R.id.more_apps_from_us).isVisible = !resources.getBoolean(org.fossify.commons.R.bool.hide_google_relations)
 			findItem(R.id.settings).isVisible = !isCreateDocumentIntent
 			findItem(R.id.about).isVisible = !isCreateDocumentIntent
 		}
@@ -247,7 +243,6 @@ class MainActivity: SimpleActivity() {
 
 				when(menuItem.itemId) {
 					R.id.go_home -> goHome()
-					R.id.go_to_favorite -> goToFavorite()
 					R.id.sort -> showSortingDialog()
 					R.id.add_favorite -> addFavorite()
 					R.id.remove_favorite -> removeFavorite()
@@ -257,7 +252,6 @@ class MainActivity: SimpleActivity() {
 					R.id.temporarily_show_hidden -> tryToggleTemporarilyShowHidden()
 					R.id.stop_showing_hidden -> tryToggleTemporarilyShowHidden()
 					R.id.column_count -> changeColumnCount()
-					R.id.more_apps_from_us -> launchMoreAppsFromUsIntent()
 					R.id.settings -> launchSettings()
 					R.id.about -> launchAbout()
 					else -> return@setOnMenuItemClickListener false
@@ -341,7 +335,7 @@ class MainActivity: SimpleActivity() {
 						try {
 							val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
 							intent.addCategory("android.intent.category.DEFAULT")
-							intent.data = Uri.parse("package:$packageName")
+							intent.data = "package:$packageName".toUri()
 							startActivityForResult(intent, MANAGE_STORAGE_RC)
 						} catch(e: Exception) {
 							showErrorToast(e)
@@ -404,7 +398,7 @@ class MainActivity: SimpleActivity() {
 					refreshMenuItems()
 				}
 			})
-			currentItem = config.lastUsedViewPagerPage
+			currentItem = tabIdToIdx(config.lastUsedViewPagerPage)
 
 			onGlobalLayout {
 				refreshMenuItems()
@@ -412,42 +406,47 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	private fun setupTabs() {
-		binding.mainTabsHolder.removeAllTabs()
+	private fun getTabsToShow(): ArrayList<Int> {
 		val action = intent.action
 		val isPickFileIntent = action == RingtoneManager.ACTION_RINGTONE_PICKER || action == Intent.ACTION_GET_CONTENT || action == Intent.ACTION_PICK
-		val isCreateDocumentIntent = action == Intent.ACTION_CREATE_DOCUMENT
 
+		var tabs = arrayListOf(TAB_FILES, TAB_FAVORITES, TAB_RECENT_FILES, TAB_STORAGE_ANALYSIS)
+		if(config.favorites.isEmpty()) tabs.remove(TAB_FAVORITES)
 		if(isPickFileIntent) {
-			mTabsToShow.remove(TAB_STORAGE_ANALYSIS)
-			if(mTabsToShow.none {it and config.showTabs != 0}) {
+			tabs.remove(TAB_STORAGE_ANALYSIS)
+			if(tabs.none {it and config.showTabs != 0}) {
 				config.showTabs = TAB_FILES
 				mStoredShowTabs = TAB_FILES
-				mTabsToShow = arrayListOf(TAB_FILES)
+				tabs = arrayListOf(TAB_FILES)
 			}
-		} else if(isCreateDocumentIntent) {
-			mTabsToShow.clear()
-			mTabsToShow = arrayListOf(TAB_FILES)
+		} else if(action == Intent.ACTION_CREATE_DOCUMENT) {
+			tabs.clear()
+			tabs = arrayListOf(TAB_FILES)
 		}
+		return tabs
+	}
 
-		mTabsToShow.forEachIndexed {index, value ->
-			if(config.showTabs and value != 0) {
+	private fun setupTabs(tabs: ArrayList<Int>) {
+		binding.mainTabsHolder.removeAllTabs()
+		mTabsToShow = tabs
+
+		mTabsToShow.forEach {id ->
+			if(config.showTabs and id != 0) {
 				binding.mainTabsHolder.newTab().setCustomView(org.fossify.commons.R.layout.bottom_tablayout_item).apply {
-					customView?.findViewById<ImageView>(org.fossify.commons.R.id.tab_item_icon)?.setImageDrawable(getTabIcon(index))
-					customView?.findViewById<TextView>(org.fossify.commons.R.id.tab_item_label)?.text = getTabLabel(index)
+					customView?.findViewById<TextView>(org.fossify.commons.R.id.tab_item_label)?.text = getTabLabel(id)
 					AutofitHelper.create(customView?.findViewById(org.fossify.commons.R.id.tab_item_label))
 					binding.mainTabsHolder.addTab(this)
 				}
-			}
+			} else mTabsToShow.remove(id)
 		}
 
 		binding.mainTabsHolder.apply {
 			onTabSelectionChanged(tabUnselectedAction = {
-				updateBottomTabItemColors(it.customView, false, getDeselectedTabDrawableIds()[it.position])
+				updateBottomTabItemColors(it.customView, false, getDeselectedTabDrawable(it.position))
 			}, tabSelectedAction = {
 				binding.mainMenu.closeSearch()
 				binding.mainViewPager.currentItem = it.position
-				updateBottomTabItemColors(it.customView, true, getSelectedTabDrawableIds()[it.position])
+				updateBottomTabItemColors(it.customView, true, getSelectedTabDrawable(it.position))
 			})
 
 			beGoneIf(tabCount == 1)
@@ -457,11 +456,11 @@ class MainActivity: SimpleActivity() {
 	private fun setupTabColors() {
 		binding.apply {
 			val activeView = mainTabsHolder.getTabAt(mainViewPager.currentItem)?.customView
-			updateBottomTabItemColors(activeView, true, getSelectedTabDrawableIds()[mainViewPager.currentItem])
+			updateBottomTabItemColors(activeView, true, getSelectedTabDrawable(mainViewPager.currentItem))
 
 			getInactiveTabIndexes(mainViewPager.currentItem).forEach {index ->
 				val inactiveView = mainTabsHolder.getTabAt(index)?.customView
-				updateBottomTabItemColors(inactiveView, false, getDeselectedTabDrawableIds()[index])
+				updateBottomTabItemColors(inactiveView, false, getDeselectedTabDrawable(index))
 			}
 
 			val bottomBarColor = getBottomNavigationBackgroundColor()
@@ -470,23 +469,13 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	private fun getTabIcon(position: Int): Drawable {
-		val drawableId = when(position) {
-			0 -> org.fossify.commons.R.drawable.ic_folder_vector
-			1 -> org.fossify.commons.R.drawable.ic_clock_vector
-			else -> R.drawable.ic_storage_vector
-		}
-
-		return resources.getColoredDrawableWithColor(drawableId, getProperTextColor())
-	}
-
-	private fun getTabLabel(position: Int): String {
-		val stringId = when(position) {
-			0 -> org.fossify.commons.R.string.files_tab
-			1 -> R.string.recents
+	private fun getTabLabel(id: Int): String {
+		val stringId = when(id) {
+			TAB_FILES -> org.fossify.commons.R.string.files_tab
+			TAB_FAVORITES -> org.fossify.commons.R.string.favorites
+			TAB_RECENT_FILES -> R.string.recents
 			else -> org.fossify.commons.R.string.storage
 		}
-
 		return resources.getString(stringId)
 	}
 
@@ -501,18 +490,21 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	private fun openPath(path: String, forceRefresh: Boolean = false) {
+	fun openPath(path: String, forceRefresh: Boolean = false) {
 		var newPath = path
 		val file = File(path)
 		if(config.OTGPath.isNotEmpty() && config.OTGPath == path.trimEnd('/')) {
 			newPath = path
 		} else if(file.exists() && !file.isDirectory) {
-			newPath = file.parent
+			newPath = file.parent?.toString()?:return
 		} else if(!file.exists() && !isPathOnOTG(newPath)) {
 			newPath = internalStoragePath
 		}
-
 		getItemsFragment()?.openPath(newPath, forceRefresh)
+	}
+
+	fun gotoFilesTab() {
+		binding.mainViewPager.currentItem = tabIdToIdx(TAB_FILES)
 	}
 
 	private fun goHome() {
@@ -530,11 +522,28 @@ class MainActivity: SimpleActivity() {
 	private fun addFavorite() {
 		config.addFavorite(getCurrentFragment()!!.currentPath)
 		refreshMenuItems()
+		updateFavsList()
 	}
 
 	private fun removeFavorite() {
 		config.removeFavorite(getCurrentFragment()!!.currentPath)
 		refreshMenuItems()
+		updateFavsList()
+	}
+
+	fun updateFavsList(resume: Boolean=false) {
+		getFavoritesFragment()?.refreshFragment()
+		val tabs = getTabsToShow()
+		if(mTabsToShow != tabs) {
+			val tab = tabIdxToId(binding.mainViewPager.currentItem)
+			setupTabs(tabs)
+			if(!resume) setupTabColors()
+			initFragments()
+			val itmFrag = getItemsFragment()?:return
+			openPath(itmFrag.currentPath) //TODO This is causing it to go back to the root path every time(?)
+			binding.mainViewPager.currentItem = tabIdToIdx(tab)
+			Log.i("test", "Tabs ${mTabsToShow.size} != ${tabs.size}, tab ${tabIdToIdx(tab)}")
+		}
 	}
 
 	private fun toggleFilenameVisibility() {
@@ -565,24 +574,6 @@ class MainActivity: SimpleActivity() {
 	fun updateFragmentColumnCounts() {
 		getAllFragments().forEach {
 			(it as? ItemOperationsListener)?.columnCountChanged()
-		}
-	}
-
-	private fun goToFavorite() {
-		val favorites = config.favorites
-		val items = ArrayList<RadioItem>(favorites.size)
-		var currFavoriteIndex = -1
-
-		favorites.forEachIndexed {index, path ->
-			val visiblePath = humanizePath(path).replace("/", " / ")
-			items.add(RadioItem(index, visiblePath, path))
-			if(path == getCurrentFragment()!!.currentPath) {
-				currFavoriteIndex = index
-			}
-		}
-
-		RadioGroupDialog(this, items, currFavoriteIndex, R.string.go_to_favorite) {
-			openPath(it.toString())
 		}
 	}
 
@@ -650,11 +641,14 @@ class MainActivity: SimpleActivity() {
 
 	private fun checkInvalidFavorites() {
 		ensureBackgroundThread {
+			var badFavs = false
 			config.favorites.forEach {
 				if(!isPathOnOTG(it) && !isPathOnSD(it) && !File(it).exists()) {
 					config.removeFavorite(it)
+					badFavs = true
 				}
 			}
+			if(badFavs) updateFavsList()
 		}
 	}
 
@@ -726,68 +720,48 @@ class MainActivity: SimpleActivity() {
 
 	private fun getInactiveTabIndexes(activeIndex: Int) = (0 until binding.mainTabsHolder.tabCount).filter {it != activeIndex}
 
-	private fun getSelectedTabDrawableIds(): ArrayList<Int> {
-		val showTabs = config.showTabs
-		val icons = ArrayList<Int>()
-
-		if(showTabs and TAB_FILES != 0) {
-			icons.add(org.fossify.commons.R.drawable.ic_folder_vector)
-		}
-
-		if(showTabs and TAB_RECENT_FILES != 0) {
-			icons.add(org.fossify.commons.R.drawable.ic_clock_filled_vector)
-		}
-
-		if(showTabs and TAB_STORAGE_ANALYSIS != 0) {
-			icons.add(R.drawable.ic_storage_vector)
-		}
-
-		return icons
+	private fun tabIdxToId(idx: Int) = mTabsToShow.getOrNull(idx)?:0
+	private fun tabIdToIdx(id: Int): Int {
+		val idx = mTabsToShow.indexOf(id)
+		return if(idx == -1) 0 else idx
 	}
 
-	private fun getDeselectedTabDrawableIds(): ArrayList<Int> {
-		val showTabs = config.showTabs
-		val icons = ArrayList<Int>()
-
-		if(showTabs and TAB_FILES != 0) {
-			icons.add(org.fossify.commons.R.drawable.ic_folder_outline_vector)
+	private fun getSelectedTabDrawable(idx: Int): Int {
+		return when(tabIdxToId(idx)) {
+			TAB_FILES -> org.fossify.commons.R.drawable.ic_folder_vector
+			TAB_FAVORITES -> org.fossify.commons.R.drawable.ic_star_vector
+			TAB_RECENT_FILES -> org.fossify.commons.R.drawable.ic_clock_filled_vector
+			else -> R.drawable.ic_storage_vector
 		}
+	}
 
-		if(showTabs and TAB_RECENT_FILES != 0) {
-			icons.add(org.fossify.commons.R.drawable.ic_clock_vector)
+	private fun getDeselectedTabDrawable(idx: Int): Int {
+		return when(tabIdxToId(idx)) {
+			TAB_FILES -> org.fossify.commons.R.drawable.ic_folder_outline_vector
+			TAB_FAVORITES -> org.fossify.commons.R.drawable.ic_star_outline_vector
+			TAB_RECENT_FILES -> org.fossify.commons.R.drawable.ic_clock_vector
+			else -> R.drawable.ic_storage_vector
 		}
-
-		if(showTabs and TAB_STORAGE_ANALYSIS != 0) {
-			icons.add(R.drawable.ic_storage_vector)
-		}
-
-		return icons
 	}
 
 	private fun getRecentsFragment() = findViewById<RecentsFragment>(R.id.recents_fragment)
+	private fun getFavoritesFragment() = findViewById<FavoritesFragment>(R.id.favorites_fragment)
 	private fun getItemsFragment() = findViewById<ItemsFragment>(R.id.items_fragment)
 	private fun getStorageFragment() = findViewById<StorageFragment>(R.id.storage_fragment)
-	private fun getAllFragments(): ArrayList<MyViewPagerFragment<*>?> = arrayListOf(getItemsFragment(), getRecentsFragment(), getStorageFragment())
+	private fun getAllFragments(): ArrayList<MyViewPagerFragment<*>?> = arrayListOf(
+		getItemsFragment(), getFavoritesFragment(), getRecentsFragment(), getStorageFragment())
 
-	private fun getCurrentFragment(): MyViewPagerFragment<*>? {
-		val showTabs = config.showTabs
-		val fragments = arrayListOf<MyViewPagerFragment<*>>()
-		if(showTabs and TAB_FILES != 0) {
-			fragments.add(getItemsFragment())
+	private fun getFragment(idx: Int): MyViewPagerFragment<*>? {
+		return when(tabIdxToId(idx)) {
+			TAB_FILES -> getItemsFragment()
+			TAB_FAVORITES -> getFavoritesFragment()
+			TAB_RECENT_FILES -> getRecentsFragment()
+			TAB_STORAGE_ANALYSIS -> getStorageFragment()
+			else -> null
 		}
-
-		if(showTabs and TAB_RECENT_FILES != 0) {
-			fragments.add(getRecentsFragment())
-		}
-
-		if(showTabs and TAB_STORAGE_ANALYSIS != 0) {
-			fragments.add(getStorageFragment())
-		}
-
-		return fragments.getOrNull(binding.mainViewPager.currentItem)
 	}
 
-	private fun getTabsList() = arrayListOf(TAB_FILES, TAB_RECENT_FILES, TAB_STORAGE_ANALYSIS)
+	private fun getCurrentFragment() = getFragment(binding.mainViewPager.currentItem)
 
 	private fun checkWhatsNewDialog() {
 		arrayListOf<Release>().apply {

@@ -13,7 +13,6 @@ import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.Breadcrumbs
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.commons.views.MyRecyclerView
-import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
@@ -191,17 +190,17 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 							activity?.toast(org.fossify.commons.R.string.no_storage_permissions)
 							return@handleAndroidSAFDialog
 						}
-						val getProperChildCount = context!!.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
+						val getProperChildCount = config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
 						context.getAndroidSAFFileItems(path, context.config.shouldShowHidden(), getProperChildCount) {fileItems ->
 							callback(path, getListItemsFromFileDirItems(fileItems))
 						}
 					}
-				} else if(context!!.isPathOnOTG(path) && config.OTGTreeUri.isNotEmpty()) {
-					val getProperFileSize = context!!.config.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
-					context!!.getOTGItems(path, config.shouldShowHidden(), getProperFileSize) {
+				} else if(context.isPathOnOTG(path) && config.OTGTreeUri.isNotEmpty()) {
+					val getProperFileSize = config.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
+					context.getOTGItems(path, config.shouldShowHidden(), getProperFileSize) {
 						callback(path, getListItemsFromFileDirItems(it))
 					}
-				} else if(!config.enableRootAccess || !context!!.isPathOnRoot(path)) {
+				} else if(!config.enableRootAccess || !context.isPathOnRoot(path)) {
 					getRegularItemsOf(path, callback)
 				} else {
 					RootHelpers(activity!!).getFiles(path, callback)

@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Tömörítés sikertelen</string>
 	<string name="decompressing_failed">Kibontás sikertelen</string>
 	<string name="manage_favorites">Kedvencek kezelése</string>
-	<string name="go_to_favorite">Ugrás kedvenchez</string>
 	<string name="favorites_activity_placeholder">A gyakran használt mappákat kedvencnek jelölheti, hogy bárhonnan könnyen elérje őket.</string>
 	<string name="file_editor">Fájlszerkesztő</string>
 	<string name="storage_analysis">Tárolóelemzés</string>

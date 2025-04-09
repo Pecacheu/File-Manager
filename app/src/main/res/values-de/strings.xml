@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Komprimieren fehlgeschlagen</string>
 	<string name="decompressing_failed">Entpacken fehlgeschlagen</string>
 	<string name="manage_favorites">Favoriten verwalten</string>
-	<string name="go_to_favorite">Zu Favoriten wechseln</string>
 	<string name="favorites_activity_placeholder">Du kannst häufig benutzte Ordner für einen einfacheren Zugriff zu den Favoriten hinzufügen.</string>
 	<string name="file_editor">Dateieditor</string>
 	<string name="storage_analysis">Speicheranalyse</string>

@@ -28,7 +28,6 @@
 	<string name="compressing_failed">Ha fallat la compressió</string>
 	<string name="decompressing_failed">Ha fallat la descompressió</string>
 	<string name="manage_favorites">Gestiona els preferits</string>
-	<string name="go_to_favorite">Ves als preferits</string>
 	<string name="favorites_activity_placeholder">Podeu afegir carpetes que utilitzeu amb freqüència als preferits per a accedir fàcilment des de qualsevol lloc.</string>
 	<string name="file_editor">Editor de fitxers</string>
 	<string name="storage_analysis">Anàlisi d\'emmagatzematge</string>

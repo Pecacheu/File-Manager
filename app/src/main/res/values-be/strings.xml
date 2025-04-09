@@ -29,7 +29,6 @@
 	<string name="compressing_failed">Не атрымалася сціснуць</string>
 	<string name="decompressing_failed">Не атрымалася распакаваць</string>
 	<string name="manage_favorites">Кіраванне абранымі</string>
-	<string name="go_to_favorite">Перайсці да абранага</string>
 	<string name="favorites_activity_placeholder">Вы можаце дадаць часта выкарыстоўваюцца папкі ў абранае для лёгкага доступу з любога месца.</string>
 	<string name="file_editor">Рэдактар файлаў</string>
 	<string name="storage_analysis">Аналіз сховішча</string>

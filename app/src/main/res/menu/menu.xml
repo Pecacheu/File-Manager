@@ -9,14 +9,14 @@
 		android:title="@string/go_to_home_folder"
 		app:showAsAction="always"/>
 	<item
-		android:id="@+id/go_to_favorite"
-		android:icon="@drawable/ic_folder_open_vector"
-		android:title="@string/go_to_favorite"
-		app:showAsAction="always"/>
-	<item
 		android:id="@+id/sort"
 		android:icon="@drawable/ic_sort_vector"
 		android:title="@string/sort_by"
+		app:showAsAction="ifRoom"/>
+	<item
+		android:id="@+id/change_view_type"
+		android:icon="@drawable/ic_change_view_vector"
+		android:title="@string/change_view_type"
 		app:showAsAction="ifRoom"/>
 	<item
 		android:id="@+id/add_favorite"
@@ -32,12 +32,7 @@
 		android:id="@+id/toggle_filename"
 		android:icon="@drawable/ic_label_vector"
 		android:title="@string/toggle_filename"
-		app:showAsAction="ifRoom"/>
-	<item
-		android:id="@+id/change_view_type"
-		android:icon="@drawable/ic_change_view_vector"
-		android:title="@string/change_view_type"
-		app:showAsAction="ifRoom"/>
+		app:showAsAction="never"/>
 	<item
 		android:id="@+id/set_as_home"
 		android:showAsAction="never"
@@ -62,14 +57,10 @@
 		android:id="@+id/settings"
 		android:icon="@drawable/ic_settings_cog_vector"
 		android:title="@string/settings"
-		app:showAsAction="never"/>
+		app:showAsAction="ifRoom"/>
 	<item
 		android:id="@+id/about"
 		android:icon="@drawable/ic_info_vector"
 		android:title="@string/about"
-		app:showAsAction="never"/>
-	<item
-		android:id="@+id/more_apps_from_us"
-		android:title="@string/more_apps_from_us"
-		app:showAsAction="never"/>
+		app:showAsAction="ifRoom"/>
 </menu>
