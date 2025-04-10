@@ -1,7 +1,9 @@
 package org.fossify.filemanager.activities
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import androidx.annotation.RequiresApi
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
@@ -9,7 +11,6 @@ import org.fossify.commons.dialogs.SecurityDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.RadioItem
-import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ActivitySettingsBinding
 import org.fossify.filemanager.dialogs.ManageVisibleTabsDialog
 import org.fossify.filemanager.extensions.config
@@ -33,7 +34,6 @@ class SettingsActivity: SimpleActivity() {
 	override fun onResume() {
 		super.onResume()
 		setupToolbar(binding.settingsToolbar, NavigationIcon.Arrow)
-
 		setupCustomizeColors()
 		setupUseEnglish()
 		setupLanguage()
@@ -61,9 +61,7 @@ class SettingsActivity: SimpleActivity() {
 	}
 
 	private fun setupCustomizeColors() {
-		binding.settingsColorCustomizationHolder.setOnClickListener {
-			startCustomizationActivity()
-		}
+		binding.settingsColorCustomizationHolder.setOnClickListener {startCustomizationActivity()}
 	}
 
 	private fun setupUseEnglish() {
@@ -83,7 +81,7 @@ class SettingsActivity: SimpleActivity() {
 			settingsLanguage.text = Locale.getDefault().displayLanguage
 			settingsLanguageHolder.beVisibleIf(isTiramisuPlus())
 			settingsLanguageHolder.setOnClickListener {
-				launchChangeAppLanguageIntent()
+				if(isTiramisuPlus()) launchChangeAppLanguageIntent()
 			}
 		}
 	}
@@ -124,13 +122,8 @@ class SettingsActivity: SimpleActivity() {
 	private fun setupShowHidden() {
 		binding.settingsShowHidden.isChecked = config.showHidden
 		binding.settingsShowHiddenHolder.setOnClickListener {
-			if(config.showHidden) {
-				toggleShowHidden()
-			} else {
-				handleHiddenFolderPasswordProtection {
-					toggleShowHidden()
-				}
-			}
+			if(config.showHidden) toggleShowHidden()
+			else handleHiddenFolderPasswordProtection {toggleShowHidden()}
 		}
 	}
 
@@ -172,9 +165,9 @@ class SettingsActivity: SimpleActivity() {
 					config.hiddenProtectionType = type
 
 					if(config.isHiddenPasswordProtectionOn) {
-						val confirmationTextId =
-							if(config.hiddenProtectionType == PROTECTION_FINGERPRINT) org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
-						ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
+						val confirmationTextId = if(config.hiddenProtectionType == PROTECTION_FINGERPRINT)
+							org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
+						ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) {}
 					}
 				}
 			}
@@ -194,8 +187,8 @@ class SettingsActivity: SimpleActivity() {
 					config.appProtectionType = type
 
 					if(config.isAppPasswordProtectionOn) {
-						val confirmationTextId =
-							if(config.appProtectionType == PROTECTION_FINGERPRINT) org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
+						val confirmationTextId = if(config.appProtectionType == PROTECTION_FINGERPRINT)
+							org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
 						ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
 					}
 				}
@@ -216,8 +209,8 @@ class SettingsActivity: SimpleActivity() {
 					config.deleteProtectionType = type
 
 					if(config.isDeletePasswordProtectionOn) {
-						val confirmationTextId =
-							if(config.deleteProtectionType == PROTECTION_FINGERPRINT) org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
+						val confirmationTextId = if(config.deleteProtectionType == PROTECTION_FINGERPRINT)
+							org.fossify.commons.R.string.fingerprint_setup_successfully else org.fossify.commons.R.string.protection_setup_successfully
 						ConfirmationDialog(this, "", confirmationTextId, org.fossify.commons.R.string.ok, 0) { }
 					}
 				}
@@ -250,13 +243,8 @@ class SettingsActivity: SimpleActivity() {
 			settingsEnableRootAccessHolder.beVisibleIf(config.isRootAvailable)
 			settingsEnableRootAccess.isChecked = config.enableRootAccess
 			settingsEnableRootAccessHolder.setOnClickListener {
-				if(!config.enableRootAccess) {
-					RootHelpers(this@SettingsActivity).askRootIfNeeded {
-						toggleRootAccess(it)
-					}
-				} else {
-					toggleRootAccess(false)
-				}
+				if(!config.enableRootAccess) RootHelpers(this@SettingsActivity).askRootIfNeeded {toggleRootAccess(it)}
+				else toggleRootAccess(false)
 			}
 		}
 	}

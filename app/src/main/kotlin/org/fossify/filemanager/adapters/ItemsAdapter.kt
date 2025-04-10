@@ -371,7 +371,7 @@ class ItemsAdapter(
 					drawable.findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(0)
 					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, bitmap)
 				} catch(e: Exception) {
-					val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault()), {fileDrawable})
+					val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
 					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, fileIcon)
 				}
 				activity.runOnUiThread {callback()}
@@ -489,7 +489,6 @@ class ItemsAdapter(
 					0 -> activity.toast(org.fossify.commons.R.string.copy_failed)
 					else -> activity.toast(org.fossify.commons.R.string.copying_success_partial)
 				}
-
 				activity.runOnUiThread {
 					listener?.refreshFragment()
 					finishActMode()
@@ -504,17 +503,11 @@ class ItemsAdapter(
 			activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
 			return
 		}
-
 		CompressAsDialog(activity, firstPath) {destination, password ->
-			activity.handleAndroidSAFDialog(firstPath) {granted ->
-				if(!granted) {
-					return@handleAndroidSAFDialog
-				}
-				activity.handleSAFDialog(firstPath) {
-					if(!it) {
-						return@handleSAFDialog
-					}
-
+			activity.handleAndroidSAFDialog(firstPath) {grant1 ->
+				if(!grant1) return@handleAndroidSAFDialog
+				activity.handleSAFDialog(firstPath) {grant2 ->
+					if(!grant2) return@handleSAFDialog
 					activity.toast(R.string.compressing)
 					val paths = getSelectedFileDirItems().map {it.path}
 					ensureBackgroundThread {
@@ -539,12 +532,8 @@ class ItemsAdapter(
 			activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
 			return
 		}
-
-		activity.handleSAFDialog(firstPath) {
-			if(!it) {
-				return@handleSAFDialog
-			}
-
+		activity.handleSAFDialog(firstPath) {grant ->
+			if(!grant) return@handleSAFDialog
 			val paths = getSelectedFileDirItems().asSequence().map {it.path}.filter {it.isZipFile()}.toList()
 			ensureBackgroundThread {
 				tryDecompressingPaths(paths) {success ->
@@ -606,31 +595,23 @@ class ItemsAdapter(
 					while(entry != null) {
 						val parentPath = path.getParentPath()
 						val newPath = "$parentPath/$newFolderName/${entry.fileName.trimEnd('/')}"
-
 						val resolution = getConflictResolution(conflictResolutions, newPath)
 						val doesPathExist = activity.getDoesFilePathExist(newPath)
+
 						if(doesPathExist && resolution == CONFLICT_OVERWRITE) {
 							val fileDirItem = FileDirItem(newPath, newPath.getFilenameFromPath(), entry.isDirectory)
 							if(activity.getIsPathDirectory(path)) {
 								activity.deleteFolderBg(fileDirItem, false) {
-									if(it) {
-										extractEntry(newPath, entry, zipInputStream)
-									} else {
-										callback(false)
-									}
+									if(it) extractEntry(newPath, entry, zipInputStream)
+									else callback(false)
 								}
 							} else {
 								activity.deleteFileBg(fileDirItem, false, false) {
-									if(it) {
-										extractEntry(newPath, entry, zipInputStream)
-									} else {
-										callback(false)
-									}
+									if(it) extractEntry(newPath, entry, zipInputStream)
+									else callback(false)
 								}
 							}
-						} else if(!doesPathExist) {
-							extractEntry(newPath, entry, zipInputStream)
-						}
+						} else if(!doesPathExist) extractEntry(newPath, entry, zipInputStream)
 
 						entry = zipInputStream.nextEntry
 					}
@@ -651,9 +632,7 @@ class ItemsAdapter(
 			}
 		} else {
 			val fos = activity.getFileOutputStreamSync(newPath, newPath.getMimeType())
-			if(fos != null) {
-				zipInputStream.copyTo(fos)
-			}
+			if(fos != null) zipInputStream.copyTo(fos)
 		}
 	}
 
@@ -670,7 +649,6 @@ class ItemsAdapter(
 	private fun compressPaths(sourcePaths: List<String>, targetPath: String, password: String? = null): Boolean {
 		val queue = LinkedList<String>()
 		val fos = activity.getFileOutputStreamSync(targetPath, "application/zip")?:return false
-
 		val zout = password?.let {ZipOutputStream(fos, password.toCharArray())}?:ZipOutputStream(fos)
 		var res: Closeable = fos
 
@@ -835,7 +813,6 @@ class ItemsAdapter(
 	}
 
 	fun isASectionTitle(position: Int) = listItems.getOrNull(position)?.isSectionTitle?:false
-
 	fun isGridTypeDivider(position: Int) = listItems.getOrNull(position)?.isGridTypeDivider?:false
 
 	override fun onViewRecycled(holder: ViewHolder) {
@@ -876,11 +853,8 @@ class ItemsAdapter(
 					itemCheck?.applyColorFilter(contrastColor)
 				}
 
-				if(!isListViewType && !listItem.isDirectory) {
-					itemName?.beVisibleIf(displayFilenamesInGrid)
-				} else {
-					itemName?.beVisible()
-				}
+				if(!isListViewType && !listItem.isDirectory) itemName?.beVisibleIf(displayFilenamesInGrid)
+				else itemName?.beVisible()
 
 				if(listItem.isDirectory) {
 					itemIcon?.setImageDrawable(folderDrawable)
@@ -891,7 +865,7 @@ class ItemsAdapter(
 					itemDate?.beVisible()
 					itemDate?.text = listItem.modified.formatDate(activity, dateFormat, timeFormat)
 
-					val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault()), {fileDrawable})
+					val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
 					val options = RequestOptions().signature(listItem.getKey())
 						.diskCacheStrategy(DiskCacheStrategy.RESOURCE)
 						.error(drawable)
@@ -948,13 +922,9 @@ class ItemsAdapter(
 					TYPE_SECTION -> ItemSection
 					TYPE_GRID_TYPE_DIVIDER -> ItemEmpty
 					else -> {
-						if(isListViewType) {
-							ItemFileDirList
-						} else if(viewType == TYPE_DIR) {
-							ItemDirGrid
-						} else {
-							ItemFileGrid
-						}
+						if(isListViewType) ItemFileDirList
+						else if(viewType == TYPE_DIR) ItemDirGrid
+						else ItemFileGrid
 					}
 				}
 			}
@@ -967,7 +937,6 @@ class ItemsAdapter(
 			override fun inflate(layoutInflater: LayoutInflater, viewGroup: ViewGroup, attachToRoot: Boolean): ItemViewBinding {
 				return ItemSectionBindingAdapter(ItemSectionBinding.inflate(layoutInflater, viewGroup, attachToRoot))
 			}
-
 			override fun bind(view: View): ItemViewBinding {
 				return ItemSectionBindingAdapter(ItemSectionBinding.bind(view))
 			}
@@ -977,7 +946,6 @@ class ItemsAdapter(
 			override fun inflate(layoutInflater: LayoutInflater, viewGroup: ViewGroup, attachToRoot: Boolean): ItemViewBinding {
 				return ItemEmptyBindingAdapter(ItemEmptyBinding.inflate(layoutInflater, viewGroup, attachToRoot))
 			}
-
 			override fun bind(view: View): ItemViewBinding {
 				return ItemEmptyBindingAdapter(ItemEmptyBinding.bind(view))
 			}
@@ -987,7 +955,6 @@ class ItemsAdapter(
 			override fun inflate(layoutInflater: LayoutInflater, viewGroup: ViewGroup, attachToRoot: Boolean): ItemViewBinding {
 				return ItemFileDirListBindingAdapter(ItemFileDirListBinding.inflate(layoutInflater, viewGroup, attachToRoot))
 			}
-
 			override fun bind(view: View): ItemViewBinding {
 				return ItemFileDirListBindingAdapter(ItemFileDirListBinding.bind(view))
 			}
@@ -997,7 +964,6 @@ class ItemsAdapter(
 			override fun inflate(layoutInflater: LayoutInflater, viewGroup: ViewGroup, attachToRoot: Boolean): ItemViewBinding {
 				return ItemDirGridBindingAdapter(ItemDirGridBinding.inflate(layoutInflater, viewGroup, attachToRoot))
 			}
-
 			override fun bind(view: View): ItemViewBinding {
 				return ItemDirGridBindingAdapter(ItemDirGridBinding.bind(view))
 			}
@@ -1007,7 +973,6 @@ class ItemsAdapter(
 			override fun inflate(layoutInflater: LayoutInflater, viewGroup: ViewGroup, attachToRoot: Boolean): ItemViewBinding {
 				return ItemFileGridBindingAdapter(ItemFileGridBinding.inflate(layoutInflater, viewGroup, attachToRoot))
 			}
-
 			override fun bind(view: View): ItemViewBinding {
 				return ItemFileGridBindingAdapter(ItemFileGridBinding.bind(view))
 			}

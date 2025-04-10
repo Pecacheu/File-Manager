@@ -15,17 +15,17 @@ class Config(context: Context): BaseConfig(context) {
 
 	var showHidden: Boolean
 		get() = prefs.getBoolean(SHOW_HIDDEN, false)
-		set(show) = prefs.edit() {putBoolean(SHOW_HIDDEN, show)}
+		set(show) = prefs.edit {putBoolean(SHOW_HIDDEN, show)}
 
 	var temporarilyShowHidden: Boolean
 		get() = prefs.getBoolean(TEMPORARILY_SHOW_HIDDEN, false)
-		set(temporarilyShowHidden) = prefs.edit() {putBoolean(TEMPORARILY_SHOW_HIDDEN, temporarilyShowHidden)}
+		set(temporarilyShowHidden) = prefs.edit {putBoolean(TEMPORARILY_SHOW_HIDDEN, temporarilyShowHidden)}
 
 	fun shouldShowHidden() = showHidden || temporarilyShowHidden
 
 	var pressBackTwice: Boolean
 		get() = prefs.getBoolean(PRESS_BACK_TWICE, true)
-		set(pressBackTwice) = prefs.edit() {putBoolean(PRESS_BACK_TWICE, pressBackTwice)}
+		set(pressBackTwice) = prefs.edit {putBoolean(PRESS_BACK_TWICE, pressBackTwice)}
 
 	var homeFolder: String
 		get(): String {
@@ -36,7 +36,7 @@ class Config(context: Context): BaseConfig(context) {
 			}
 			return path
 		}
-		set(homeFolder) = prefs.edit() {putString(HOME_FOLDER, homeFolder)}
+		set(homeFolder) = prefs.edit {putString(HOME_FOLDER, homeFolder)}
 
 	fun addFavorite(path: String) {
 		val currFavorites = HashSet<String>(favorites)
@@ -45,10 +45,7 @@ class Config(context: Context): BaseConfig(context) {
 	}
 
 	fun moveFavorite(oldPath: String, newPath: String) {
-		if(!favorites.contains(oldPath)) {
-			return
-		}
-
+		if(!favorites.contains(oldPath)) return
 		val currFavorites = HashSet<String>(favorites)
 		currFavorites.remove(oldPath)
 		currFavorites.add(newPath)
@@ -56,10 +53,7 @@ class Config(context: Context): BaseConfig(context) {
 	}
 
 	fun removeFavorite(path: String) {
-		if(!favorites.contains(path)) {
-			return
-		}
-
+		if(!favorites.contains(path)) return
 		val currFavorites = HashSet<String>(favorites)
 		currFavorites.remove(path)
 		favorites = currFavorites
@@ -67,43 +61,36 @@ class Config(context: Context): BaseConfig(context) {
 
 	var isRootAvailable: Boolean
 		get() = prefs.getBoolean(IS_ROOT_AVAILABLE, false)
-		set(isRootAvailable) = prefs.edit() {putBoolean(IS_ROOT_AVAILABLE, isRootAvailable)}
+		set(isRootAvailable) = prefs.edit {putBoolean(IS_ROOT_AVAILABLE, isRootAvailable)}
 
 	var enableRootAccess: Boolean
 		get() = prefs.getBoolean(ENABLE_ROOT_ACCESS, false)
-		set(enableRootAccess) = prefs.edit() {putBoolean(ENABLE_ROOT_ACCESS, enableRootAccess)}
+		set(enableRootAccess) = prefs.edit {putBoolean(ENABLE_ROOT_ACCESS, enableRootAccess)}
 
 	var editorTextZoom: Float
 		get() = prefs.getFloat(EDITOR_TEXT_ZOOM, 1.2f)
-		set(editorTextZoom) = prefs.edit() {putFloat(EDITOR_TEXT_ZOOM, editorTextZoom)}
+		set(editorTextZoom) = prefs.edit {putFloat(EDITOR_TEXT_ZOOM, editorTextZoom)}
 
 	fun saveFolderViewType(path: String, value: Int) {
-		if(path.isEmpty()) {
-			viewType = value
-		} else {
-			prefs.edit() {putInt(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()), value)}
-		}
+		if(path.isEmpty()) viewType = value
+		else prefs.edit {putInt(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()), value)}
 	}
 
 	fun getFolderViewType(path: String) = prefs.getInt(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()), viewType)
 
 	fun removeFolderViewType(path: String) {
-		prefs.edit() {remove(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()))}
+		prefs.edit {remove(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()))}
 	}
 
 	fun hasCustomViewType(path: String) = prefs.contains(VIEW_TYPE_PREFIX + path.lowercase(Locale.getDefault()))
 
 	var fileColumnCnt: Int
 		get() = prefs.getInt(getFileColumnsField(), getDefaultFileColumnCount())
-		set(fileColumnCnt) = prefs.edit() {putInt(getFileColumnsField(), fileColumnCnt)}
+		set(fileColumnCnt) = prefs.edit {putInt(getFileColumnsField(), fileColumnCnt)}
 
 	private fun getFileColumnsField(): String {
 		val isPortrait = context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-		return if(isPortrait) {
-			FILE_COLUMN_CNT
-		} else {
-			FILE_LANDSCAPE_COLUMN_CNT
-		}
+		return if(isPortrait) FILE_COLUMN_CNT else FILE_LANDSCAPE_COLUMN_CNT
 	}
 
 	private fun getDefaultFileColumnCount(): Int {
@@ -113,9 +100,9 @@ class Config(context: Context): BaseConfig(context) {
 
 	var displayFilenames: Boolean
 		get() = prefs.getBoolean(DISPLAY_FILE_NAMES, true)
-		set(displayFilenames) = prefs.edit() {putBoolean(DISPLAY_FILE_NAMES, displayFilenames)}
+		set(displayFilenames) = prefs.edit {putBoolean(DISPLAY_FILE_NAMES, displayFilenames)}
 
 	var showTabs: Int
 		get() = prefs.getInt(SHOW_TABS, ALL_TABS_MASK)
-		set(showTabs) = prefs.edit() {putInt(SHOW_TABS, showTabs)}
+		set(showTabs) = prefs.edit {putInt(SHOW_TABS, showTabs)}
 }

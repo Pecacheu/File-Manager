@@ -5,10 +5,10 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
-import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogSaveAsBinding
 
-class SaveAsDialog(val activity: BaseSimpleActivity, var path: String, val hidePath: Boolean, val callback: (path: String, filename: String)->Unit) {
+class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
+	private val hidePath: Boolean, val callback: (path: String, filename: String)->Unit) {
 
 	init {
 		if(path.isEmpty()) {

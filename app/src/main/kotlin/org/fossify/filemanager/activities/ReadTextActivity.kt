@@ -57,21 +57,15 @@ class ReadTextActivity: SimpleActivity() {
 			updateMaterialActivityViews(readTextCoordinator, readTextView, useTransparentNavigation = true, useTopSearchMenu = false)
 			setupMaterialScrollListener(readTextHolder, readTextToolbar)
 		}
-
 		searchQueryET = findViewById(org.fossify.commons.R.id.search_query)
 		searchPrevBtn = findViewById(org.fossify.commons.R.id.search_previous)
 		searchNextBtn = findViewById(org.fossify.commons.R.id.search_next)
 		searchClearBtn = findViewById(org.fossify.commons.R.id.search_clear)
+		if(checkAppSideloading()) return
 
-		if(checkAppSideloading()) {
-			return
-		}
-
-		val uri = if(intent.extras?.containsKey(REAL_FILE_PATH) == true) {
+		val uri = if(intent.extras?.containsKey(REAL_FILE_PATH) == true)
 			Uri.fromFile(File(intent.extras?.get(REAL_FILE_PATH).toString()))
-		} else {
-			intent.data
-		}
+		else intent.data
 
 		if(uri == null) {
 			finish()
@@ -79,16 +73,8 @@ class ReadTextActivity: SimpleActivity() {
 		}
 
 		val filename = getFilenameFromUri(uri)
-		if(filename.isNotEmpty()) {
-			binding.readTextToolbar.title = Uri.decode(filename)
-		}
-
-		binding.readTextView.onGlobalLayout {
-			ensureBackgroundThread {
-				checkIntent(uri)
-			}
-		}
-
+		if(filename.isNotEmpty()) binding.readTextToolbar.title = Uri.decode(filename)
+		binding.readTextView.onGlobalLayout {ensureBackgroundThread {checkIntent(uri)}}
 		setupSearchButtons()
 	}
 
@@ -101,13 +87,8 @@ class ReadTextActivity: SimpleActivity() {
 		super.onActivityResult(requestCode, resultCode, resultData)
 		if(requestCode == SELECT_SAVE_FILE_INTENT && resultCode == Activity.RESULT_OK && resultData != null && resultData.data != null) {
 			val outputStream = contentResolver.openOutputStream(resultData.data!!)
-
-			val shouldExitAfterSaving = requestCode == SELECT_SAVE_FILE_AND_EXIT_INTENT
-
 			val selectedFilePath = getRealPathFromURI(intent.data!!)
-			val shouldOverwriteOriginalText = selectedFilePath == filePath
-
-			saveTextContent(outputStream, shouldExitAfterSaving, shouldOverwriteOriginalText)
+			saveTextContent(outputStream, selectedFilePath == filePath)
 		}
 	}
 
@@ -117,17 +98,12 @@ class ReadTextActivity: SimpleActivity() {
 			isSearchActive -> closeSearch()
 			hasUnsavedChanges && System.currentTimeMillis() - lastSavePromptTS > SAVE_DISCARD_PROMPT_INTERVAL -> {
 				lastSavePromptTS = System.currentTimeMillis()
-				ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.save_before_closing, org.fossify.commons.R.string.save,
-					org.fossify.commons.R.string.discard) {
-					if(it) {
-						saveText(true)
-					} else {
-						super.onBackPressed()
-					}
+				ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.save_before_closing,
+					org.fossify.commons.R.string.save, org.fossify.commons.R.string.discard) {
+					if(it) saveText()
+					else super.onBackPressed()
 				}
-			}
-
-			else -> super.onBackPressed()
+			} else -> super.onBackPressed()
 		}
 	}
 
@@ -148,33 +124,20 @@ class ReadTextActivity: SimpleActivity() {
 		isSearchActive = true
 		binding.searchWrapper.beVisible()
 		showKeyboard(searchQueryET)
-
 		binding.readTextView.requestFocus()
 		binding.readTextView.setSelection(0)
-
-		searchQueryET.postDelayed({
-			searchQueryET.requestFocus()
-		}, 250)
+		searchQueryET.postDelayed({searchQueryET.requestFocus()}, 250)
 	}
 
-	private fun saveText(shouldExitAfterSaving: Boolean = false) {
-		if(filePath.isEmpty()) {
-			filePath = getRealPathFromURI(intent.data!!)?:""
-		}
-
+	private fun saveText() {
+		if(filePath.isEmpty()) filePath = getRealPathFromURI(intent.data!!)?:""
 		if(filePath.isEmpty()) {
 			SaveAsDialog(this, filePath, true) {_, filename ->
 				Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
 					type = "text/plain"
 					putExtra(Intent.EXTRA_TITLE, filename)
 					addCategory(Intent.CATEGORY_OPENABLE)
-
-					val requestCode = if(shouldExitAfterSaving) {
-						SELECT_SAVE_FILE_AND_EXIT_INTENT
-					} else {
-						SELECT_SAVE_FILE_INTENT
-					}
-					startActivityForResult(this, requestCode)
+					startActivityForResult(this, SELECT_SAVE_FILE_AND_EXIT_INTENT)
 				}
 			}
 		} else {
@@ -183,32 +146,22 @@ class ReadTextActivity: SimpleActivity() {
 					val file = File(path)
 					getFileOutputStream(file.toFileDirItem(this), true) {
 						val shouldOverwriteOriginalText = path == filePath
-						saveTextContent(it, shouldExitAfterSaving, shouldOverwriteOriginalText)
+						saveTextContent(it, shouldOverwriteOriginalText)
 					}
-				} else {
-					toast(org.fossify.commons.R.string.no_storage_permissions)
-				}
+				} else toast(org.fossify.commons.R.string.no_storage_permissions)
 			}
 		}
 	}
 
-	private fun saveTextContent(outputStream: OutputStream?, shouldExitAfterSaving: Boolean, shouldOverwriteOriginalText: Boolean) {
+	private fun saveTextContent(outputStream: OutputStream?, shouldOverwriteOriginalText: Boolean) {
 		if(outputStream != null) {
 			val currentText = binding.readTextView.text.toString()
 			outputStream.bufferedWriter().use {it.write(currentText)}
 			toast(org.fossify.commons.R.string.file_saved)
 			hideKeyboard()
-
-			if(shouldOverwriteOriginalText) {
-				originalText = currentText
-			}
-
-			if(shouldExitAfterSaving) {
-				super.onBackPressed()
-			}
-		} else {
-			toast(org.fossify.commons.R.string.unknown_error_occurred)
-		}
+			if(shouldOverwriteOriginalText) originalText = currentText
+			super.onBackPressed()
+		} else toast(org.fossify.commons.R.string.unknown_error_occurred)
 	}
 
 	private fun printText() {
@@ -216,12 +169,8 @@ class ReadTextActivity: SimpleActivity() {
 			val webView = WebView(this)
 			webView.webViewClient = object: WebViewClient() {
 				override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = false
-
-				override fun onPageFinished(view: WebView, url: String) {
-					createWebPrintJob(view)
-				}
+				override fun onPageFinished(view: WebView, url: String) {createWebPrintJob(view)}
 			}
-
 			webView.loadData(binding.readTextView.text.toString(), "text/plain", "UTF-8")
 		} catch(e: Exception) {
 			showErrorToast(e)
@@ -229,14 +178,9 @@ class ReadTextActivity: SimpleActivity() {
 	}
 
 	private fun createWebPrintJob(webView: WebView) {
-		val jobName = if(filePath.isNotEmpty()) {
-			filePath.getFilenameFromPath()
-		} else {
-			getString(R.string.app_name)
-		}
-
+		val jobName = if(filePath.isNotEmpty()) filePath.getFilenameFromPath()
+		else getString(R.string.app_name)
 		val printAdapter = webView.createPrintDocumentAdapter(jobName)
-
 		(getSystemService(Context.PRINT_SERVICE) as? PrintManager)?.apply {
 			print(jobName, printAdapter, PrintAttributes.Builder().build())
 		}
@@ -247,15 +191,9 @@ class ReadTextActivity: SimpleActivity() {
 			filePath = uri.path!!
 			val file = File(filePath)
 			if(file.exists()) {
-				try {
-					file.readText()
-				} catch(e: Exception) {
-					showErrorToast(e)
-					""
-				}
+				try {file.readText()} catch(e: Exception) {showErrorToast(e); ""}
 			} else {
-				toast(org.fossify.commons.R.string.unknown_error_occurred)
-				""
+				toast(org.fossify.commons.R.string.unknown_error_occurred); ""
 			}
 		} else {
 			try {
@@ -269,85 +207,54 @@ class ReadTextActivity: SimpleActivity() {
 				return
 			}
 		}
-
 		runOnUiThread {
 			binding.readTextView.setText(originalText)
-			if(originalText.isNotEmpty()) {
-				hideKeyboard()
-			} else {
-				showKeyboard(binding.readTextView)
-			}
+			if(originalText.isNotEmpty()) hideKeyboard()
+			else showKeyboard(binding.readTextView)
 		}
 	}
 
 	private fun setupSearchButtons() {
-		searchQueryET.onTextChangeListener {
-			searchTextChanged(it)
-		}
-
-		searchPrevBtn.setOnClickListener {
-			goToPrevSearchResult()
-		}
-
-		searchNextBtn.setOnClickListener {
-			goToNextSearchResult()
-		}
-
-		searchClearBtn.setOnClickListener {
-			closeSearch()
-		}
-
+		searchQueryET.onTextChangeListener {searchTextChanged(it)}
+		searchPrevBtn.setOnClickListener {goToPrevSearchResult()}
+		searchNextBtn.setOnClickListener {goToNextSearchResult()}
+		searchClearBtn.setOnClickListener {closeSearch()}
 		searchQueryET.setOnEditorActionListener(TextView.OnEditorActionListener {_, actionId, _ ->
 			if(actionId == EditorInfo.IME_ACTION_SEARCH) {
 				searchNextBtn.performClick()
 				return@OnEditorActionListener true
 			}
-
 			false
 		})
-
 		binding.searchWrapper.setBackgroundColor(getProperPrimaryColor())
 		val contrastColor = getProperPrimaryColor().getContrastColor()
-		arrayListOf(searchPrevBtn, searchNextBtn, searchClearBtn).forEach {
-			it.applyColorFilter(contrastColor)
-		}
+		arrayListOf(searchPrevBtn, searchNextBtn, searchClearBtn).forEach {it.applyColorFilter(contrastColor)}
 	}
 
 	private fun searchTextChanged(text: String) {
 		binding.readTextView.text?.clearBackgroundSpans()
-
 		if(text.isNotBlank() && text.length > 1) {
 			searchMatches = binding.readTextView.text.toString().searchMatches(text)
 			binding.readTextView.highlightText(text, getProperPrimaryColor())
 		}
-
 		if(searchMatches.isNotEmpty()) {
 			binding.readTextView.requestFocus()
 			binding.readTextView.setSelection(searchMatches.getOrNull(searchIndex)?:0)
 		}
-
 		searchQueryET.postDelayed({
 			searchQueryET.requestFocus()
 		}, 50)
 	}
 
 	private fun goToPrevSearchResult() {
-		if(searchIndex > 0) {
-			searchIndex--
-		} else {
-			searchIndex = searchMatches.lastIndex
-		}
-
+		if(searchIndex > 0) searchIndex--
+		else searchIndex = searchMatches.lastIndex
 		selectSearchMatch(binding.readTextView)
 	}
 
 	private fun goToNextSearchResult() {
-		if(searchIndex < searchMatches.lastIndex) {
-			searchIndex++
-		} else {
-			searchIndex = 0
-		}
-
+		if(searchIndex < searchMatches.lastIndex) searchIndex++
+		else searchIndex = 0
 		selectSearchMatch(binding.readTextView)
 	}
 
@@ -362,8 +269,6 @@ class ReadTextActivity: SimpleActivity() {
 		if(searchMatches.isNotEmpty()) {
 			editText.requestFocus()
 			editText.setSelection(searchMatches.getOrNull(searchIndex)?:0)
-		} else {
-			hideKeyboard()
-		}
+		} else hideKeyboard()
 	}
 }

@@ -503,15 +503,12 @@ class MainActivity: SimpleActivity() {
 		for(i in 1..MAX_COLUMN_COUNT) {
 			items.add(RadioItem(i, resources.getQuantityString(org.fossify.commons.R.plurals.column_counts, i, i)))
 		}
-
-		val currentColumnCount = config.fileColumnCnt
-		RadioGroupDialog(this, items, config.fileColumnCnt) {
-			val newColumnCount = it as Int
-			if(currentColumnCount != newColumnCount) {
-				config.fileColumnCnt = newColumnCount
-				getAllFragments().forEach {
-					(it as? ItemOperationsListener)?.columnCountChanged()
-				}
+		val colCount = config.fileColumnCnt
+		RadioGroupDialog(this, items, config.fileColumnCnt) {newVal ->
+			val newColCount = newVal as Int
+			if(colCount != newColCount) {
+				config.fileColumnCnt = newColCount
+				getAllFragments().forEach {(it as? ItemOperationsListener)?.columnCountChanged()}
 			}
 		}
 	}

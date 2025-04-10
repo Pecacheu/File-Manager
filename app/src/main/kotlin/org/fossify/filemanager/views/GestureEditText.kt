@@ -17,9 +17,7 @@ import org.fossify.filemanager.extensions.config
 // https://github.com/alexvasilkov/GestureViews/blob/f0a4c266e31dcad23bd0d9013531bc1c501b9c9f/sample/src/main/java/com/alexvasilkov/gestures/sample/ex/custom/text/GestureTextView.java
 class GestureEditText: AppCompatEditText, GestureView {
 	constructor(context: Context): super(context)
-
 	constructor(context: Context, attrs: AttributeSet): super(context, attrs)
-
 	constructor(context: Context, attrs: AttributeSet, defStyle: Int): super(context, attrs, defStyle)
 
 	private val controller: GestureController = GestureController(this)
@@ -29,13 +27,8 @@ class GestureEditText: AppCompatEditText, GestureView {
 	init {
 		controller.settings.setOverzoomFactor(1f).isPanEnabled = false
 		controller.addOnStateChangeListener(object: GestureController.OnStateChangeListener {
-			override fun onStateChanged(state: State) {
-				applyState(state)
-			}
-
-			override fun onStateReset(oldState: State, newState: State) {
-				applyState(newState)
-			}
+			override fun onStateChanged(state: State) {applyState(state)}
+			override fun onStateReset(oldState: State, newState: State) {applyState(newState)}
 		})
 
 		origSize = textSize
@@ -43,11 +36,9 @@ class GestureEditText: AppCompatEditText, GestureView {
 		setLinkTextColor(context.getProperPrimaryColor())
 
 		val storedTextZoom = context.config.editorTextZoom
-		if(storedTextZoom != 0f) {
-			onGlobalLayout {
-				controller.state.zoomTo(storedTextZoom, width/2f, height/2f)
-				controller.updateState()
-			}
+		if(storedTextZoom != 0f) onGlobalLayout {
+			controller.state.zoomTo(storedTextZoom, width/2f, height/2f)
+			controller.updateState()
 		}
 	}
 
@@ -79,9 +70,7 @@ class GestureEditText: AppCompatEditText, GestureView {
 	private fun applyState(state: State) {
 		var size = origSize*state.zoom
 		val maxSize = origSize*controller.stateController.getMaxZoom(state)
-		size = Math.max(origSize, Math.min(size, maxSize))
-
-		size = Math.round(size).toFloat()
+		size = Math.round(origSize.coerceAtLeast(size.coerceAtMost(maxSize))).toFloat()
 		if(!State.equals(this.size, size)) {
 			this.size = size
 			super.setTextSize(TypedValue.COMPLEX_UNIT_PX, size)

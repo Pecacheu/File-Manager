@@ -7,7 +7,6 @@ import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ActivitySaveAsBinding
 import org.fossify.filemanager.extensions.config
 import java.io.File

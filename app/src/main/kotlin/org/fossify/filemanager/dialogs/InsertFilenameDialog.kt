@@ -3,7 +3,6 @@ package org.fossify.filemanager.dialogs
 import androidx.appcompat.app.AlertDialog
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
-import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogInsertFilenameBinding
 
 class InsertFilenameDialog(val activity: BaseSimpleActivity, var path: String, val callback: (filename: String)->Unit) {

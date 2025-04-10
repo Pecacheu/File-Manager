@@ -12,7 +12,7 @@ import org.fossify.commons.views.MyRecyclerView
 import org.fossify.filemanager.databinding.ItemManageFavoriteBinding
 import org.fossify.filemanager.extensions.config
 
-class ManageFavoritesAdapter(activity: BaseSimpleActivity, var favorites: ArrayList<String>, val listener: RefreshRecyclerViewListener?,
+class ManageFavoritesAdapter(activity: BaseSimpleActivity, private var favorites: ArrayList<String>, private val listener: RefreshRecyclerViewListener?,
 	recyclerView: MyRecyclerView, itemClick: (Any)->Unit): MyRecyclerViewAdapter(activity, recyclerView, itemClick) {
 
 	private val config = activity.config

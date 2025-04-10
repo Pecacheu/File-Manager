@@ -192,7 +192,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		val lastModifieds = context!!.getFolderLastModifieds(path)
 
 		for(file in files) {
-			val listItem = getListItemFromFile(file, isSortingBySize, lastModifieds, false)
+			val listItem = getListItemFromFile(file, isSortingBySize, lastModifieds)
 			if(listItem != null) {
 				if(wantedMimeTypes.any {isProperMimeType(it, file.absolutePath, file.isDirectory)}) {
 					items.add(listItem)
@@ -215,17 +215,16 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		}
 	}
 
-	private fun getListItemFromFile(file: File, isSortingBySize: Boolean, lastModifieds: HashMap<String, Long>, getProperChildCount: Boolean): ListItem? {
+	private fun getListItemFromFile(file: File, isSortingBySize: Boolean, lastModifieds: HashMap<String, Long>): ListItem? {
 		val curPath = file.absolutePath
 		val curName = file.name
 		if(!showHidden && curName.startsWith(".")) return null
 
 		var lastModified = lastModifieds.remove(curPath)
 		val isDirectory = if(lastModified != null) false else file.isDirectory
-		val children = if(isDirectory && getProperChildCount) file.getDirectChildrenCount(context, showHidden) else 0
 		val size = if(isDirectory) {if(isSortingBySize) file.getProperSize(showHidden) else 0L} else file.length()
 		if(lastModified == null) lastModified = file.lastModified()
-		return ListItem(curPath, curName, isDirectory, children, size, lastModified, false, false)
+		return ListItem(curPath, curName, isDirectory, 0, size, lastModified, false, false)
 	}
 
 	private fun getListItemsFromFileDirItems(fileDirItems: ArrayList<FileDirItem>): ArrayList<ListItem> {
@@ -313,13 +312,13 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			if(!showHidden && it.isHidden) return@forEach
 			if(it.isDirectory) {
 				if(it.name.contains(text, true)) {
-					val fileDirItem = getListItemFromFile(it, isSortingBySize, HashMap(), false)
+					val fileDirItem = getListItemFromFile(it, isSortingBySize, HashMap())
 					if(fileDirItem != null) files.add(fileDirItem)
 				}
 				files.addAll(searchFiles(text, it.absolutePath))
 			} else {
 				if(it.name.contains(text, true)) {
-					val fileDirItem = getListItemFromFile(it, isSortingBySize, HashMap(), false)
+					val fileDirItem = getListItemFromFile(it, isSortingBySize, HashMap())
 					if(fileDirItem != null) files.add(fileDirItem)
 				}
 			}

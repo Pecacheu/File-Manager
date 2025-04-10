@@ -62,7 +62,7 @@ import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.util.Locale
 
-private val SIZE_DIVIDER = 100000
+private const val SIZE_DIVIDER = 100000
 
 class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
 	ItemOperationsListener {

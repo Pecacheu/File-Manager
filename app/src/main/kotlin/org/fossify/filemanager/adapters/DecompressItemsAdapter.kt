@@ -1,5 +1,6 @@
 package org.fossify.filemanager.adapters
 
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
@@ -13,13 +14,10 @@ import com.bumptech.glide.request.RequestOptions
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.getTextSize
-import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.commons.helpers.getFilePlaceholderDrawables
 import org.fossify.commons.views.MyRecyclerView
-import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.ItemDecompressionListFileDirBinding
-import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.models.ListItem
 import java.util.Locale
 
@@ -30,34 +28,20 @@ class DecompressItemsAdapter(activity: SimpleActivity, var listItems: MutableLis
 	private lateinit var folderDrawable: Drawable
 	private var fileDrawables = HashMap<String, Drawable>()
 	private var fontSize = 0f
-	private var smallerFontSize = 0f
-	private var dateFormat = ""
-	private var timeFormat = ""
 
 	init {
 		initDrawables()
 		fontSize = activity.getTextSize()
-		smallerFontSize = fontSize*0.8f
-		dateFormat = activity.config.dateFormat
-		timeFormat = activity.getTimeFormat()
 	}
 
 	override fun getActionMenuId() = 0
-
 	override fun prepareActionMode(menu: Menu) {}
-
 	override fun actionItemPressed(id: Int) {}
-
 	override fun getSelectableItemCount() = 0
-
 	override fun getIsItemSelectable(position: Int) = false
-
 	override fun getItemSelectionKey(position: Int) = 0
-
 	override fun getItemKeyPosition(key: Int) = 0
-
 	override fun onActionModeCreated() {}
-
 	override fun onActionModeDestroyed() {}
 
 	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -78,9 +62,7 @@ class DecompressItemsAdapter(activity: SimpleActivity, var listItems: MutableLis
 		super.onViewRecycled(holder)
 		if(!activity.isDestroyed && !activity.isFinishing) {
 			ItemDecompressionListFileDirBinding.bind(holder.itemView).apply {
-				if(itemIcon != null) {
-					Glide.with(activity).clear(itemIcon)
-				}
+				Glide.with(activity).clear(itemIcon)
 			}
 		}
 	}
@@ -95,9 +77,8 @@ class DecompressItemsAdapter(activity: SimpleActivity, var listItems: MutableLis
 			if(listItem.isDirectory) {
 				itemIcon.setImageDrawable(folderDrawable)
 			} else {
-				val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault()), {fileDrawable})
+				val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
 				val options = RequestOptions().signature(listItem.getKey()).diskCacheStrategy(DiskCacheStrategy.RESOURCE).error(drawable).centerCrop()
-
 				val itemToLoad = getImagePathToLoad(listItem.path)
 				if(!activity.isDestroyed) {
 					Glide.with(activity).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(options).into(itemIcon)
@@ -114,18 +95,15 @@ class DecompressItemsAdapter(activity: SimpleActivity, var listItems: MutableLis
 				appInfo.sourceDir = path
 				appInfo.publicSourceDir = path
 				appInfo.loadIcon(activity.packageManager)
-			} else {
-				path
-			}
-		} else {
-			path
-		}
+			} else path
+		} else path
 	}
 
+	@SuppressLint("UseCompatLoadingForDrawables")
 	private fun initDrawables() {
 		folderDrawable = resources.getColoredDrawableWithColor(org.fossify.commons.R.drawable.ic_folder_vector, properPrimaryColor)
 		folderDrawable.alpha = 180
-		fileDrawable = resources.getDrawable(org.fossify.commons.R.drawable.ic_file_generic)
+		fileDrawable = resources.getDrawable(org.fossify.commons.R.drawable.ic_file_generic, null)
 		fileDrawables = getFilePlaceholderDrawables(activity)
 	}
 }

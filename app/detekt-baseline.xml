@@ -1,5 +1,5 @@
 <SmellBaseline>
-	<ManuallySuppressedIssues></ManuallySuppressedIssues>
+	<ManuallySuppressedIssues/>
 	<CurrentIssues>
 		<ID>ComplexCondition:Activity.kt$(hide &amp;&amp; filename.startsWith('.')) || (!hide &amp;&amp; !filename.startsWith('.'))</ID>
 		<ID>ComplexCondition:ItemsAdapter.kt$ItemsAdapter$activity.getDoesFilePathExist(source) &amp;&amp; activity.getIsPathDirectory(source) &amp;&amp; sourceFile.list()?.isEmpty() == true &amp;&amp; sourceFile.getProperSize(true) == 0L &amp;&amp; sourceFile.getFileCount(true) == 0</ID>
