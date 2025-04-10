@@ -41,6 +41,7 @@ class DecompressActivity: SimpleActivity() {
 	private var uri: Uri? = null
 	private var password: String? = null
 	private var passwordDialog: EnterPasswordDialog? = null
+	private var filename = ""
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		isMaterialActivity = true
@@ -59,9 +60,9 @@ class DecompressActivity: SimpleActivity() {
 		}
 
 		password = savedInstanceState?.getString(PASSWORD, null)
-
 		val realPath = getRealPathFromURI(uri!!)
-		binding.decompressToolbar.title = realPath?.getFilenameFromPath()?:Uri.decode(uri.toString().getFilenameFromPath())
+		filename = realPath?.getFilenameFromPath()?:Uri.decode(uri.toString().getFilenameFromPath())
+		binding.decompressToolbar.title = filename
 		setupFilesList()
 	}
 
@@ -113,9 +114,7 @@ class DecompressActivity: SimpleActivity() {
 	private fun updateAdapter(listItems: MutableList<ListItem>) {
 		runOnUiThread {
 			DecompressItemsAdapter(this, listItems, binding.decompressList) {
-				if((it as ListItem).isDirectory) {
-					updateCurrentPath(it.path)
-				}
+				if((it as ListItem).isDirectory) updateCurrentPath(it.path)
 			}.apply {
 				binding.decompressList.adapter = this
 			}
@@ -127,11 +126,7 @@ class DecompressActivity: SimpleActivity() {
 		FilePickerDialog(activity = this, currPath = defaultFolder, pickFile = false, showHidden = config.showHidden, showFAB = true,
 			canAddShowHiddenButton = true, showFavoritesButton = true) {destination ->
 			handleSAFDialog(destination) {
-				if(it) {
-					ensureBackgroundThread {
-						decompressTo(destination)
-					}
-				}
+				if(it) ensureBackgroundThread {decompressTo(destination)}
 			}
 		}
 	}
@@ -140,41 +135,26 @@ class DecompressActivity: SimpleActivity() {
 		try {
 			val inputStream = contentResolver.openInputStream(uri!!)
 			val zipInputStream = ZipInputStream(BufferedInputStream(inputStream!!))
-			if(password != null) {
-				zipInputStream.setPassword(password?.toCharArray())
-			}
+			if(password != null) zipInputStream.setPassword(password?.toCharArray())
 			val buffer = ByteArray(1024)
 
 			zipInputStream.use {
 				while(true) {
 					val entry = zipInputStream.nextEntry?:break
-					val filename = title.toString().substringBeforeLast(".")
+					val filename = filename.substringBeforeLast(".")
 					val parent = "$destination/$filename"
 					val newPath = "$parent/${entry.fileName.trimEnd('/')}"
 
-					if(!getDoesFilePathExist(parent)) {
-						if(!createDirectorySync(parent)) {
-							continue
-						}
-					}
-
-					if(entry.isDirectory) {
-						continue
-					}
-
+					if(!getDoesFilePathExist(parent) && !createDirectorySync(parent)) continue
+					if(entry.isDirectory) continue
 					val isVulnerableForZipPathTraversal = !File(newPath).canonicalPath.startsWith(parent)
-					if(isVulnerableForZipPathTraversal) {
-						continue
-					}
+					if(isVulnerableForZipPathTraversal) continue
 
 					val fos = getFileOutputStreamSync(newPath, newPath.getMimeType())
 					var count: Int
 					while(true) {
 						count = zipInputStream.read(buffer)
-						if(count == -1) {
-							break
-						}
-
+						if(count == -1) break
 						fos!!.write(buffer, 0, count)
 					}
 					fos!!.close()
@@ -190,12 +170,7 @@ class DecompressActivity: SimpleActivity() {
 
 	private fun getFolderItems(parent: String): ArrayList<ListItem> {
 		return allFiles.filter {
-			val fileParent = if(it.path.contains("/")) {
-				it.path.getParentPath()
-			} else {
-				""
-			}
-
+			val fileParent = if(it.path.contains("/")) it.path.getParentPath() else ""
 			fileParent == parent
 		}.sortedWith(compareBy({!it.isDirectory}, {it.mName})).toMutableList() as ArrayList<ListItem>
 	}
@@ -209,9 +184,7 @@ class DecompressActivity: SimpleActivity() {
 		}
 
 		val zipInputStream = ZipInputStream(BufferedInputStream(inputStream))
-		if(password != null) {
-			zipInputStream.setPassword(password?.toCharArray())
-		}
+		if(password != null) zipInputStream.setPassword(password?.toCharArray())
 		var zipEntry: LocalFileHeader?
 		while(true) {
 			try {
@@ -222,27 +195,16 @@ class DecompressActivity: SimpleActivity() {
 						toast(getString(org.fossify.commons.R.string.invalid_password))
 						passwordDialog?.clearPassword()
 					} else {
-						runOnUiThread {
-							askForPassword()
-						}
+						runOnUiThread {askForPassword()}
 					}
 					return@ensureBackgroundThread
-				} else {
-					break
-				}
-			} catch(ignored: Exception) {
-				break
-			}
+				} else break
+			} catch(ignored: Exception) {break}
+			if(zipEntry == null) break
 
-			if(zipEntry == null) {
-				break
-			}
-
-			// Show progress bar only after password dialog is dismissed.
+			//Show progress bar only after password dialog is dismissed.
 			runOnUiThread {
-				if(binding.progressIndicator.isGone()) {
-					binding.progressIndicator.show()
-				}
+				if(binding.progressIndicator.isGone()) binding.progressIndicator.show()
 			}
 
 			if(passwordDialog != null) {
@@ -256,10 +218,7 @@ class DecompressActivity: SimpleActivity() {
 				mModified = lastModified, isSectionTitle = false, isGridTypeDivider = false))
 		}
 
-		runOnUiThread {
-			binding.progressIndicator.hide()
-		}
-
+		runOnUiThread {binding.progressIndicator.hide()}
 		callback()
 	}
 
