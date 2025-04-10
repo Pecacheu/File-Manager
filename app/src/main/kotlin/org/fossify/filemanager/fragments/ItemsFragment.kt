@@ -66,7 +66,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			progressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
 
 			if(currentPath != "") breadcrumbs.updateColor(textColor)
-			itemsSwipeRefresh.isEnabled = false
+			itemsSwipeRefresh.isEnabled = activity?.config?.enablePullToRefresh != false
 		}
 	}
 

@@ -13,6 +13,7 @@
 	<string name="recents">Recents</string>
 	<string name="show_recents">Show recents</string>
 	<string name="invert_colors">Invert colors</string>
+	<string name="contributors_developers">Aga-C, AlbertoPellitteri, Alfavio, connyduck, correia55, dagkalis, DaPa, ForgottenUmbrella, KryptKode, naveensingh, qwertyfinger, Pecacheu</string>
 	<!-- Open as -->
 	<string name="open_as">Open as</string>
 	<string name="text_file">Text file</string>

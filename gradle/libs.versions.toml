@@ -20,14 +20,20 @@ gradlePlugins-agp = "8.9.1"
 app-build-compileSDKVersion = "34"
 app-build-targetSDK = "34"
 app-build-minimumSDK = "26"
-app-build-javaVersion = "VERSION_17"
-app-build-kotlinJVMTarget = "17"
+app-build-javaVersion = "VERSION_19"
+app-build-kotlinJVMTarget = "19"
 #versioning
 app-version-appId = "org.fossify.filemanager"
 app-version-versionCode = "3"
 app-version-versionName = "1.0.2"
+runtimeAndroid = "1.7.8"
+uiAndroid = "1.7.8"
+foundationLayoutAndroid = "1.7.8"
+foundationAndroid = "1.7.8"
+material3Android = "1.3.2"
 [libraries]
 #AndroidX
+androidx-activity-compose = { module = "androidx.activity:activity-compose" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "androidx-swiperefreshlayout" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "androidx-documentfile" }
 #Fossify
@@ -38,6 +44,11 @@ gestureviews = { module = "com.alexvasilkov:gesture-views", version.ref = "gestu
 rootshell = { module = "com.github.Stericson:RootShell", version.ref = "rootshell" }
 roottools = { module = "com.github.naveensingh:RootTools", version.ref = "roottools" }
 zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
+androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+androidx-ui-android = { group = "androidx.compose.ui", name = "ui-android", version.ref = "uiAndroid" }
+androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
+androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
+androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 [plugins]
 android = { id = "com.android.application", version.ref = "gradlePlugins-agp" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

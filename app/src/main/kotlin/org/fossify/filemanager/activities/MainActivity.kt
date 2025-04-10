@@ -76,6 +76,16 @@ import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
 import androidx.core.net.toUri
 import androidx.viewpager2.widget.ViewPager2
+import org.fossify.commons.extensions.baseConfig
+import org.fossify.commons.helpers.APP_FAQ
+import org.fossify.commons.helpers.APP_ICON_IDS
+import org.fossify.commons.helpers.APP_LAUNCHER_NAME
+import org.fossify.commons.helpers.APP_LICENSES
+import org.fossify.commons.helpers.APP_NAME
+import org.fossify.commons.helpers.APP_PACKAGE_NAME
+import org.fossify.commons.helpers.APP_REPOSITORY_NAME
+import org.fossify.commons.helpers.APP_VERSION_NAME
+import org.fossify.filemanager.about.AboutActivityAlt
 
 class MainActivity: SimpleActivity() {
 	companion object {
@@ -556,7 +566,6 @@ class MainActivity: SimpleActivity() {
 
 	private fun launchAbout() {
 		val licenses = LICENSE_GLIDE or LICENSE_PATTERN or LICENSE_REPRINT or LICENSE_GESTURE_VIEWS or LICENSE_AUTOFITTEXTVIEW or LICENSE_ZIP4J
-
 		val faqItems = arrayListOf(FAQItem(org.fossify.commons.R.string.faq_3_title_commons, org.fossify.commons.R.string.faq_3_text_commons),
 			FAQItem(org.fossify.commons.R.string.faq_9_title_commons, org.fossify.commons.R.string.faq_9_text_commons))
 
@@ -567,7 +576,18 @@ class MainActivity: SimpleActivity() {
 			faqItems.add(FAQItem(org.fossify.commons.R.string.faq_10_title_commons, org.fossify.commons.R.string.faq_10_text_commons))
 		}
 
-		startAboutActivity(R.string.app_name, licenses, BuildConfig.VERSION_NAME, faqItems, true)
+		hideKeyboard()
+		Intent(applicationContext, AboutActivityAlt::class.java).apply {
+			putExtra(APP_ICON_IDS, getAppIconIDs())
+			putExtra(APP_LAUNCHER_NAME, getAppLauncherName())
+			putExtra(APP_NAME, getString(R.string.app_name))
+			putExtra(APP_REPOSITORY_NAME, getRepositoryName())
+			putExtra(APP_LICENSES, licenses)
+			putExtra(APP_VERSION_NAME, BuildConfig.VERSION_NAME)
+			putExtra(APP_PACKAGE_NAME, baseConfig.appId)
+			putExtra(APP_FAQ, faqItems)
+			startActivity(this)
+		}
 	}
 
 	private fun checkIfRootAvailable() {

@@ -1,8 +1,16 @@
+# About this fork
+
+**The plan is to add network file sharing (SMB/SFTP)**. The official maintainers do not approve of the app containing any networking functionality. That is, perhaps, understandable, but also sadly makes the app mostly useless for my purposes.
+
+There's a **BIG** difference between an app connecting to some Big Data cloud you don't control, and connecting to your *own* network shares (local or remote). This app's advantage over similar open-source options like Amaze is its simplicity and the clean interface, which I do enjoy, but sometimes, things can be a little *too* simple.
+
+While I'm at it, I'm also making tweaks and improvements, and merging any other good forks I see to make this the comprehensive best version of the app. In the future, network file syncing is a possibility. There are other options for that, but having both a great file manager and sync client in one app would be convenient.
+
 # Fossify File Manager
 
-<img alt="Logo" src="graphics/icon.webp" width="120" />
+<img alt="Logo" src="graphics/icon.webp" width="120"/>
 
-<a href='https://play.google.com/store/apps/details?id=org.fossify.filemanager'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' height=80/></a> <a href="https://f-droid.org/packages/org.fossify.filemanager/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" height=80/></a> <a href="https://apt.izzysoft.de/fdroid/index/apk/org.fossify.filemanager"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height=80/></a>
+<!-- <a href='https://play.google.com/store/apps/details?id=org.fossify.filemanager'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' height=80/></a> <a href="https://f-droid.org/packages/org.fossify.filemanager/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" height=80/></a> <a href="https://apt.izzysoft.de/fdroid/index/apk/org.fossify.filemanager"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height=80/></a> -->
 
 Tired of file managers that slow you down and invade your privacy? Unlock a lightning-fast, secure, and completely customizable experience with Fossify File Manager. ⚡
 
