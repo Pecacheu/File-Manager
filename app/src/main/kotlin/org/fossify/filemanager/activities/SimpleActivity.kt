@@ -1,6 +1,5 @@
 package org.fossify.filemanager.activities
 
-import android.annotation.SuppressLint
 import android.os.Environment
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.hasPermission
@@ -20,7 +19,6 @@ open class SimpleActivity: BaseSimpleActivity() {
 
 	override fun getRepositoryName() = "File-Manager"
 
-	@SuppressLint("NewApi")
 	fun hasStoragePermission(): Boolean {
 		return if(isRPlus()) {
 			Environment.isExternalStorageManager()

@@ -1,6 +1,5 @@
 package org.fossify.filemanager.fragments
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.usage.StorageStatsManager
 import android.content.ContentResolver
@@ -34,7 +33,6 @@ import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.SHORT_ANIMATION_DURATION
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
-import org.fossify.commons.helpers.VIEW_TYPE_LIST
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
@@ -255,13 +253,10 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					if(mimeType == null) {
 						if(size > 0 && size != 4096L) {
 							val path = cursor.getStringValue(MediaStore.Files.FileColumns.DATA)
-							if(!context.getIsPathDirectory(path)) {
-								othersSize += size
-							}
+							if(!context.getIsPathDirectory(path)) othersSize += size
 						}
 						return@queryCursor
 					}
-
 					when(mimeType.substringBefore("/")) {
 						"image" -> imagesSize += size
 						"video" -> videosSize += size
@@ -276,11 +271,9 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 							}
 						}
 					}
-				} catch(e: Exception) {
-				}
+				} catch(_: Exception) {}
 			}
-		} catch(e: Exception) {
-		}
+		} catch(_: Exception) {}
 
 		val mimeTypeSizes = HashMap<String, Long>().apply {
 			put(IMAGES, imagesSize)
@@ -294,7 +287,6 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		return mimeTypeSizes
 	}
 
-	@SuppressLint("NewApi")
 	private fun getVolumeStorageStats(context: Context) {
 		val externalDirs = context.getExternalFilesDirs(null)
 		val storageManager = context.getSystemService(AppCompatActivity.STORAGE_SERVICE) as StorageManager
@@ -304,7 +296,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			val totalStorageSpace: Long
 			val freeStorageSpace: Long
 			val storageVolume = storageManager.getStorageVolume(file)?:return
-			if(storageVolume.isPrimary) {                // internal storage
+			if(storageVolume.isPrimary) { //Internal storage
 				volumeName = PRIMARY_VOLUME_NAME
 				val storageStatsManager = context.getSystemService(AppCompatActivity.STORAGE_STATS_SERVICE) as StorageStatsManager
 				val uuid = StorageManager.UUID_DEFAULT
@@ -315,16 +307,12 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 				totalStorageSpace = file.totalSpace
 				freeStorageSpace = file.freeSpace
 			}
-
 			post {
 				volumes[volumeName]?.apply {
-					arrayOf(mainStorageUsageProgressbar, imagesProgressbar, videosProgressbar, audioProgressbar, documentsProgressbar, archivesProgressbar,
-						othersProgressbar).forEach {
-						it.max = (totalStorageSpace/SIZE_DIVIDER).toInt()
-					}
+					arrayOf(mainStorageUsageProgressbar, imagesProgressbar, videosProgressbar, audioProgressbar, documentsProgressbar,
+						archivesProgressbar, othersProgressbar).forEach {it.max = (totalStorageSpace/SIZE_DIVIDER).toInt()}
 
 					mainStorageUsageProgressbar.progress = ((totalStorageSpace - freeStorageSpace)/SIZE_DIVIDER).toInt()
-
 					mainStorageUsageProgressbar.beVisible()
 					freeSpaceValue.text = freeStorageSpace.formatSizeThousand()
 					totalSpace.text = String.format(context.getString(R.string.total_storage), totalStorageSpace.formatSizeThousand())
@@ -338,9 +326,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		lastSearchedText = text
 		binding.apply {
 			if(text.isNotEmpty()) {
-				if(searchHolder.alpha < 1f) {
-					searchHolder.fadeIn()
-				}
+				if(searchHolder.alpha < 1f) searchHolder.fadeIn()
 			} else {
 				searchHolder.animate().alpha(0f).setDuration(SHORT_ANIMATION_DURATION).withEndAction {
 					searchHolder.beGone()
@@ -359,12 +345,8 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			} else {
 				showProgressBar()
 				ensureBackgroundThread {
-					val start = System.currentTimeMillis()
 					val filtered = allDeviceListItems.filter {it.mName.contains(text, true)}.toMutableList() as ArrayList<ListItem>
-					if(lastSearchedText != text) {
-						return@ensureBackgroundThread
-					}
-
+					if(lastSearchedText != text) return@ensureBackgroundThread
 					(context as? Activity)?.runOnUiThread {
 						(searchResultsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)
 						searchResultsList.beVisible()
@@ -377,14 +359,10 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		}
 	}
 
-	private fun setupLayoutManager() {
-		if(context!!.config.getFolderViewType("") == VIEW_TYPE_GRID) {
-			currentViewType = VIEW_TYPE_GRID
-			setupGridLayoutManager()
-		} else {
-			currentViewType = VIEW_TYPE_LIST
-			setupListLayoutManager()
-		}
+	private fun setupLayoutManager(viewType: Int) {
+		if(viewType == VIEW_TYPE_GRID) setupGridLayoutManager()
+		else setupListLayoutManager()
+		currentViewType = viewType
 
 		binding.searchResultsList.adapter = null
 		addItems()
@@ -424,74 +402,44 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					do {
 						try {
 							val name = cursor.getStringValue(MediaStore.Files.FileColumns.DISPLAY_NAME)
-							if(!showHidden && name.startsWith(".")) {
-								continue
-							}
-
+							if(!showHidden && name.startsWith(".")) continue
 							val size = cursor.getLongValue(MediaStore.Files.FileColumns.SIZE)
-							if(size == 0L) {
-								continue
-							}
-
+							if(size == 0L) continue
 							val path = cursor.getStringValue(MediaStore.Files.FileColumns.DATA)
 							val lastModified = cursor.getLongValue(MediaStore.Files.FileColumns.DATE_MODIFIED)*1000
 							fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-						} catch(e: Exception) {
-						}
+						} catch(_: Exception) {}
 					} while(cursor.moveToNext())
 				}
 			}
-		} catch(e: Exception) {
-			context?.showErrorToast(e)
-		}
+		} catch(e: Exception) {context?.showErrorToast(e)}
 
 		return fileDirItems
 	}
 
-	private fun showProgressBar() {
-		binding.progressBar.show()
-	}
+	private fun showProgressBar() {binding.progressBar.show()}
+	private fun hideProgressBar() {binding.progressBar.hide()}
 
-	private fun hideProgressBar() {
-		binding.progressBar.hide()
-	}
-
-	private fun getRecyclerAdapter() = binding.searchResultsList.adapter as? ItemsAdapter
+	override fun getRecyclerAdapter() = binding.searchResultsList.adapter as? ItemsAdapter
 
 	override fun refreshFragment() {
 		ensureBackgroundThread {
 			val fileDirItems = volumes.keys.map {getAllFiles(it)}.flatten()
 			allDeviceListItems = getListItemsFromFileDirItems(ArrayList(fileDirItems))
 		}
-		setupLayoutManager()
+		setupLayoutManager(context!!.config.getFolderViewType(""))
 	}
 
-	override fun deleteFiles(files: ArrayList<FileDirItem>) {
-		handleFileDeleting(files, false)
-	}
-
+	override fun deleteFiles(files: ArrayList<FileDirItem>) {handleFileDeleting(files, false)}
 	override fun selectedPaths(paths: ArrayList<String>) {}
-
-	override fun setupDateTimeFormat() {
-		getRecyclerAdapter()?.updateDateTimeFormat()
-	}
-
-	override fun setupFontSize() {
-		getRecyclerAdapter()?.updateFontSizes()
-	}
-
-	override fun toggleFilenameVisibility() {
-		getRecyclerAdapter()?.updateDisplayFilenamesInGrid()
-	}
+	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
+	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
+	override fun toggleFilenameVisibility() {getRecyclerAdapter()?.updateDisplayFilenamesInGrid()}
 
 	override fun columnCountChanged() {
 		(binding.searchResultsList.layoutManager as MyGridLayoutManager).spanCount = context!!.config.fileColumnCnt
-		getRecyclerAdapter()?.apply {
-			notifyItemRangeChanged(0, listItems.size)
-		}
+		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
 	}
 
-	override fun finishActMode() {
-		getRecyclerAdapter()?.finishActMode()
-	}
+	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 }

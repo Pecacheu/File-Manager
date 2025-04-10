@@ -56,7 +56,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content">
 
-			<org.fossify.commons.views.MyRecyclerView
+			<main.org.fossify.commons.views.ItemsList
 				android:id="@+id/mimetypes_list"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"

@@ -28,6 +28,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import com.stericson.RootTools.RootTools
+import main.org.fossify.commons.views.ItemsList
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.io.inputstream.ZipInputStream
 import net.lingala.zip4j.io.outputstream.ZipOutputStream
@@ -119,6 +120,7 @@ import java.io.File
 import java.util.LinkedList
 import java.util.Locale
 
+@SuppressLint("NotifyDataSetChanged")
 class ItemsAdapter(
 	activity: SimpleActivity,
 	var listItems: MutableList<ListItem>,
@@ -162,6 +164,10 @@ class ItemsAdapter(
 		updateFontSizes()
 		dateFormat = config.dateFormat
 		timeFormat = activity.getTimeFormat()
+	}
+
+	fun setItemListZoom(zoomListener: MyRecyclerView.MyZoomListener?) {
+		(recyclerView as ItemsList).setZoomListener(zoomListener, swipeRefreshLayout)
 	}
 
 	override fun getActionMenuId() = R.menu.cab
@@ -213,10 +219,12 @@ class ItemsAdapter(
 	override fun onActionModeCreated() {
 		swipeRefreshLayout?.isRefreshing = false
 		swipeRefreshLayout?.isEnabled = false
+		(recyclerView as? ItemsList)?.zoomEnabled = false
 	}
 
 	override fun onActionModeDestroyed() {
 		swipeRefreshLayout?.isEnabled = true
+		(recyclerView as? ItemsList)?.zoomEnabled = true
 	}
 
 	override fun getItemViewType(position: Int): Int {
@@ -252,11 +260,8 @@ class ItemsAdapter(
 		var hiddenCnt = 0
 		var unhiddenCnt = 0
 		getSelectedFileDirItems().map {it.name}.forEach {
-			if(it.startsWith(".")) {
-				hiddenCnt++
-			} else {
-				unhiddenCnt++
-			}
+			if(it.startsWith(".")) hiddenCnt++
+			else unhiddenCnt++
 		}
 		menu.findItem(R.id.cab_hide).isVisible = unhiddenCnt > 0
 		menu.findItem(R.id.cab_unhide).isVisible = hiddenCnt > 0
@@ -311,9 +316,7 @@ class ItemsAdapter(
 	private fun shareFiles() {
 		val selectedItems = getSelectedFileDirItems()
 		val paths = ArrayList<String>(selectedItems.size)
-		selectedItems.forEach {
-			addFileUris(it.path, paths)
-		}
+		selectedItems.forEach {addFileUris(it.path, paths)}
 		activity.sharePaths(paths)
 	}
 
@@ -329,12 +332,12 @@ class ItemsAdapter(
 		}
 	}
 
-	@SuppressLint("NewApi")
+	@SuppressLint("UseCompatLoadingForDrawables")
 	private fun createShortcut() {
 		val manager = activity.getSystemService(ShortcutManager::class.java)
 		if(manager.isRequestPinShortcutSupported) {
 			val path = getFirstSelectedItemPath()
-			val drawable = resources.getDrawable(R.drawable.shortcut_folder).mutate()
+			val drawable = resources.getDrawable(R.drawable.shortcut_folder, null).mutate()
 			getShortcutImage(path, drawable) {
 				val intent = Intent(activity, SplashActivity::class.java)
 				intent.action = Intent.ACTION_VIEW
@@ -359,11 +362,10 @@ class ItemsAdapter(
 			callback()
 		} else {
 			ensureBackgroundThread {
-				val options = RequestOptions().format(DecodeFormat.PREFER_ARGB_8888).skipMemoryCache(true).diskCacheStrategy(DiskCacheStrategy.NONE).fitCenter()
-
+				val options = RequestOptions().format(DecodeFormat.PREFER_ARGB_8888).skipMemoryCache(true)
+					.diskCacheStrategy(DiskCacheStrategy.NONE).fitCenter()
 				val size = activity.resources.getDimension(org.fossify.commons.R.dimen.shortcut_size).toInt()
-				val builder = Glide.with(activity).asDrawable().load(getImagePathToLoad(path)).apply(options).centerCrop().into(size, size)
-
+				val builder = Glide.with(activity).asDrawable().load(getImagePathToLoad(path)).apply(options).centerCrop().submit(size, size)
 				try {
 					val bitmap = builder.get()
 					drawable.findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(0)
@@ -372,15 +374,11 @@ class ItemsAdapter(
 					val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault()), {fileDrawable})
 					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, fileIcon)
 				}
-
-				activity.runOnUiThread {
-					callback()
-				}
+				activity.runOnUiThread {callback()}
 			}
 		}
 	}
 
-	@SuppressLint("NewApi")
 	private fun addFileUris(path: String, paths: ArrayList<String>) {
 		if(activity.getIsPathDirectory(path)) {
 			val shouldShowHidden = config.shouldShowHidden()
@@ -391,23 +389,17 @@ class ItemsAdapter(
 							addFileUris(activity.getAndroidSAFUri(it.path).toString(), paths)
 						}
 					}
-				}
-
-				activity.isPathOnOTG(path) -> {
+				} activity.isPathOnOTG(path) -> {
 					activity.getDocumentFile(path)?.listFiles()?.filter {if(shouldShowHidden) true else !it.name!!.startsWith(".")}?.forEach {
 						addFileUris(it.uri.toString(), paths)
 					}
-				}
-
-				else -> {
+				} else -> {
 					File(path).listFiles()?.filter {if(shouldShowHidden) true else !it.name.startsWith('.')}?.forEach {
 						addFileUris(it.absolutePath, paths)
 					}
 				}
 			}
-		} else {
-			paths.add(path)
-		}
+		} else paths.add(path)
 	}
 
 	private fun copyPath() {
@@ -675,7 +667,6 @@ class ItemsAdapter(
 		}
 	}
 
-	@SuppressLint("NewApi")
 	private fun compressPaths(sourcePaths: List<String>, targetPath: String, password: String? = null): Boolean {
 		val queue = LinkedList<String>()
 		val fos = activity.getFileOutputStreamSync(targetPath, "application/zip")?:return false
@@ -763,30 +754,21 @@ class ItemsAdapter(
 			} else {
 				resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
 			}
-
 			val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), items)
-			ConfirmationDialog(activity, question) {
-				deleteFiles()
-			}
+			ConfirmationDialog(activity, question) {deleteFiles()}
 		}
 	}
 
 	private fun deleteFiles() {
-		if(selectedKeys.isEmpty()) {
-			return
-		}
-
-		val SAFPath = getFirstSelectedItemPath()
-		if(activity.isPathOnRoot(SAFPath) && !RootTools.isRootAvailable()) {
+		if(selectedKeys.isEmpty()) return
+		val safPath = getFirstSelectedItemPath()
+		if(activity.isPathOnRoot(safPath) && !RootTools.isRootAvailable()) {
 			activity.toast(R.string.rooted_device_only)
 			return
 		}
 
-		activity.handleSAFDialog(SAFPath) {granted ->
-			if(!granted) {
-				return@handleSAFDialog
-			}
-
+		activity.handleSAFDialog(safPath) {granted ->
+			if(!granted) return@handleSAFDialog
 			val files = ArrayList<FileDirItem>(selectedKeys.size)
 			val positions = ArrayList<Int>()
 
@@ -933,34 +915,27 @@ class ItemsAdapter(
 		"${baseConfig.OTGTreeUri}/document/${baseConfig.OTGPartition}%3A${itemToLoad.substring(baseConfig.OTGPath.length).replace("/", "%2F")}"
 
 	private fun getImagePathToLoad(path: String): Any {
-		var itemToLoad = if(path.endsWith(".apk", true)) {
+		var itemToLoad: Any = if(path.endsWith(".apk", true)) {
 			val packageInfo = activity.packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
 			if(packageInfo != null) {
 				val appInfo = packageInfo.applicationInfo
 				appInfo.sourceDir = path
 				appInfo.publicSourceDir = path
 				appInfo.loadIcon(activity.packageManager)
-			} else {
-				path
-			}
-		} else {
-			path
-		}
+			} else path
+		} else path
 
-		if(activity.isRestrictedSAFOnlyRoot(path)) {
-			itemToLoad = activity.getAndroidSAFUri(path)
-		} else if(hasOTGConnected && itemToLoad is String && activity.isPathOnOTG(
-				itemToLoad) && baseConfig.OTGTreeUri.isNotEmpty() && baseConfig.OTGPartition.isNotEmpty()) {
-			itemToLoad = getOTGPublicPath(itemToLoad)
-		}
-
+		if(activity.isRestrictedSAFOnlyRoot(path)) itemToLoad = activity.getAndroidSAFUri(path)
+		else if(hasOTGConnected && itemToLoad is String && activity.isPathOnOTG(itemToLoad) && baseConfig.OTGTreeUri.isNotEmpty() &&
+			baseConfig.OTGPartition.isNotEmpty()) itemToLoad = getOTGPublicPath(itemToLoad)
 		return itemToLoad
 	}
 
+	@SuppressLint("UseCompatLoadingForDrawables")
 	fun initDrawables() {
 		folderDrawable = resources.getColoredDrawableWithColor(org.fossify.commons.R.drawable.ic_folder_vector, properPrimaryColor)
 		folderDrawable.alpha = 180
-		fileDrawable = resources.getDrawable(org.fossify.commons.R.drawable.ic_file_generic)
+		fileDrawable = resources.getDrawable(org.fossify.commons.R.drawable.ic_file_generic, null)
 		fileDrawables = getFilePlaceholderDrawables(activity)
 	}
 
@@ -1068,7 +1043,6 @@ class ItemsAdapter(
 		override val itemDate: TextView? = null
 		override val itemCheck: ImageView? = null
 		override val itemSection: TextView? = null
-
 		override fun getRoot(): View = binding.root
 	}
 
@@ -1080,7 +1054,6 @@ class ItemsAdapter(
 		override val itemDate: TextView = binding.itemDate
 		override val itemCheck: ImageView? = null
 		override val itemSection: TextView? = null
-
 		override fun getRoot(): View = binding.root
 	}
 
@@ -1092,7 +1065,6 @@ class ItemsAdapter(
 		override val itemDate: TextView? = null
 		override val itemCheck: ImageView = binding.itemCheck
 		override val itemSection: TextView? = null
-
 		override fun getRoot(): View = binding.root
 	}
 
@@ -1104,7 +1076,6 @@ class ItemsAdapter(
 		override val itemDate: TextView? = null
 		override val itemCheck: ImageView? = null
 		override val itemSection: TextView? = null
-
 		override fun getRoot(): View = binding.root
 	}
 }

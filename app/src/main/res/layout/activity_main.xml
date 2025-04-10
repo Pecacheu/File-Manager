@@ -16,7 +16,7 @@
 		android:layout_height="match_parent"
 		android:layout_marginTop="?attr/actionBarSize">
 
-		<org.fossify.commons.views.MyViewPager
+		<androidx.viewpager2.widget.ViewPager2
 			android:id="@+id/main_view_pager"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"

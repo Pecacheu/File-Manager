@@ -24,11 +24,9 @@ class ChangeSortingDialog(val activity: BaseSimpleActivity, val path: String = "
 		}
 
 		activity.getAlertDialogBuilder()
-			.setPositiveButton(org.fossify.commons.R.string.ok) {dialog, which -> dialogConfirmed()}
+			.setPositiveButton(org.fossify.commons.R.string.ok) {_, _ -> dialogConfirmed()}
 			.setNegativeButton(org.fossify.commons.R.string.cancel, null)
-			.apply {
-				activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.sort_by)
-			}
+			.apply {activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.sort_by)}
 
 		setupSortRadio()
 		setupOrderRadio()
@@ -40,7 +38,6 @@ class ChangeSortingDialog(val activity: BaseSimpleActivity, val path: String = "
 				val isSortingByName = checkedId == sortingDialogRadioName.id
 				binding.sortingDialogNumericSorting.beVisibleIf(isSortingByName)
 			}
-
 			val sortBtn = when {
 				currSorting and SORT_BY_SIZE != 0 -> sortingDialogRadioSize
 				currSorting and SORT_BY_DATE_MODIFIED != 0 -> sortingDialogRadioLastModified
@@ -53,10 +50,7 @@ class ChangeSortingDialog(val activity: BaseSimpleActivity, val path: String = "
 
 	private fun setupOrderRadio() {
 		var orderBtn = binding.sortingDialogRadioAscending
-
-		if(currSorting and SORT_DESCENDING != 0) {
-			orderBtn = binding.sortingDialogRadioDescending
-		}
+		if(currSorting and SORT_DESCENDING != 0) orderBtn = binding.sortingDialogRadioDescending
 		orderBtn.isChecked = true
 	}
 
@@ -68,15 +62,12 @@ class ChangeSortingDialog(val activity: BaseSimpleActivity, val path: String = "
 			R.id.sorting_dialog_radio_last_modified -> SORT_BY_DATE_MODIFIED
 			else -> SORT_BY_EXTENSION
 		}
-
 		if(binding.sortingDialogRadioOrder.checkedRadioButtonId == R.id.sorting_dialog_radio_descending) {
 			sorting = sorting or SORT_DESCENDING
 		}
-
 		if(binding.sortingDialogNumericSorting.isChecked) {
 			sorting = sorting or SORT_USE_NUMERIC_VALUE
 		}
-
 		if(binding.sortingDialogUseForThisFolder.isChecked) {
 			config.saveCustomSorting(path, sorting)
 		} else {

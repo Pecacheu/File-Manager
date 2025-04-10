@@ -6,7 +6,6 @@ import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
-import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogChangeViewTypeBinding
 import org.fossify.filemanager.extensions.config
 
@@ -17,23 +16,18 @@ class ChangeViewTypeDialog(val activity: BaseSimpleActivity, val path: String = 
 	init {
 		binding = DialogChangeViewTypeBinding.inflate(activity.layoutInflater).apply {
 			val currViewType = config.getFolderViewType(this@ChangeViewTypeDialog.path)
-			val viewToCheck = if(currViewType == VIEW_TYPE_GRID) {
-				changeViewTypeDialogRadioGrid.id
-			} else {
-				changeViewTypeDialogRadioList.id
-			}
-
+			val viewToCheck = if(currViewType == VIEW_TYPE_GRID) changeViewTypeDialogRadioGrid.id
+			else changeViewTypeDialogRadioList.id
 			changeViewTypeDialogRadio.check(viewToCheck)
+
 			if(!showFolderCheck) {
 				useForThisFolderDivider.beGone()
 				changeViewTypeDialogUseForThisFolder.beGone()
 			}
-
 			changeViewTypeDialogUseForThisFolder.apply {
 				isChecked = config.hasCustomViewType(this@ChangeViewTypeDialog.path)
 			}
 		}
-
 		activity.getAlertDialogBuilder()
 			.setPositiveButton(org.fossify.commons.R.string.ok) {dialog, which -> dialogConfirmed()}
 			.setNegativeButton(org.fossify.commons.R.string.cancel, null)
@@ -43,19 +37,14 @@ class ChangeViewTypeDialog(val activity: BaseSimpleActivity, val path: String = 
 	}
 
 	private fun dialogConfirmed() {
-		val viewType = if(binding.changeViewTypeDialogRadio.checkedRadioButtonId == binding.changeViewTypeDialogRadioGrid.id) {
-			VIEW_TYPE_GRID
-		} else {
-			VIEW_TYPE_LIST
-		}
-
+		val viewType = if(binding.changeViewTypeDialogRadio.checkedRadioButtonId == binding.changeViewTypeDialogRadioGrid.id) VIEW_TYPE_GRID
+		else VIEW_TYPE_LIST
 		if(binding.changeViewTypeDialogUseForThisFolder.isChecked) {
 			config.saveFolderViewType(this.path, viewType)
 		} else {
 			config.removeFolderViewType(this.path)
 			config.viewType = viewType
 		}
-
 		callback()
 	}
 }

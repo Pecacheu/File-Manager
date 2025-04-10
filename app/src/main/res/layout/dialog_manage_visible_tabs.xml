@@ -14,14 +14,6 @@
 		android:paddingEnd="@dimen/activity_margin">
 
 		<org.fossify.commons.views.MyAppCompatCheckbox
-			android:id="@+id/manage_visible_tabs_files"
-			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
-			android:paddingTop="@dimen/activity_margin"
-			android:paddingBottom="@dimen/activity_margin"
-			android:text="@string/files_tab"/>
-
-		<org.fossify.commons.views.MyAppCompatCheckbox
 			android:id="@+id/manage_visible_tabs_favorites"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"

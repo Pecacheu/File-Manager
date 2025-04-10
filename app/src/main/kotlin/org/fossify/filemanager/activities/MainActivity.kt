@@ -1,6 +1,5 @@
 package org.fossify.filemanager.activities
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
@@ -9,9 +8,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.provider.Settings
-import android.util.Log
 import android.widget.TextView
-import androidx.viewpager.widget.ViewPager
 import com.stericson.RootTools.RootTools
 import me.grantland.widget.AutofitHelper
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
@@ -78,6 +75,7 @@ import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
 import androidx.core.net.toUri
+import androidx.viewpager2.widget.ViewPager2
 
 class MainActivity: SimpleActivity() {
 	companion object {
@@ -90,11 +88,9 @@ class MainActivity: SimpleActivity() {
 
 	private var wasBackJustPressed = false
 	private var mTabsToShow = ArrayList<Int>()
-
 	private var mStoredFontSize = 0
 	private var mStoredDateFormat = ""
 	private var mStoredTimeFormat = ""
-	private var mStoredShowTabs = 0
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		isMaterialActivity = true
@@ -125,37 +121,19 @@ class MainActivity: SimpleActivity() {
 
 	override fun onResume() {
 		super.onResume()
-		if(mStoredShowTabs != config.showTabs) {
-			config.lastUsedViewPagerPage = TAB_FILES
-			System.exit(0)
-			return
-		}
-
 		refreshMenuItems()
 		updateMenuColors()
 		updateFavsList(true)
 		setupTabColors()
 
-		getAllFragments().forEach {
-			it?.onResume(getProperTextColor())
-		}
-		//TODO Files tab can still go blank if rotating while on other tab
-
+		getAllFragments().forEach {it?.onResume(getProperTextColor())}
 		if(mStoredFontSize != config.fontSize) {
-			getAllFragments().forEach {
-				(it as? ItemOperationsListener)?.setupFontSize()
-			}
+			getAllFragments().forEach {(it as? ItemOperationsListener)?.setupFontSize()}
 		}
-
 		if(mStoredDateFormat != config.dateFormat || mStoredTimeFormat != getTimeFormat()) {
-			getAllFragments().forEach {
-				(it as? ItemOperationsListener)?.setupDateTimeFormat()
-			}
+			getAllFragments().forEach {(it as? ItemOperationsListener)?.setupDateTimeFormat()}
 		}
-
-		if(binding.mainViewPager.adapter == null) {
-			initFragments()
-		}
+		if(binding.mainViewPager.adapter == null) initFragments()
 	}
 
 	override fun onPause() {
@@ -237,10 +215,7 @@ class MainActivity: SimpleActivity() {
 			}
 
 			getToolbar().setOnMenuItemClickListener {menuItem ->
-				if(getCurrentFragment() == null) {
-					return@setOnMenuItemClickListener true
-				}
-
+				if(getCurrentFragment() == null) return@setOnMenuItemClickListener true
 				when(menuItem.itemId) {
 					R.id.go_home -> goHome()
 					R.id.sort -> showSortingDialog()
@@ -279,7 +254,6 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	@SuppressLint("NewApi")
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
 		super.onActivityResult(requestCode, resultCode, resultData)
 		isAskingPermissions = false
@@ -298,7 +272,6 @@ class MainActivity: SimpleActivity() {
 			mStoredFontSize = fontSize
 			mStoredDateFormat = dateFormat
 			mStoredTimeFormat = context.getTimeFormat()
-			mStoredShowTabs = showTabs
 		}
 	}
 
@@ -307,13 +280,8 @@ class MainActivity: SimpleActivity() {
 		handleStoragePermission {
 			checkOTGPath()
 			if(it) {
-				if(binding.mainViewPager.adapter == null) {
-					initFragments()
-				}
-
-				binding.mainViewPager.onGlobalLayout {
-					initFileManager(!hadPermission)
-				}
+				if(binding.mainViewPager.adapter == null) initFragments()
+				binding.mainViewPager.onGlobalLayout {initFileManager(!hadPermission)}
 			} else {
 				toast(org.fossify.commons.R.string.no_storage_permissions)
 				finish()
@@ -321,7 +289,6 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	@SuppressLint("InlinedApi")
 	private fun handleStoragePermission(callback: (granted: Boolean)->Unit) {
 		actionOnPermission = null
 		if(hasStoragePermission()) {
@@ -384,45 +351,31 @@ class MainActivity: SimpleActivity() {
 	private fun initFragments() {
 		binding.mainViewPager.apply {
 			adapter = ViewPagerAdapter(this@MainActivity, mTabsToShow)
-			offscreenPageLimit = 2
-			addOnPageChangeListener(object: ViewPager.OnPageChangeListener {
-				override fun onPageScrollStateChanged(state: Int) {}
-
-				override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-
+			registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
 				override fun onPageSelected(position: Int) {
 					binding.mainTabsHolder.getTabAt(position)?.select()
-					getAllFragments().forEach {
-						(it as? ItemOperationsListener)?.finishActMode()
-					}
+					getAllFragments().forEach {(it as? ItemOperationsListener)?.finishActMode()}
 					refreshMenuItems()
 				}
 			})
 			currentItem = tabIdToIdx(config.lastUsedViewPagerPage)
-
-			onGlobalLayout {
-				refreshMenuItems()
-			}
+			onGlobalLayout {refreshMenuItems()}
 		}
+	}
+
+	fun setSwipeEnabled(en: Boolean) {
+		binding.mainViewPager.isUserInputEnabled = en
 	}
 
 	private fun getTabsToShow(): ArrayList<Int> {
 		val action = intent.action
-		val isPickFileIntent = action == RingtoneManager.ACTION_RINGTONE_PICKER || action == Intent.ACTION_GET_CONTENT || action == Intent.ACTION_PICK
+		if(action == Intent.ACTION_CREATE_DOCUMENT) return arrayListOf(TAB_FILES)
 
-		var tabs = arrayListOf(TAB_FILES, TAB_FAVORITES, TAB_RECENT_FILES, TAB_STORAGE_ANALYSIS)
+		val tabs = arrayListOf(TAB_FILES, TAB_FAVORITES, TAB_RECENT_FILES, TAB_STORAGE_ANALYSIS)
 		if(config.favorites.isEmpty()) tabs.remove(TAB_FAVORITES)
-		if(isPickFileIntent) {
-			tabs.remove(TAB_STORAGE_ANALYSIS)
-			if(tabs.none {it and config.showTabs != 0}) {
-				config.showTabs = TAB_FILES
-				mStoredShowTabs = TAB_FILES
-				tabs = arrayListOf(TAB_FILES)
-			}
-		} else if(action == Intent.ACTION_CREATE_DOCUMENT) {
-			tabs.clear()
-			tabs = arrayListOf(TAB_FILES)
-		}
+		if(action == RingtoneManager.ACTION_RINGTONE_PICKER || action == Intent.ACTION_GET_CONTENT
+			|| action == Intent.ACTION_PICK) tabs.remove(TAB_STORAGE_ANALYSIS) //Pick Document
+		tabs.removeAll {it != TAB_FILES && config.showTabs and it == 0}
 		return tabs
 	}
 
@@ -431,13 +384,11 @@ class MainActivity: SimpleActivity() {
 		mTabsToShow = tabs
 
 		mTabsToShow.forEach {id ->
-			if(config.showTabs and id != 0) {
-				binding.mainTabsHolder.newTab().setCustomView(org.fossify.commons.R.layout.bottom_tablayout_item).apply {
-					customView?.findViewById<TextView>(org.fossify.commons.R.id.tab_item_label)?.text = getTabLabel(id)
-					AutofitHelper.create(customView?.findViewById(org.fossify.commons.R.id.tab_item_label))
-					binding.mainTabsHolder.addTab(this)
-				}
-			} else mTabsToShow.remove(id)
+			binding.mainTabsHolder.newTab().setCustomView(org.fossify.commons.R.layout.bottom_tablayout_item).apply {
+				customView?.findViewById<TextView>(org.fossify.commons.R.id.tab_item_label)?.text = getTabLabel(id)
+				AutofitHelper.create(customView?.findViewById(org.fossify.commons.R.id.tab_item_label))
+				binding.mainTabsHolder.addTab(this)
+			}
 		}
 
 		binding.mainTabsHolder.apply {
@@ -448,7 +399,6 @@ class MainActivity: SimpleActivity() {
 				binding.mainViewPager.currentItem = it.position
 				updateBottomTabItemColors(it.customView, true, getSelectedTabDrawable(it.position))
 			})
-
 			beGoneIf(tabCount == 1)
 		}
 	}
@@ -535,14 +485,9 @@ class MainActivity: SimpleActivity() {
 		getFavoritesFragment()?.refreshFragment()
 		val tabs = getTabsToShow()
 		if(mTabsToShow != tabs) {
-			val tab = tabIdxToId(binding.mainViewPager.currentItem)
 			setupTabs(tabs)
 			if(!resume) setupTabColors()
-			initFragments()
-			val itmFrag = getItemsFragment()?:return
-			openPath(itmFrag.currentPath) //TODO This is causing it to go back to the root path every time(?)
-			binding.mainViewPager.currentItem = tabIdToIdx(tab)
-			Log.i("test", "Tabs ${mTabsToShow.size} != ${tabs.size}, tab ${tabIdToIdx(tab)}")
+			(binding.mainViewPager.adapter as ViewPagerAdapter).setTabs(tabs)
 		}
 	}
 
@@ -751,17 +696,14 @@ class MainActivity: SimpleActivity() {
 	private fun getAllFragments(): ArrayList<MyViewPagerFragment<*>?> = arrayListOf(
 		getItemsFragment(), getFavoritesFragment(), getRecentsFragment(), getStorageFragment())
 
-	private fun getFragment(idx: Int): MyViewPagerFragment<*>? {
-		return when(tabIdxToId(idx)) {
+	private fun getCurrentFragment(): MyViewPagerFragment<*>? {
+		return when(tabIdxToId(binding.mainViewPager.currentItem)) {
 			TAB_FILES -> getItemsFragment()
 			TAB_FAVORITES -> getFavoritesFragment()
 			TAB_RECENT_FILES -> getRecentsFragment()
-			TAB_STORAGE_ANALYSIS -> getStorageFragment()
-			else -> null
+			else -> getStorageFragment()
 		}
 	}
-
-	private fun getCurrentFragment() = getFragment(binding.mainViewPager.currentItem)
 
 	private fun checkWhatsNewDialog() {
 		arrayListOf<Release>().apply {

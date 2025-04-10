@@ -1,6 +1,5 @@
 package org.fossify.filemanager.fragments
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Parcelable
 import android.util.AttributeSet
@@ -12,7 +11,6 @@ import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.Breadcrumbs
 import org.fossify.commons.views.MyGridLayoutManager
-import org.fossify.commons.views.MyRecyclerView
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
@@ -20,7 +18,6 @@ import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.dialogs.CreateNewItemDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isPathOnRoot
-import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
 import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
@@ -31,8 +28,6 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private var showHidden = false
 	private var lastSearchedText = ""
 	private var scrollStates = HashMap<String, Parcelable>()
-	private var zoomListener: MyRecyclerView.MyZoomListener? = null
-
 	private var storedItems = ArrayList<ListItem>()
 	private var itemsIgnoringSearch = ArrayList<ListItem>()
 	private lateinit var binding: ItemsFragmentBinding
@@ -50,11 +45,8 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 				breadcrumbs.listener = this@ItemsFragment
 				itemsSwipeRefresh.setOnRefreshListener {refreshFragment()}
 				itemsFab.setOnClickListener {
-					if(isCreateDocumentIntent) {
-						(activity as MainActivity).createDocumentConfirmed(currentPath)
-					} else {
-						createNewItem()
-					}
+					if(isCreateDocumentIntent) (activity as MainActivity).createDocumentConfirmed(currentPath)
+					else createNewItem()
 				}
 			}
 		}
@@ -67,55 +59,37 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			updateTextColor(textColor)
 			initDrawables()
 		}
-
 		binding.apply {
 			val properPrimaryColor = context!!.getProperPrimaryColor()
 			itemsFastscroller.updateColors(properPrimaryColor)
 			progressBar.setIndicatorColor(properPrimaryColor)
 			progressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
 
-			if(currentPath != "") {
-				breadcrumbs.updateColor(textColor)
-			}
-
-			itemsSwipeRefresh.isEnabled = lastSearchedText.isEmpty() && activity?.config?.enablePullToRefresh != false
+			if(currentPath != "") breadcrumbs.updateColor(textColor)
+			itemsSwipeRefresh.isEnabled = false
 		}
 	}
 
 	override fun setupFontSize() {
 		getRecyclerAdapter()?.updateFontSizes()
-		if(currentPath != "") {
-			binding.breadcrumbs.updateFontSize(context!!.getTextSize(), false)
-		}
+		if(currentPath != "") binding.breadcrumbs.updateFontSize(context!!.getTextSize(), false)
 	}
 
-	override fun setupDateTimeFormat() {
-		getRecyclerAdapter()?.updateDateTimeFormat()
-	}
-
-	override fun finishActMode() {
-		getRecyclerAdapter()?.finishActMode()
-	}
+	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
+	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 
 	fun openPath(path: String, forceRefresh: Boolean = false) {
-		if((activity as? BaseSimpleActivity)?.isAskingPermissions == true) {
-			return
-		}
-
+		if((activity as? BaseSimpleActivity)?.isAskingPermissions == true) return
 		var realPath = path.trimEnd('/')
-		if(realPath.isEmpty()) {
-			realPath = "/"
-		}
+		if(realPath.isEmpty()) realPath = "/"
 
 		scrollStates[currentPath] = getScrollState()!!
 		currentPath = realPath
 		showHidden = context!!.config.shouldShowHidden()
 		showProgressBar()
-		getItems(currentPath) {originalPath, listItems ->
-			if(currentPath != originalPath) {
-				return@getItems
-			}
 
+		getItems(currentPath) {originalPath, listItems ->
+			if(currentPath != originalPath) return@getItems
 			FileDirItem.sorting = context!!.config.getFolderSorting(currentPath)
 			listItems.sort()
 
@@ -123,7 +97,8 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 				if(listItems.any {it.mIsDirectory} && listItems.any {!it.mIsDirectory}) {
 					val firstFileIndex = listItems.indexOfFirst {!it.mIsDirectory}
 					if(firstFileIndex != -1) {
-						val sectionTitle = ListItem("", "", false, 0, 0, 0, false, true)
+						val sectionTitle = ListItem("", "", false,
+							0, 0, 0, false, true)
 						listItems.add(firstFileIndex, sectionTitle)
 					}
 				}
@@ -133,8 +108,9 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			activity?.runOnUiThread {
 				(activity as? MainActivity)?.refreshMenuItems()
 				addItems(listItems, forceRefresh)
-				if(context != null && currentViewType != context!!.config.getFolderViewType(currentPath)) {
-					setupLayoutManager()
+				if(context != null) {
+					val viewType = context!!.config.getFolderViewType(currentPath)
+					if(currentViewType != viewType) setupLayoutManager(viewType)
 				}
 				hideProgressBar()
 			}
@@ -145,9 +121,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		activity?.runOnUiThread {
 			binding.itemsSwipeRefresh.isRefreshing = false
 			binding.breadcrumbs.setBreadcrumb(currentPath)
-			if(!forceRefresh && items.hashCode() == storedItems.hashCode()) {
-				return@runOnUiThread
-			}
+			if(!forceRefresh && items.hashCode() == storedItems.hashCode()) return@runOnUiThread
 
 			storedItems = items
 			if(binding.itemsList.adapter == null) {
@@ -162,14 +136,11 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 					itemClicked(it as FileDirItem)
 				}
 			}.apply {
-				setupZoomListener(zoomListener)
+				setItemListZoom(zoomListener)
 				binding.itemsList.adapter = this
 			}
 
-			if(context.areSystemAnimationsEnabled) {
-				binding.itemsList.scheduleLayoutAnimation()
-			}
-
+			if(context.areSystemAnimationsEnabled) binding.itemsList.scheduleLayoutAnimation()
 			getRecyclerLayoutManager().onRestoreInstanceState(scrollStates[currentPath])
 		}
 	}
@@ -178,7 +149,6 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	private fun getRecyclerLayoutManager() = (binding.itemsList.layoutManager as MyGridLayoutManager)
 
-	@SuppressLint("NewApi")
 	private fun getItems(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
 		ensureBackgroundThread {
 			if(activity?.isDestroyed == false && activity?.isFinishing == false) {
@@ -230,7 +200,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			}
 		}
 
-		// send out the initial item list asap, get proper child count asynchronously as it can be slow
+		//Send out the initial item list asap, get proper child count asynchronously as it can be slow
 		callback(path, items)
 
 		if(getProperChildCount) {
@@ -238,9 +208,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 				if(context != null) {
 					val childrenCount = it.getDirectChildrenCount(activity as BaseSimpleActivity, showHidden)
 					if(childrenCount != 0) {
-						activity?.runOnUiThread {
-							getRecyclerAdapter()?.updateChildCount(it.mPath, childrenCount)
-						}
+						activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(it.mPath, childrenCount)}
 					}
 				}
 			}
@@ -250,27 +218,13 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private fun getListItemFromFile(file: File, isSortingBySize: Boolean, lastModifieds: HashMap<String, Long>, getProperChildCount: Boolean): ListItem? {
 		val curPath = file.absolutePath
 		val curName = file.name
-		if(!showHidden && curName.startsWith(".")) {
-			return null
-		}
+		if(!showHidden && curName.startsWith(".")) return null
 
 		var lastModified = lastModifieds.remove(curPath)
 		val isDirectory = if(lastModified != null) false else file.isDirectory
 		val children = if(isDirectory && getProperChildCount) file.getDirectChildrenCount(context, showHidden) else 0
-		val size = if(isDirectory) {
-			if(isSortingBySize) {
-				file.getProperSize(showHidden)
-			} else {
-				0L
-			}
-		} else {
-			file.length()
-		}
-
-		if(lastModified == null) {
-			lastModified = file.lastModified()
-		}
-
+		val size = if(isDirectory) {if(isSortingBySize) file.getProperSize(showHidden) else 0L} else file.length()
+		if(lastModified == null) lastModified = file.lastModified()
 		return ListItem(curPath, curName, isDirectory, children, size, lastModified, false, false)
 	}
 
@@ -286,26 +240,18 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	private fun itemClicked(item: FileDirItem) {
-		if(item.isDirectory) {
-			openDirectory(item.path)
-		} else {
-			clickedPath(item.path)
-		}
+		if(item.isDirectory) openDirectory(item.path)
+		else clickedPath(item.path)
 	}
 
 	private fun openDirectory(path: String) {
-		(activity as? MainActivity)?.apply {
-			openedDirectory()
-		}
+		(activity as? MainActivity)?.apply {openedDirectory()}
 		openPath(path)
 	}
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text
-		if(context == null) {
-			return
-		}
-
+		if(context == null) return
 		binding.apply {
 			itemsSwipeRefresh.isEnabled = text.isEmpty() && activity?.config?.enablePullToRefresh != false
 			when {
@@ -315,27 +261,18 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 					itemsPlaceholder.beGone()
 					itemsPlaceholder2.beGone()
 					hideProgressBar()
-				}
-
-				text.length == 1 -> {
+				} text.length == 1 -> {
 					itemsFastscroller.beGone()
 					itemsPlaceholder.beVisible()
 					itemsPlaceholder2.beVisible()
 					hideProgressBar()
-				}
-
-				else -> {
+				} else -> {
 					showProgressBar()
 					ensureBackgroundThread {
 						val files = searchFiles(text, currentPath)
 						files.sortBy {it.getParentPath()}
-
-						if(lastSearchedText != text) {
-							return@ensureBackgroundThread
-						}
-
+						if(lastSearchedText != text) return@ensureBackgroundThread
 						val listItems = ArrayList<ListItem>()
-
 						var previousParent = ""
 						files.forEach {
 							val parent = it.mPath.getParentPath()
@@ -344,16 +281,12 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 								listItems.add(sectionTitle)
 								previousParent = parent
 							}
-
 							if(it.isDirectory) {
 								val sectionTitle = ListItem(it.path, context!!.humanizePath(it.path), true, 0, 0, 0, true, false)
 								listItems.add(sectionTitle)
 								previousParent = parent
 							}
-
-							if(!it.isDirectory) {
-								listItems.add(it)
-							}
+							if(!it.isDirectory) listItems.add(it)
 						}
 
 						activity?.runOnUiThread {
@@ -371,33 +304,23 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	private fun searchFiles(text: String, path: String): ArrayList<ListItem> {
 		val files = ArrayList<ListItem>()
-		if(context == null) {
-			return files
-		}
+		if(context == null) return files
 
 		val sorting = context!!.config.getFolderSorting(path)
 		FileDirItem.sorting = context!!.config.getFolderSorting(currentPath)
 		val isSortingBySize = sorting and SORT_BY_SIZE != 0
 		File(path).listFiles()?.sortedBy {it.isDirectory}?.forEach {
-			if(!showHidden && it.isHidden) {
-				return@forEach
-			}
-
+			if(!showHidden && it.isHidden) return@forEach
 			if(it.isDirectory) {
 				if(it.name.contains(text, true)) {
 					val fileDirItem = getListItemFromFile(it, isSortingBySize, HashMap(), false)
-					if(fileDirItem != null) {
-						files.add(fileDirItem)
-					}
+					if(fileDirItem != null) files.add(fileDirItem)
 				}
-
 				files.addAll(searchFiles(text, it.absolutePath))
 			} else {
 				if(it.name.contains(text, true)) {
 					val fileDirItem = getListItemFromFile(it, isSortingBySize, HashMap(), false)
-					if(fileDirItem != null) {
-						files.add(fileDirItem)
-					}
+					if(fileDirItem != null) files.add(fileDirItem)
 				}
 			}
 		}
@@ -417,41 +340,30 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	private fun createNewItem() {
 		CreateNewItemDialog(activity as SimpleActivity, currentPath) {
-			if(it) {
-				refreshFragment()
-			} else {
-				activity?.toast(org.fossify.commons.R.string.unknown_error_occurred)
-			}
+			if(it) refreshFragment()
+			else activity?.toast(org.fossify.commons.R.string.unknown_error_occurred)
 		}
 	}
 
-	private fun getRecyclerAdapter() = binding.itemsList.adapter as? ItemsAdapter
+	override fun getRecyclerAdapter() = binding.itemsList.adapter as? ItemsAdapter
 
-	private fun setupLayoutManager() {
-		if(context!!.config.getFolderViewType(currentPath) == VIEW_TYPE_GRID) {
-			currentViewType = VIEW_TYPE_GRID
-			setupGridLayoutManager()
-		} else {
-			currentViewType = VIEW_TYPE_LIST
-			setupListLayoutManager()
-		}
+	private fun setupLayoutManager(viewType: Int) {
+		if(viewType == VIEW_TYPE_GRID) setupGridLayoutManager()
+		else setupListLayoutManager()
+		currentViewType = viewType
 
 		binding.itemsList.adapter = null
-		initZoomListener()
+		initZoomListener(binding.itemsList.layoutManager as MyGridLayoutManager)
 		addItems(storedItems, true)
 	}
 
 	private fun setupGridLayoutManager() {
 		val layoutManager = binding.itemsList.layoutManager as MyGridLayoutManager
 		layoutManager.spanCount = context?.config?.fileColumnCnt?:3
-
 		layoutManager.spanSizeLookup = object: GridLayoutManager.SpanSizeLookup() {
 			override fun getSpanSize(position: Int): Int {
-				return if(getRecyclerAdapter()?.isASectionTitle(position) == true || getRecyclerAdapter()?.isGridTypeDivider(position) == true) {
-					layoutManager.spanCount
-				} else {
-					1
-				}
+				return if(getRecyclerAdapter()?.isASectionTitle(position) == true ||
+					getRecyclerAdapter()?.isGridTypeDivider(position) == true) layoutManager.spanCount else 1
 			}
 		}
 	}
@@ -459,67 +371,19 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private fun setupListLayoutManager() {
 		val layoutManager = binding.itemsList.layoutManager as MyGridLayoutManager
 		layoutManager.spanCount = 1
-		zoomListener = null
-	}
-
-	private fun initZoomListener() {
-		if(context?.config?.getFolderViewType(currentPath) == VIEW_TYPE_GRID) {
-			val layoutManager = binding.itemsList.layoutManager as MyGridLayoutManager
-			zoomListener = object: MyRecyclerView.MyZoomListener {
-				override fun zoomIn() {
-					if(layoutManager.spanCount > 1) {
-						reduceColumnCount()
-						getRecyclerAdapter()?.finishActMode()
-					}
-				}
-
-				override fun zoomOut() {
-					if(layoutManager.spanCount < MAX_COLUMN_COUNT) {
-						increaseColumnCount()
-						getRecyclerAdapter()?.finishActMode()
-					}
-				}
-			}
-		} else {
-			zoomListener = null
-		}
-	}
-
-	private fun increaseColumnCount() {
-		if(currentViewType == VIEW_TYPE_GRID) {
-			context!!.config.fileColumnCnt += 1
-			(activity as? MainActivity)?.updateFragmentColumnCounts()
-		}
-	}
-
-	private fun reduceColumnCount() {
-		if(currentViewType == VIEW_TYPE_GRID) {
-			context!!.config.fileColumnCnt -= 1
-			(activity as? MainActivity)?.updateFragmentColumnCounts()
-		}
 	}
 
 	override fun columnCountChanged() {
 		(binding.itemsList.layoutManager as MyGridLayoutManager).spanCount = context!!.config.fileColumnCnt
 		(activity as? MainActivity)?.refreshMenuItems()
-		getRecyclerAdapter()?.apply {
-			notifyItemRangeChanged(0, listItems.size)
-		}
+		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
 	}
 
-	fun showProgressBar() {
-		binding.progressBar.show()
-	}
-
-	private fun hideProgressBar() {
-		binding.progressBar.hide()
-	}
+	private fun showProgressBar() {binding.progressBar.show()}
+	private fun hideProgressBar() {binding.progressBar.hide()}
 
 	fun getBreadcrumbs() = binding.breadcrumbs
-
-	override fun toggleFilenameVisibility() {
-		getRecyclerAdapter()?.updateDisplayFilenamesInGrid()
-	}
+	override fun toggleFilenameVisibility() {getRecyclerAdapter()?.updateDisplayFilenamesInGrid()}
 
 	override fun breadcrumbClicked(id: Int) {
 		if(id == 0) {
@@ -533,9 +397,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		}
 	}
 
-	override fun refreshFragment() {
-		openPath(currentPath)
-	}
+	override fun refreshFragment() {openPath(currentPath)}
 
 	override fun deleteFiles(files: ArrayList<FileDirItem>) {
 		val hasFolder = files.any {it.isDirectory}

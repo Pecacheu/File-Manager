@@ -11,7 +11,6 @@ import org.fossify.commons.views.MyAppCompatCheckbox
 import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogManageVisibleTabsBinding
 import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.helpers.ALL_TABS_MASK
 
 class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
 	private val binding = DialogManageVisibleTabsBinding.inflate(activity.layoutInflater)
@@ -19,7 +18,6 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
 
 	init {
 		tabs.apply {
-			put(TAB_FILES, R.id.manage_visible_tabs_files)
 			put(TAB_FAVORITES, R.id.manage_visible_tabs_favorites)
 			put(TAB_RECENT_FILES, R.id.manage_visible_tabs_recent_files)
 			put(TAB_STORAGE_ANALYSIS, R.id.manage_visible_tabs_storage_analysis)
@@ -39,12 +37,10 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
 	}
 
 	private fun dialogConfirmed() {
-		var result = 0
+		var result = TAB_FILES
 		for((key, value) in tabs) {
 			if(binding.root.findViewById<MyAppCompatCheckbox>(value).isChecked) result += key
 		}
-
-		if(result == 0) result = ALL_TABS_MASK
 		activity.config.showTabs = result
 	}
 }
