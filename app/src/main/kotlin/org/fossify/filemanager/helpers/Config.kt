@@ -105,4 +105,8 @@ class Config(context: Context): BaseConfig(context) {
 	var showTabs: Int
 		get() = prefs.getInt(SHOW_TABS, ALL_TABS_MASK)
 		set(showTabs) = prefs.edit {putInt(SHOW_TABS, showTabs)}
+
+	var lastPath: String
+		get() = prefs.getString(LAST_PATH, "")!!
+		set(lastPath) = prefs.edit {putString(LAST_PATH, lastPath)}
 }

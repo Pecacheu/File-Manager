@@ -22,6 +22,7 @@ const val FILE_COLUMN_CNT = "file_column_cnt"
 const val FILE_LANDSCAPE_COLUMN_CNT = "file_landscape_column_cnt"
 const val DISPLAY_FILE_NAMES = "display_file_names"
 const val SHOW_TABS = "show_tabs"
+const val LAST_PATH = "last_path"
 
 // open as
 const val OPEN_AS_DEFAULT = 0

@@ -67,7 +67,6 @@ private const val SIZE_DIVIDER = 100000
 class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
 	ItemOperationsListener {
 	private var allDeviceListItems = ArrayList<ListItem>()
-	private var lastSearchedText = ""
 	private lateinit var binding: StorageFragmentBinding
 	private val volumes = mutableMapOf<String, ItemStorageVolumeBinding>()
 
@@ -419,7 +418,6 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 
 	private fun showProgressBar() {binding.progressBar.show()}
 	private fun hideProgressBar() {binding.progressBar.hide()}
-
 	override fun getRecyclerAdapter() = binding.searchResultsList.adapter as? ItemsAdapter
 
 	override fun refreshFragment() {

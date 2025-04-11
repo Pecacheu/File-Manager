@@ -26,7 +26,6 @@ import java.io.File
 class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.ItemsInnerBinding>(context, attributeSet),
 	ItemOperationsListener, Breadcrumbs.BreadcrumbsListener {
 	private var showHidden = false
-	private var lastSearchedText = ""
 	private var scrollStates = HashMap<String, Parcelable>()
 	private var storedItems = ArrayList<ListItem>()
 	private var itemsIgnoringSearch = ArrayList<ListItem>()
@@ -66,7 +65,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			progressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
 
 			if(currentPath != "") breadcrumbs.updateColor(textColor)
-			itemsSwipeRefresh.isEnabled = activity?.config?.enablePullToRefresh != false
+			itemsSwipeRefresh.isEnabled = lastSearchedText.isEmpty() && activity?.config?.enablePullToRefresh != false
 		}
 	}
 
@@ -146,7 +145,6 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	private fun getScrollState() = getRecyclerLayoutManager().onSaveInstanceState()
-
 	private fun getRecyclerLayoutManager() = (binding.itemsList.layoutManager as MyGridLayoutManager)
 
 	private fun getItems(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
@@ -378,7 +376,10 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
 	}
 
-	private fun showProgressBar() {binding.progressBar.show()}
+	private fun showProgressBar() {
+		binding.progressBar.beVisible()
+		binding.progressBar.show()
+	}
 	private fun hideProgressBar() {binding.progressBar.hide()}
 
 	fun getBreadcrumbs() = binding.breadcrumbs

@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.provider.Settings
+import android.view.KeyEvent
 import android.widget.TextView
 import com.stericson.RootTools.RootTools
 import me.grantland.widget.AutofitHelper
@@ -86,12 +87,15 @@ import org.fossify.commons.helpers.APP_PACKAGE_NAME
 import org.fossify.commons.helpers.APP_REPOSITORY_NAME
 import org.fossify.commons.helpers.APP_VERSION_NAME
 import org.fossify.filemanager.about.AboutActivityAlt
+import java.util.Date
+import java.util.Timer
+import kotlin.concurrent.fixedRateTimer
 
 class MainActivity: SimpleActivity() {
 	companion object {
 		private const val BACK_PRESS_TIMEOUT = 5000
 		private const val MANAGE_STORAGE_RC = 201
-		private const val PICKED_PATH = "picked_path"
+		private const val LAST_SEARCH = "last_search"
 	}
 
 	private val binding by viewBinding(ActivityMainBinding::inflate)
@@ -101,6 +105,7 @@ class MainActivity: SimpleActivity() {
 	private var mStoredFontSize = 0
 	private var mStoredDateFormat = ""
 	private var mStoredTimeFormat = ""
+	private var scrollTmr: Timer? = null
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		isMaterialActivity = true
@@ -150,6 +155,7 @@ class MainActivity: SimpleActivity() {
 		super.onPause()
 		storeStateVariables()
 		config.lastUsedViewPagerPage = tabIdxToId(binding.mainViewPager.currentItem)
+		config.lastPath = getItemsFragment()?.currentPath?:""
 	}
 
 	override fun onDestroy() {
@@ -178,6 +184,77 @@ class MainActivity: SimpleActivity() {
 			currentFragment.getBreadcrumbs().removeBreadcrumb()
 			openPath(currentFragment.getBreadcrumbs().getLastItem().path)
 		}
+	}
+
+	override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+		if(!binding.mainMenu.isSearchOpen) {
+			when(keyCode) {
+				KeyEvent.KEYCODE_DPAD_UP -> {
+					beginScroll(-50)
+					return true
+				} KeyEvent.KEYCODE_DPAD_DOWN -> {
+					beginScroll(50)
+					return true
+				}
+			}
+		}
+		return super.onKeyDown(keyCode, event)
+	}
+
+	private fun beginScroll(by: Int) {
+		endScroll()
+		scrollTmr = fixedRateTimer(startAt = Date(), period = 30) {
+			runOnUiThread {getCurrentFragment()?.getRecyclerAdapter()?.recyclerView?.scrollBy(0, by)}
+		}
+	}
+	private fun endScroll() {
+		scrollTmr?.cancel()
+		scrollTmr = null
+	}
+
+	override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+		if(!binding.mainMenu.isSearchOpen) {
+			if(event?.isCtrlPressed == true) {
+				val adapter = getCurrentFragment()?.getRecyclerAdapter()
+				if(keyCode == KeyEvent.KEYCODE_A) {
+					adapter?.doSelectAll()
+					return true
+				}
+				if(adapter?.isActMode() == true) when(keyCode) { //Action mode
+					KeyEvent.KEYCODE_D -> {
+						(getCurrentFragment() as? ItemOperationsListener)?.finishActMode()
+						return true
+					} KeyEvent.KEYCODE_S -> {
+						adapter.shareFiles()
+						return true
+					} KeyEvent.KEYCODE_C, KeyEvent.KEYCODE_X -> {
+						adapter.copyMoveTo(keyCode == KeyEvent.KEYCODE_C)
+						return true
+					} KeyEvent.KEYCODE_R -> {
+						adapter.displayRenameDialog()
+						return true
+					} KeyEvent.KEYCODE_I -> {
+						adapter.showProperties()
+						return true
+					}
+				} else when(keyCode) { //Main view
+					KeyEvent.KEYCODE_DPAD_LEFT -> {
+						binding.mainViewPager.currentItem -= 1
+						return true
+					} KeyEvent.KEYCODE_DPAD_RIGHT -> {
+						binding.mainViewPager.currentItem += 1
+						return true
+					}
+				}
+			}
+		}
+		when(keyCode) {
+			KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
+				endScroll()
+				return true
+			}
+		}
+		return super.onKeyUp(keyCode, event)
 	}
 
 	fun refreshMenuItems() {
@@ -215,11 +292,8 @@ class MainActivity: SimpleActivity() {
 			setupMenu()
 
 			onSearchClosedListener = {
-				getAllFragments().forEach {
-					it?.searchQueryChanged("")
-				}
+				getAllFragments().forEach {it?.searchQueryChanged("")}
 			}
-
 			onSearchTextChangedListener = {text ->
 				getCurrentFragment()?.searchQueryChanged(text)
 			}
@@ -248,20 +322,20 @@ class MainActivity: SimpleActivity() {
 
 	override fun onSaveInstanceState(outState: Bundle) {
 		super.onSaveInstanceState(outState)
-		outState.putString(PICKED_PATH, getItemsFragment()?.currentPath?:"")
+		outState.putString(LAST_SEARCH, getCurrentFragment()?.lastSearchedText?:"")
 	}
 
-	override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-		super.onRestoreInstanceState(savedInstanceState)
-		val path = savedInstanceState.getString(PICKED_PATH)?:internalStoragePath
+	override fun onRestoreInstanceState(state: Bundle) {
+		super.onRestoreInstanceState(state)
+		if(binding.mainViewPager.adapter == null) binding.mainViewPager.onGlobalLayout {restoreState(state)}
+		else restoreState(state)
+	}
 
-		if(binding.mainViewPager.adapter == null) {
-			binding.mainViewPager.onGlobalLayout {
-				openPath(path, true)
-			}
-		} else {
-			openPath(path, true)
-		}
+	private fun restoreState(state: Bundle) {
+		openPath(config.lastPath.ifEmpty {config.homeFolder})
+
+		val search = state.getString(LAST_SEARCH)?:""
+		if(search.isNotEmpty()) binding.mainMenu.binding.topToolbarSearch.setText(search)
 	}
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -331,31 +405,18 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private fun initFileManager(refreshRecents: Boolean) {
+		val path = config.lastPath.ifEmpty {config.homeFolder}
 		if(intent.action == Intent.ACTION_VIEW && intent.data != null) {
 			val data = intent.data
-			if(data?.scheme == "file") {
-				openPath(data.path!!)
-			} else {
-				val path = getRealPathFromURI(data!!)
-				if(path != null) {
-					openPath(path)
-				} else {
-					openPath(config.homeFolder)
-				}
-			}
+			if(data?.scheme == "file") openPath(data.path!!)
+			else openPath(getRealPathFromURI(data!!)?:path)
 
-			if(!File(data.path!!).isDirectory) {
+			if(!File(data.path!!).isDirectory)
 				tryOpenPathIntent(data.path!!, false, finishActivity = true)
-			}
 
 			binding.mainViewPager.currentItem = 0
-		} else {
-			openPath(config.homeFolder)
-		}
-
-		if(refreshRecents) {
-			getRecentsFragment()?.refreshFragment()
-		}
+		} else openPath(path)
+		if(refreshRecents) getRecentsFragment()?.refreshFragment()
 	}
 
 	private fun initFragments() {
@@ -675,9 +736,7 @@ class MainActivity: SimpleActivity() {
 	}
 
 	fun openedDirectory() {
-		if(binding.mainMenu.isSearchOpen) {
-			binding.mainMenu.closeSearch()
-		}
+		if(binding.mainMenu.isSearchOpen) binding.mainMenu.closeSearch()
 	}
 
 	private fun getInactiveTabIndexes(activeIndex: Int) = (0 until binding.mainTabsHolder.tabCount).filter {it != activeIndex}

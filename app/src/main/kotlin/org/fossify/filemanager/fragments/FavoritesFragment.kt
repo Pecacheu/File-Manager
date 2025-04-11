@@ -128,6 +128,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	override fun deleteFiles(files: ArrayList<FileDirItem>) {handleFileDeleting(files, false)}
 
 	override fun searchQueryChanged(text: String) {
+		lastSearchedText = text
 		val filtered = filesIgnoringSearch.filter {it.mName.contains(text, true)}.toMutableList() as ArrayList<ListItem>
 		binding.apply {
 			(favsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)

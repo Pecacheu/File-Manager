@@ -31,7 +31,6 @@ private const val RECENTS_LIMIT = 50
 class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
 	ItemOperationsListener {
 	private var filesIgnoringSearch = ArrayList<ListItem>()
-	private var lastSearchedText = ""
 	private lateinit var binding: RecentsFragmentBinding
 
 	override fun onFinishInflate() {

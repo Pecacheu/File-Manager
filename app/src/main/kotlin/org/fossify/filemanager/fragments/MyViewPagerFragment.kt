@@ -28,6 +28,7 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 	protected var currentViewType = VIEW_TYPE_LIST
 
 	var currentPath = ""
+	var lastSearchedText = ""
 	var isGetContentIntent = false
 	var isGetRingtonePicker = false
 	var isPickMultipleIntent = false
@@ -109,7 +110,8 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 	abstract fun onResume(textColor: Int)
 	abstract fun refreshFragment()
 	abstract fun searchQueryChanged(text: String)
-	protected abstract fun getRecyclerAdapter(): ItemsAdapter?
+	abstract fun getRecyclerAdapter(): ItemsAdapter?
+	open fun selectAll() {}
 
 	interface InnerBinding {val itemsFab: MyFloatingActionButton?}
 	open class BaseInnerBinding(val binding: ViewBinding): InnerBinding {override val itemsFab: MyFloatingActionButton? = null}

@@ -209,11 +209,8 @@ class ItemsAdapter(
 	}
 
 	override fun getSelectableItemCount() = listItems.filter {!it.isSectionTitle && !it.isGridTypeDivider}.size
-
 	override fun getIsItemSelectable(position: Int) = !listItems[position].isSectionTitle && !listItems[position].isGridTypeDivider
-
 	override fun getItemSelectionKey(position: Int) = listItems.getOrNull(position)?.path?.hashCode()
-
 	override fun getItemKeyPosition(key: Int) = listItems.indexOfFirst {it.path.hashCode() == key}
 
 	override fun onActionModeCreated() {
@@ -236,6 +233,12 @@ class ItemsAdapter(
 		}
 	}
 
+	fun doSelectAll() {
+		if(!actModeCallback.isSelectable) activity.startActionMode(actModeCallback)
+		selectAll()
+	}
+
+	fun isActMode() = selectedKeys.isNotEmpty()
 	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
 		val binding = Binding.getByItemViewType(viewType, isListViewType).inflate(layoutInflater, parent, false)
 		return createViewHolder(binding.root)
@@ -251,9 +254,7 @@ class ItemsAdapter(
 	}
 
 	override fun getItemCount() = listItems.size
-
 	private fun getItemWithKey(key: Int): FileDirItem? = listItems.firstOrNull {it.path.hashCode() == key}
-
 	private fun isOneFileSelected() = isOneItemSelected() && getItemWithKey(selectedKeys.first())?.isDirectory == false
 
 	private fun checkHideBtnVisibility(menu: Menu) {
@@ -275,7 +276,7 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun displayRenameDialog() {
+	fun displayRenameDialog() {
 		val fileDirItems = getSelectedFileDirItems()
 		val paths = fileDirItems.asSequence().map {it.path}.toMutableList() as ArrayList<String>
 		when {
@@ -304,7 +305,7 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun showProperties() {
+	fun showProperties() {
 		if(selectedKeys.size <= 1) {
 			PropertiesDialog(activity, getFirstSelectedItemPath(), config.shouldShowHidden())
 		} else {
@@ -313,7 +314,7 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun shareFiles() {
+	fun shareFiles() {
 		val selectedItems = getSelectedFileDirItems()
 		val paths = ArrayList<String>(selectedItems.size)
 		selectedItems.forEach {addFileUris(it.path, paths)}
@@ -432,7 +433,7 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun copyMoveTo(isCopyOperation: Boolean) {
+	fun copyMoveTo(isCopyOperation: Boolean) {
 		val files = getSelectedFileDirItems()
 		val firstFile = files[0]
 		val source = firstFile.getParentPath()
@@ -772,7 +773,6 @@ class ItemsAdapter(
 	}
 
 	private fun getFirstSelectedItemPath() = getSelectedFileDirItems().first().path
-
 	private fun getSelectedFileDirItems() = listItems.filter {selectedKeys.contains(it.path.hashCode())} as ArrayList<FileDirItem>
 
 	fun updateItems(newItems: ArrayList<ListItem>, highlightText: String = "") {
