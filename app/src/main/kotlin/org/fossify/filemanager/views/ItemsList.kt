@@ -1,4 +1,4 @@
-package main.org.fossify.commons.views
+package org.fossify.filemanager.views
 
 import android.content.Context
 import android.util.AttributeSet

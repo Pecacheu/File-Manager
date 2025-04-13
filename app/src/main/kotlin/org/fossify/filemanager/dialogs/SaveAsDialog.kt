@@ -5,6 +5,7 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
+import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.databinding.DialogSaveAsBinding
 
 class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,

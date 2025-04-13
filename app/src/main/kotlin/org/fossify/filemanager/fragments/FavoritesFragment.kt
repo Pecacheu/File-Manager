@@ -5,7 +5,6 @@ import android.util.AttributeSet
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getFilenameFromPath
-import org.fossify.commons.extensions.humanizePath
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.FileDirItem
@@ -15,6 +14,7 @@ import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.FavoritesFragmentBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.io.File
@@ -102,9 +102,9 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		val favorites = activity!!.config.favorites
 		val items = ArrayList<ListItem>(favorites.size)
 		favorites.forEach {path ->
-			val name = if(viewType == VIEW_TYPE_GRID) path.getFilenameFromPath() else activity!!.humanizePath(path)
-			val itm = ListItem(path, name, File(path).isDirectory, 0,
-				0, 0, false, false)
+			var name = activity!!.humanizePath(path)
+			if(viewType == VIEW_TYPE_GRID) name = name.getFilenameFromPath()
+			val itm = ListItem(path, name, true, 0, 0, 0, false, false)
 			items.add(itm)
 		}
 		activity?.runOnUiThread {callback(items)}
@@ -125,7 +125,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
 	override fun selectedPaths(paths: ArrayList<String>) {(activity as MainActivity).pickedPaths(paths)}
-	override fun deleteFiles(files: ArrayList<FileDirItem>) {handleFileDeleting(files, false)}
+	override fun deleteFiles(files: ArrayList<FileDirItem>) {}
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text

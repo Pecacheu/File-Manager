@@ -1,6 +1,5 @@
 package org.fossify.filemanager.activities
 
-import android.app.Activity
 import android.content.ClipData
 import android.content.Intent
 import android.media.RingtoneManager
@@ -8,6 +7,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.provider.Settings
+import android.util.Log
 import android.view.KeyEvent
 import android.widget.TextView
 import com.stericson.RootTools.RootTools
@@ -87,6 +87,10 @@ import org.fossify.commons.helpers.APP_PACKAGE_NAME
 import org.fossify.commons.helpers.APP_REPOSITORY_NAME
 import org.fossify.commons.helpers.APP_VERSION_NAME
 import org.fossify.filemanager.about.AboutActivityAlt
+import org.fossify.filemanager.extensions.UUID
+import org.fossify.filemanager.extensions.idFromRemotePath
+import org.fossify.filemanager.extensions.isRemotePath
+import org.fossify.filemanager.helpers.Remote
 import java.util.Date
 import java.util.Timer
 import kotlin.concurrent.fixedRateTimer
@@ -173,9 +177,7 @@ class MainActivity: SimpleActivity() {
 			if(!wasBackJustPressed && config.pressBackTwice) {
 				wasBackJustPressed = true
 				toast(R.string.press_back_again)
-				Handler().postDelayed({
-					wasBackJustPressed = false
-				}, BACK_PRESS_TIMEOUT.toLong())
+				Handler().postDelayed({wasBackJustPressed = false}, BACK_PRESS_TIMEOUT.toLong())
 			} else {
 				appLockManager.lock()
 				finish()
@@ -300,6 +302,7 @@ class MainActivity: SimpleActivity() {
 
 			getToolbar().setOnMenuItemClickListener {menuItem ->
 				if(getCurrentFragment() == null) return@setOnMenuItemClickListener true
+				//TODO Add "Manage favorites" to menu in favorites tab
 				when(menuItem.itemId) {
 					R.id.go_home -> goHome()
 					R.id.sort -> showSortingDialog()
@@ -503,7 +506,9 @@ class MainActivity: SimpleActivity() {
 	private fun checkOTGPath() {
 		ensureBackgroundThread {
 			if(!config.wasOTGHandled && hasPermission(PERMISSION_WRITE_STORAGE) && hasOTGConnected() && config.OTGPath.isEmpty()) {
-				getStorageDirectories().firstOrNull {it.trimEnd('/') != internalStoragePath && it.trimEnd('/') != sdCardPath}?.apply {
+				getStorageDirectories().firstOrNull {
+					it.trimEnd('/') != internalStoragePath && it.trimEnd('/') != sdCardPath
+				}?.apply {
 					config.wasOTGHandled = true
 					config.OTGPath = trimEnd('/')
 				}
@@ -511,15 +516,12 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	fun openPath(path: String, forceRefresh: Boolean = false) {
+	fun openPath(path: String, forceRefresh: Boolean=false) {
 		var newPath = path
-		val file = File(path)
-		if(config.OTGPath.isNotEmpty() && config.OTGPath == path.trimEnd('/')) {
-			newPath = path
-		} else if(file.exists() && !file.isDirectory) {
-			newPath = file.parent?.toString()?:return
-		} else if(!file.exists() && !isPathOnOTG(newPath)) {
-			newPath = internalStoragePath
+		if(!isRemotePath(path) && (config.OTGPath.isEmpty() || path.trimEnd('/') != config.OTGPath)) {
+			val file = File(path)
+			if(file.exists() && !file.isDirectory) newPath = file.parent?.toString()?:return
+			else if(!file.exists() && !isPathOnOTG(newPath)) newPath = internalStoragePath
 		}
 		getItemsFragment()?.openPath(newPath, forceRefresh)
 	}
@@ -665,11 +667,20 @@ class MainActivity: SimpleActivity() {
 	private fun checkInvalidFavorites() {
 		ensureBackgroundThread {
 			var badFavs = false
+			var noRemoteTest = config.getRemotes(true).isEmpty()
 			config.favorites.forEach {
-				if(!isPathOnOTG(it) && !isPathOnSD(it) && !File(it).exists()) {
+				val isBad = if(isRemotePath(it)) config.getRemote(idFromRemotePath(it)) == null
+					else (!isPathOnOTG(it) && !isPathOnSD(it) && !File(it).exists())
+				if(isBad) {
+					Log.i("test", "Removed invalid fav $it")
 					config.removeFavorite(it)
 					badFavs = true
 				}
+			}
+			if(noRemoteTest) { //TODO TEMP
+				val uid = UUID.genUUID()
+				config.addRemote(Remote(uid, "Test Remote", "192.168.1.1:5000", ""))
+				config.favorites.add("r@$uid:/Test Dir")
 			}
 			if(badFavs) updateFavsList()
 		}
@@ -681,7 +692,7 @@ class MainActivity: SimpleActivity() {
 		val type = path.getMimeType()
 		resultIntent.setDataAndType(uri, type)
 		resultIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-		setResult(Activity.RESULT_OK, resultIntent)
+		setResult(RESULT_OK, resultIntent)
 		finish()
 	}
 
@@ -703,7 +714,7 @@ class MainActivity: SimpleActivity() {
 		val type = path.getMimeType()
 		resultIntent.setDataAndType(uri, type)
 		resultIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-		setResult(Activity.RESULT_OK, resultIntent)
+		setResult(RESULT_OK, resultIntent)
 		finish()
 	}
 
@@ -714,7 +725,7 @@ class MainActivity: SimpleActivity() {
 			setDataAndType(uri, type)
 			flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 			putExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, uri)
-			setResult(Activity.RESULT_OK, this)
+			setResult(RESULT_OK, this)
 		}
 		finish()
 	}
@@ -730,7 +741,7 @@ class MainActivity: SimpleActivity() {
 		Intent().apply {
 			this.clipData = clipData
 			flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-			setResult(Activity.RESULT_OK, this)
+			setResult(RESULT_OK, this)
 		}
 		finish()
 	}

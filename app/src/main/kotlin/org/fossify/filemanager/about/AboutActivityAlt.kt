@@ -26,6 +26,8 @@ import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FAQItem
 
+//TODO Add keyboard controls to about
+
 class AboutActivityAlt: BaseComposeActivity() {
 	private val appName get() = intent.getStringExtra(APP_NAME)?:""
 	private var firstVersionClickTS = 0L

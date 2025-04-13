@@ -3,6 +3,8 @@ package org.fossify.filemanager.fragments
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.RelativeLayout
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy
 import androidx.viewbinding.ViewBinding
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
@@ -37,6 +39,7 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 	protected lateinit var innerBinding: BINDING
 	protected var zoomListener: MyRecyclerView.MyZoomListener? = null
 
+	//TODO Fix for remote
 	protected fun clickedPath(path: String) {
 		if(isGetContentIntent || isCreateDocumentIntent) {
 			(activity as MainActivity).pickedPath(path)
@@ -57,6 +60,7 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 		innerBinding.itemsFab?.setImageDrawable(fabIcon)
 	}
 
+	//TODO Fix for remote
 	fun handleFileDeleting(files: ArrayList<FileDirItem>, hasFolder: Boolean) {
 		val firstPath = files.firstOrNull()?.path
 		if(firstPath.isNullOrEmpty() || context == null) return
@@ -111,7 +115,6 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 	abstract fun refreshFragment()
 	abstract fun searchQueryChanged(text: String)
 	abstract fun getRecyclerAdapter(): ItemsAdapter?
-	open fun selectAll() {}
 
 	interface InnerBinding {val itemsFab: MyFloatingActionButton?}
 	open class BaseInnerBinding(val binding: ViewBinding): InnerBinding {override val itemsFab: MyFloatingActionButton? = null}

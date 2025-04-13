@@ -3,24 +3,27 @@ package org.fossify.filemanager.fragments
 import android.content.Context
 import android.os.Parcelable
 import android.util.AttributeSet
+import android.util.Log
 import androidx.recyclerview.widget.GridLayoutManager
 import org.fossify.commons.activities.BaseSimpleActivity
-import org.fossify.commons.dialogs.StoragePickerDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FileDirItem
-import org.fossify.commons.views.Breadcrumbs
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.dialogs.CreateNewItemDialog
+import org.fossify.filemanager.dialogs.StoragePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isPathOnRoot
+import org.fossify.filemanager.extensions.isRemotePath
+import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
+import org.fossify.filemanager.views.Breadcrumbs
 import java.io.File
 
 class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.ItemsInnerBinding>(context, attributeSet),
@@ -78,6 +81,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 
 	fun openPath(path: String, forceRefresh: Boolean = false) {
+		Log.i("test", "openPath '$path' $forceRefresh")
 		if((activity as? BaseSimpleActivity)?.isAskingPermissions == true) return
 		var realPath = path.trimEnd('/')
 		if(realPath.isEmpty()) realPath = "/"
@@ -151,7 +155,9 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		ensureBackgroundThread {
 			if(activity?.isDestroyed == false && activity?.isFinishing == false) {
 				val config = context!!.config
-				if(context.isRestrictedSAFOnlyRoot(path)) {
+				if(context.isRemotePath(path)) {
+					getRemoteItemsOf(path, callback)
+				} else if(context.isRestrictedSAFOnlyRoot(path)) {
 					activity?.runOnUiThread {hideProgressBar()}
 					activity?.handleAndroidSAFDialog(path, openInSystemAppAllowed = true) {
 						if(!it) {
@@ -177,6 +183,15 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		}
 	}
 
+	private fun getRemoteItemsOf(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
+		val items = arrayListOf(
+			ListItem("$path/test.txt", "test.txt", false, 0, 0, 0, false, false),
+			ListItem("$path/Test Dir", "Test Dir", true, 0, 0, 0, false, false),
+			ListItem("$path/hi.png", "hi.png", false, 0, 0, 0, false, false)
+		)
+		callback(path, items)
+	}
+
 	private fun getRegularItemsOf(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
 		val items = ArrayList<ListItem>()
 		val files = File(path).listFiles()?.filterNotNull()
@@ -191,24 +206,19 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 		for(file in files) {
 			val listItem = getListItemFromFile(file, isSortingBySize, lastModifieds)
-			if(listItem != null) {
-				if(wantedMimeTypes.any {isProperMimeType(it, file.absolutePath, file.isDirectory)}) {
-					items.add(listItem)
-				}
+			if(listItem != null && wantedMimeTypes.any {isProperMimeType(it, file.absolutePath, file.isDirectory)}) {
+				items.add(listItem)
 			}
 		}
 
 		//Send out the initial item list asap, get proper child count asynchronously as it can be slow
 		callback(path, items)
 
-		if(getProperChildCount) {
-			items.filter {it.mIsDirectory}.forEach {
-				if(context != null) {
-					val childrenCount = it.getDirectChildrenCount(activity as BaseSimpleActivity, showHidden)
-					if(childrenCount != 0) {
-						activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(it.mPath, childrenCount)}
-					}
-				}
+		if(getProperChildCount) items.filter {it.mIsDirectory}.forEach {
+			if(context != null) {
+				val childrenCount = it.getDirectChildrenCount(activity as BaseSimpleActivity, showHidden)
+				if(childrenCount != 0)
+					activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(it.mPath, childrenCount)}
 			}
 		}
 	}
@@ -387,7 +397,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	override fun breadcrumbClicked(id: Int) {
 		if(id == 0) {
-			StoragePickerDialog(activity as SimpleActivity, currentPath, context!!.config.enableRootAccess, true) {
+			StoragePickerDialog(activity as SimpleActivity, currentPath, context!!.config.enableRootAccess) {
 				getRecyclerAdapter()?.finishActMode()
 				openPath(it)
 			}

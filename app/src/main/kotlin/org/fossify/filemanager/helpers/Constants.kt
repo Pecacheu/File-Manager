@@ -1,5 +1,6 @@
 package org.fossify.filemanager.helpers
 
+import android.security.keystore.KeyProperties
 import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
@@ -9,7 +10,13 @@ import org.fossify.filemanager.models.ListItem
 
 const val MAX_COLUMN_COUNT = 15
 
-// shared preferences
+//Keys
+const val KEYSTORE = "AndroidKeyStore"
+const val KEY_TYPE = KeyProperties.KEY_ALGORITHM_EC
+const val KEY_NAME = "remote_key"
+const val CIPHER = "AES_256"
+
+//Shared Prefs
 const val SHOW_HIDDEN = "show_hidden"
 const val PRESS_BACK_TWICE = "press_back_twice"
 const val HOME_FOLDER = "home_folder"
@@ -23,8 +30,9 @@ const val FILE_LANDSCAPE_COLUMN_CNT = "file_landscape_column_cnt"
 const val DISPLAY_FILE_NAMES = "display_file_names"
 const val SHOW_TABS = "show_tabs"
 const val LAST_PATH = "last_path"
+const val REMOTES = "remotes"
 
-// open as
+//Open As
 const val OPEN_AS_DEFAULT = 0
 const val OPEN_AS_TEXT = 1
 const val OPEN_AS_IMAGE = 2
@@ -33,7 +41,6 @@ const val OPEN_AS_VIDEO = 4
 const val OPEN_AS_OTHER = 5
 
 const val ALL_TABS_MASK = TAB_FILES or TAB_FAVORITES or TAB_RECENT_FILES or TAB_STORAGE_ANALYSIS
-
 const val IMAGES = "images"
 const val VIDEOS = "videos"
 const val AUDIO = "audio"
@@ -44,8 +51,9 @@ const val SHOW_MIMETYPE = "show_mimetype"
 
 const val VOLUME_NAME = "volume_name"
 const val PRIMARY_VOLUME_NAME = "external_primary"
+const val REMOTE_URI = "r@"
 
-// what else should we count as an audio except "audio/*" mimetype
+//What else should we count as an audio except "audio/*" mimetype
 val extraAudioMimeTypes = arrayListOf("application/ogg")
 val extraDocumentMimeTypes = arrayListOf("application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/javascript")

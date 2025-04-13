@@ -28,7 +28,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import com.stericson.RootTools.RootTools
-import main.org.fossify.commons.views.ItemsList
+import org.fossify.filemanager.views.ItemsList
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.io.inputstream.ZipInputStream
 import net.lingala.zip4j.io.outputstream.ZipOutputStream
@@ -185,6 +185,7 @@ class ItemsAdapter(
 		}
 	}
 
+	//TODO Fix all below for remote
 	override fun actionItemPressed(id: Int) {
 		if(selectedKeys.isEmpty()) return
 		when(id) {
@@ -428,9 +429,7 @@ class ItemsAdapter(
 	}
 
 	private fun tryMoveFiles() {
-		activity.handleDeletePasswordProtection {
-			copyMoveTo(false)
-		}
+		activity.handleDeletePasswordProtection {copyMoveTo(false)}
 	}
 
 	fun copyMoveTo(isCopyOperation: Boolean) {
@@ -450,9 +449,7 @@ class ItemsAdapter(
 							if(activity.isRestrictedSAFOnlyRoot(sourcePath) && activity.getDoesFilePathExist(sourcePath)) {
 								activity.deleteFile(sourceFileDir, true) {
 									listener?.refreshFragment()
-									activity.runOnUiThread {
-										finishActMode()
-									}
+									activity.runOnUiThread {finishActMode()}
 								}
 							} else {
 								val sourceFile = File(sourcePath)
@@ -461,9 +458,7 @@ class ItemsAdapter(
 									val sourceFolder = sourceFile.toFileDirItem(activity)
 									activity.deleteFile(sourceFolder, true) {
 										listener?.refreshFragment()
-										activity.runOnUiThread {
-											finishActMode()
-										}
+										activity.runOnUiThread {finishActMode()}
 									}
 								} else {
 									listener?.refreshFragment()
@@ -518,9 +513,7 @@ class ItemsAdapter(
 								listener?.refreshFragment()
 								finishActMode()
 							}
-						} else {
-							activity.toast(R.string.compressing_failed)
-						}
+						} else activity.toast(R.string.compressing_failed)
 					}
 				}
 			}
@@ -543,9 +536,7 @@ class ItemsAdapter(
 							activity.toast(R.string.decompression_successful)
 							listener?.refreshFragment()
 							finishActMode()
-						} else {
-							activity.toast(R.string.decompressing_failed)
-						}
+						} else activity.toast(R.string.decompressing_failed)
 					}
 				}
 			}
@@ -573,11 +564,9 @@ class ItemsAdapter(
 						}
 					}
 				} catch(zipException: ZipException) {
-					if(zipException.type == ZipException.Type.WRONG_PASSWORD) {
+					if(zipException.type == ZipException.Type.WRONG_PASSWORD)
 						activity.showErrorToast(activity.getString(org.fossify.commons.R.string.invalid_password))
-					} else {
-						activity.showErrorToast(zipException)
-					}
+					else activity.showErrorToast(zipException)
 				} catch(exception: Exception) {
 					activity.showErrorToast(exception)
 				}
@@ -613,7 +602,6 @@ class ItemsAdapter(
 								}
 							}
 						} else if(!doesPathExist) extractEntry(newPath, entry, zipInputStream)
-
 						entry = zipInputStream.nextEntry
 					}
 					callback(true)
@@ -819,9 +807,7 @@ class ItemsAdapter(
 		super.onViewRecycled(holder)
 		if(!activity.isDestroyed && !activity.isFinishing) {
 			val icon = Binding.getByItemViewType(holder.itemViewType, isListViewType).bind(holder.itemView).itemIcon
-			if(icon != null) {
-				Glide.with(activity).clear(icon)
-			}
+			if(icon != null) Glide.with(activity).clear(icon)
 		}
 	}
 
@@ -871,9 +857,12 @@ class ItemsAdapter(
 						.error(drawable)
 						.transform(CenterCrop(), RoundedCorners(10))
 
+					//TODO Fix icons for remote
 					val itemToLoad = getImagePathToLoad(listItem.path)
 					if(!activity.isDestroyed && itemIcon != null) {
-						Glide.with(activity).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(options).into(itemIcon!!)
+						Glide.with(activity).load(itemToLoad)
+							.transition(DrawableTransitionOptions.withCrossFade())
+							.apply(options).into(itemIcon!!)
 					}
 				}
 			}

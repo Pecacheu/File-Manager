@@ -1,7 +1,5 @@
 package org.fossify.filemanager.activities
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -24,7 +22,6 @@ import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ActivityReadTextBinding
 import org.fossify.filemanager.dialogs.SaveAsDialog
 import org.fossify.filemanager.extensions.openPath
-import org.fossify.filemanager.views.GestureEditText
 import java.io.File
 import java.io.OutputStream
 
@@ -85,7 +82,7 @@ class ReadTextActivity: SimpleActivity() {
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
 		super.onActivityResult(requestCode, resultCode, resultData)
-		if(requestCode == SELECT_SAVE_FILE_INTENT && resultCode == Activity.RESULT_OK && resultData != null && resultData.data != null) {
+		if(requestCode == SELECT_SAVE_FILE_INTENT && resultCode == RESULT_OK && resultData != null && resultData.data != null) {
 			val outputStream = contentResolver.openOutputStream(resultData.data!!)
 			val selectedFilePath = getRealPathFromURI(intent.data!!)
 			saveTextContent(outputStream, selectedFilePath == filePath)
@@ -131,25 +128,18 @@ class ReadTextActivity: SimpleActivity() {
 
 	private fun saveText() {
 		if(filePath.isEmpty()) filePath = getRealPathFromURI(intent.data!!)?:""
-		if(filePath.isEmpty()) {
-			SaveAsDialog(this, filePath, true) {_, filename ->
+		SaveAsDialog(this, filePath, true) {path, filename ->
+			if(filePath.isEmpty()) {
 				Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
 					type = "text/plain"
 					putExtra(Intent.EXTRA_TITLE, filename)
 					addCategory(Intent.CATEGORY_OPENABLE)
 					startActivityForResult(this, SELECT_SAVE_FILE_AND_EXIT_INTENT)
 				}
-			}
-		} else {
-			SaveAsDialog(this, filePath, false) {path, _ ->
-				if(hasStoragePermission()) {
-					val file = File(path)
-					getFileOutputStream(file.toFileDirItem(this), true) {
-						val shouldOverwriteOriginalText = path == filePath
-						saveTextContent(it, shouldOverwriteOriginalText)
-					}
-				} else toast(org.fossify.commons.R.string.no_storage_permissions)
-			}
+			} else if(hasStoragePermission()) {
+				val file = File(path)
+				getFileOutputStream(file.toFileDirItem(this), true) {saveTextContent(it, path == filePath)}
+			} else toast(org.fossify.commons.R.string.no_storage_permissions)
 		}
 	}
 
@@ -181,7 +171,7 @@ class ReadTextActivity: SimpleActivity() {
 		val jobName = if(filePath.isNotEmpty()) filePath.getFilenameFromPath()
 		else getString(R.string.app_name)
 		val printAdapter = webView.createPrintDocumentAdapter(jobName)
-		(getSystemService(Context.PRINT_SERVICE) as? PrintManager)?.apply {
+		(getSystemService(PRINT_SERVICE) as? PrintManager)?.apply {
 			print(jobName, printAdapter, PrintAttributes.Builder().build())
 		}
 	}
@@ -209,8 +199,7 @@ class ReadTextActivity: SimpleActivity() {
 		}
 		runOnUiThread {
 			binding.readTextView.setText(originalText)
-			if(originalText.isNotEmpty()) hideKeyboard()
-			else showKeyboard(binding.readTextView)
+			showKeyboard(binding.readTextView)
 		}
 	}
 
@@ -233,31 +222,24 @@ class ReadTextActivity: SimpleActivity() {
 
 	private fun searchTextChanged(text: String) {
 		binding.readTextView.text?.clearBackgroundSpans()
-		if(text.isNotBlank() && text.length > 1) {
+		if(text.isNotBlank()) {
 			searchMatches = binding.readTextView.text.toString().searchMatches(text)
 			binding.readTextView.highlightText(text, getProperPrimaryColor())
 		}
-		if(searchMatches.isNotEmpty()) {
-			binding.readTextView.requestFocus()
-			binding.readTextView.setSelection(searchMatches.getOrNull(searchIndex)?:0)
-		}
-		searchQueryET.postDelayed({
-			searchQueryET.requestFocus()
-		}, 50)
+		selectSearchMatch()
+		searchQueryET.postDelayed({searchQueryET.requestFocus()}, 50)
 	}
 
 	private fun goToPrevSearchResult() {
 		if(searchIndex > 0) searchIndex--
 		else searchIndex = searchMatches.lastIndex
-		selectSearchMatch(binding.readTextView)
+		selectSearchMatch()
 	}
-
 	private fun goToNextSearchResult() {
 		if(searchIndex < searchMatches.lastIndex) searchIndex++
 		else searchIndex = 0
-		selectSearchMatch(binding.readTextView)
+		selectSearchMatch()
 	}
-
 	private fun closeSearch() {
 		searchQueryET.text?.clear()
 		isSearchActive = false
@@ -265,10 +247,10 @@ class ReadTextActivity: SimpleActivity() {
 		hideKeyboard()
 	}
 
-	private fun selectSearchMatch(editText: GestureEditText) {
+	private fun selectSearchMatch() {
 		if(searchMatches.isNotEmpty()) {
-			editText.requestFocus()
-			editText.setSelection(searchMatches.getOrNull(searchIndex)?:0)
+			binding.readTextView.requestFocus()
+			binding.readTextView.setSelection(searchMatches.getOrNull(searchIndex)?:0)
 		} else hideKeyboard()
 	}
 }

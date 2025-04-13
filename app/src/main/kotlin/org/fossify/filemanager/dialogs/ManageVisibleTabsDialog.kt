@@ -22,18 +22,14 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
 			put(TAB_RECENT_FILES, R.id.manage_visible_tabs_recent_files)
 			put(TAB_STORAGE_ANALYSIS, R.id.manage_visible_tabs_storage_analysis)
 		}
-
 		val showTabs = activity.config.showTabs
 		for((key, value) in tabs) {
 			binding.root.findViewById<MyAppCompatCheckbox>(value).isChecked = showTabs and key != 0
 		}
-
 		activity.getAlertDialogBuilder()
 			.setPositiveButton(org.fossify.commons.R.string.ok) {dialog, which -> dialogConfirmed()}
 			.setNegativeButton(org.fossify.commons.R.string.cancel, null)
-			.apply {
-				activity.setupDialogStuff(binding.root, this)
-			}
+			.apply {activity.setupDialogStuff(binding.root, this)}
 	}
 
 	private fun dialogConfirmed() {

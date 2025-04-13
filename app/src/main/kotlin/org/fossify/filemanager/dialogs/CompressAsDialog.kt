@@ -5,6 +5,7 @@ import androidx.appcompat.app.AlertDialog
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
+import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogCompressAsBinding
 import org.fossify.filemanager.extensions.config

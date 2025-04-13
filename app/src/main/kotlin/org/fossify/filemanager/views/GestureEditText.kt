@@ -1,5 +1,6 @@
 package org.fossify.filemanager.views
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.util.TypedValue
@@ -12,9 +13,9 @@ import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.filemanager.extensions.config
+import kotlin.math.roundToInt
 
-// inspired by
-// https://github.com/alexvasilkov/GestureViews/blob/f0a4c266e31dcad23bd0d9013531bc1c501b9c9f/sample/src/main/java/com/alexvasilkov/gestures/sample/ex/custom/text/GestureTextView.java
+//Inspired by https://github.com/alexvasilkov/GestureViews/blob/f0a4c266e31dcad23bd0d9013531bc1c501b9c9f/sample/src/main/java/com/alexvasilkov/gestures/sample/ex/custom/text/GestureTextView.java
 class GestureEditText: AppCompatEditText, GestureView {
 	constructor(context: Context): super(context)
 	constructor(context: Context, attrs: AttributeSet): super(context, attrs)
@@ -44,6 +45,7 @@ class GestureEditText: AppCompatEditText, GestureView {
 
 	override fun getController() = controller
 
+	@SuppressLint("ClickableViewAccessibility")
 	override fun onTouchEvent(event: MotionEvent): Boolean {
 		controller.onTouch(this, event)
 		return super.onTouchEvent(event)
@@ -70,7 +72,7 @@ class GestureEditText: AppCompatEditText, GestureView {
 	private fun applyState(state: State) {
 		var size = origSize*state.zoom
 		val maxSize = origSize*controller.stateController.getMaxZoom(state)
-		size = Math.round(origSize.coerceAtLeast(size.coerceAtMost(maxSize))).toFloat()
+		size = origSize.coerceAtLeast(size.coerceAtMost(maxSize)).roundToInt().toFloat()
 		if(!State.equals(this.size, size)) {
 			this.size = size
 			super.setTextSize(TypedValue.COMPLEX_UNIT_PX, size)

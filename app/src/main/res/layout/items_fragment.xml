@@ -16,7 +16,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content">
 
-			<org.fossify.commons.views.Breadcrumbs
+			<org.fossify.filemanager.views.Breadcrumbs
 				android:id="@+id/breadcrumbs"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
@@ -80,7 +80,7 @@
 					android:layout_height="wrap_content"
 					app:supportSwipeToRefresh="true">
 
-					<main.org.fossify.commons.views.ItemsList
+					<org.fossify.filemanager.views.ItemsList
 						android:id="@+id/items_list"
 						android:layout_width="match_parent"
 						android:layout_height="match_parent"

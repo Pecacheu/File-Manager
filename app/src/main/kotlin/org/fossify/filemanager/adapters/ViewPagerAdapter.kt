@@ -1,6 +1,7 @@
 package org.fossify.filemanager.adapters
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.view.LayoutInflater
@@ -27,31 +28,29 @@ class ViewPagerAdapter(private val activity: SimpleActivity, private var tabsToS
 	}
 
 	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-		return ViewHolder(LayoutInflater.from(parent.context).inflate(viewType, parent, false))
-	}
+		val holder = ViewHolder(LayoutInflater.from(parent.context).inflate(viewType, parent, false))
 
-	override fun onBindViewHolder(holder: ViewHolder, idx: Int) {
+		val isPickRingtoneIntent = activity.intent.action == RingtoneManager.ACTION_RINGTONE_PICKER
+		val isGetContentIntent = activity.intent.action == Intent.ACTION_GET_CONTENT || activity.intent.action == Intent.ACTION_PICK
+		val isCreateDocumentIntent = activity.intent.action == Intent.ACTION_CREATE_DOCUMENT
+		val allowPickingMultipleIntent = activity.intent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+		val getContentMimeType = if(isGetContentIntent) activity.intent.type?:"" else ""
+		val passedExtraMimeTypes = activity.intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
+		val extraMimeTypes = if(isGetContentIntent && passedExtraMimeTypes != null) passedExtraMimeTypes else null
+
 		(holder.itemView as MyViewPagerFragment<*>).apply {
-			val isPickRingtoneIntent = activity.intent.action == RingtoneManager.ACTION_RINGTONE_PICKER
-			val isGetContentIntent = activity.intent.action == Intent.ACTION_GET_CONTENT || activity.intent.action == Intent.ACTION_PICK
-			val isCreateDocumentIntent = activity.intent.action == Intent.ACTION_CREATE_DOCUMENT
-			val allowPickingMultipleIntent = activity.intent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-			val getContentMimeType = if(isGetContentIntent) activity.intent.type?:"" else ""
-
-			val passedExtraMimeTypes = activity.intent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES)
-			val extraMimeTypes = if(isGetContentIntent && passedExtraMimeTypes != null) passedExtraMimeTypes else null
-
 			this.isGetRingtonePicker = isPickRingtoneIntent
 			this.isPickMultipleIntent = allowPickingMultipleIntent
 			this.isGetContentIntent = isGetContentIntent
 			wantedMimeTypes = extraMimeTypes?.toList()?:listOf(getContentMimeType)
 			updateIsCreateDocumentIntent(isCreateDocumentIntent)
-
 			setupFragment(activity)
-			onResume(activity.getProperTextColor())
+			(holder.itemView as MyViewPagerFragment<*>).onResume(activity.getProperTextColor())
 		}
+		return holder
 	}
 
+	override fun onBindViewHolder(holder: ViewHolder, idx: Int) {}
 	override fun getItemCount() = tabsToShow.size
 
 	override fun getItemViewType(idx: Int): Int {
