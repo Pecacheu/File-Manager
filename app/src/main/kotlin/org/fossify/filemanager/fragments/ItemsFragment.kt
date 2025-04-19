@@ -12,6 +12,7 @@ import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
+import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
@@ -189,7 +190,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		val shouldGetCnt = context.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
 		try {
 			val r = context.config.getRemoteForPath(path)
-			if(r == null) throw Error("Remote share no longer exists") //TODO Resource string
+			if(r == null) throw Error(context.getString(R.string.no_remote_err))
 			r.connect()
 			val items = r.listDir(path, context.config.shouldShowHidden())
 			callback(path, items)
@@ -197,7 +198,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		} catch(e: Throwable) {
 			var ne = e
 			if(e is SMBApiException) ne = when(e.status) {
-				NtStatus.STATUS_LOGON_FAILURE -> Error("Login failed. Are your credentials correct?", e) //TODO Resource string
+				NtStatus.STATUS_LOGON_FAILURE -> Error(context.getString(R.string.login_err), e)
 				else -> e
 			}
 			activity?.error(ne)

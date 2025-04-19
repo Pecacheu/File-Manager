@@ -68,10 +68,12 @@ internal fun OtherSection(
 }
 
 @Composable
-internal fun AboutSection(setupFAQ: Boolean, setupKnownIssues: Boolean, onFAQClick: ()->Unit, onKnownIssuesClick: ()->Unit) {
+internal fun AboutSection(setupFAQ: Boolean, setupKnownIssues: Boolean, onFAQClick: ()->Unit, onKnownIssuesClick: ()->Unit, onKbHintsClick: ()->Unit) {
 	SettingsGroup(title = {
 		SettingsTitleTextComponent(text = stringResource(id = R.string.support), modifier = titleStartPadding)
 	}) {
+		TwoLinerTextItem(click = onKbHintsClick, text = stringResource(id = org.fossify.filemanager.R.string.kb_hints),
+			icon = R.drawable.ic_copy_vector)
 		if(setupFAQ) TwoLinerTextItem(click = onFAQClick, text = stringResource(id = R.string.frequently_asked_questions),
 			icon = R.drawable.ic_help_outline_vector)
 		if(setupKnownIssues) TwoLinerTextItem(click = onKnownIssuesClick, text = stringResource(R.string.known_issues),
@@ -107,16 +109,11 @@ internal fun TwoLinerTextItem(text: String, icon: Int, click: ()->Unit) {
 @Composable
 private fun AboutScreenPreview() {
 	AppThemeSurface {
-		AboutScreen(goBack = {}, helpUsSection = {
-			HelpUsSection(onRateUsClick = {}, onInviteClick = {}, onContributorsClick = {}, showRateUs = true, showInvite = true, showDonate = true,
-				onDonateClick = {})
-		}, aboutSection = {
-			AboutSection(setupFAQ = true, setupKnownIssues = true, onFAQClick = {}, onKnownIssuesClick = {})
-		}, socialSection = {
-			SocialSection(onGithubClick = {}, onRedditClick = {}, onTelegramClick = {})
-		}) {
-			OtherSection(showMoreApps = true, onMoreAppsClick = {}, onPrivacyPolicyClick = {}, onLicenseClick = {}, versionName = "5.0.4",
-				packageName = "org.fossify.commons.samples", onVersionClick = {})
+		AboutScreen(goBack = {},
+			helpUsSection = {HelpUsSection({}, {}, {}, true, true, true, {})},
+			aboutSection = {AboutSection(true, true, {}, {}, {})},
+			socialSection = {SocialSection({}, {}, {})}) {
+			OtherSection(true, {}, {}, {}, "5.0.4", "org.fossify.commons.samples", {})
 		}
 	}
 }

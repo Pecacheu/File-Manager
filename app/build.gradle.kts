@@ -127,4 +127,5 @@ dependencies {
 	implementation(libs.androidx.activity.compose)
 	implementation(libs.androidx.material3.android)
 	implementation(libs.smbj)
+	debugImplementation(libs.androidx.ui.tooling)
 }

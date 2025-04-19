@@ -634,8 +634,8 @@ class MainActivity: SimpleActivity() {
 				try {
 					r.setPwd("testpass")
 					config.setRemotes()
-				} catch(e: Throwable) { //TODO Resource string
-					if(e is Remote.KeyException) error(e, "Clear encryption keys? (This will reset all passwords)") {
+				} catch(e: Throwable) {
+					if(e is Remote.KeyException) error(e, getString(R.string.clear_keys)) {
 						if(!it) return@error
 						Remote.clearKeys()
 						for(r in config.getRemotes()) r.value.pwdKey = ""

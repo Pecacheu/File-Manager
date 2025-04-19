@@ -26,8 +26,6 @@ import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FAQItem
 
-//TODO Add keyboard controls to about
-
 class AboutActivityAlt: BaseComposeActivity() {
 	private val appName get() = intent.getStringExtra(APP_NAME)?:""
 	private var firstVersionClickTS = 0L
@@ -59,7 +57,7 @@ class AboutActivityAlt: BaseComposeActivity() {
 					val setupFAQ = showFAQ()
 					if(setupFAQ || showGithubRelations) {
 						AboutSection(setupFAQ = setupFAQ, setupKnownIssues = showGithubRelations, onFAQClick = ::launchFAQActivity,
-							onKnownIssuesClick = ::launchIssueTracker)
+							onKnownIssuesClick = ::launchIssueTracker, onKbHintsClick = ::showKbHints)
 					}
 				}, socialSection = {
 					SocialSection(onGithubClick = ::onGithubClick, onRedditClick = ::onRedditClick, onTelegramClick = ::onTelegramClick)
@@ -124,6 +122,10 @@ class AboutActivityAlt: BaseComposeActivity() {
 
 	private fun launchIssueTracker() {
 		launchViewIntent("${getGithubUrl()}/issues?q=is:open+is:issue+label:bug")
+	}
+
+	private fun showKbHints() {
+		startActivity(Intent(applicationContext, KbHints::class.java))
 	}
 
 	private fun onRateUsClick(showConfirmationAdvancedDialog: ()->Unit, showRateStarsDialog: ()->Unit) {

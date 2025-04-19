@@ -126,6 +126,12 @@
 			android:label="@string/about"
 			android:parentActivityName=".activities.MainActivity"/>
 		<activity
+			android:name=".about.KbHints"
+			android:configChanges="orientation"
+			android:exported="false"
+			android:label="@string/about"
+			android:parentActivityName=".about.AboutActivityAlt"/>
+		<activity
 			android:name="org.fossify.commons.activities.CustomizationActivity"
 			android:configChanges="orientation"
 			android:exported="false"
