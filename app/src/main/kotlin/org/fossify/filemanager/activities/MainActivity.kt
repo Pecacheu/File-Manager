@@ -14,46 +14,7 @@ import com.stericson.RootTools.RootTools
 import me.grantland.widget.AutofitHelper
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
-import org.fossify.commons.extensions.appLaunched
-import org.fossify.commons.extensions.appLockManager
-import org.fossify.commons.extensions.beGoneIf
-import org.fossify.commons.extensions.checkWhatsNew
-import org.fossify.commons.extensions.getBottomNavigationBackgroundColor
-import org.fossify.commons.extensions.getFilePublicUri
-import org.fossify.commons.extensions.getMimeType
-import org.fossify.commons.extensions.getProperBackgroundColor
-import org.fossify.commons.extensions.getProperTextColor
-import org.fossify.commons.extensions.getRealPathFromURI
-import org.fossify.commons.extensions.getStorageDirectories
-import org.fossify.commons.extensions.getTimeFormat
-import org.fossify.commons.extensions.handleHiddenFolderPasswordProtection
-import org.fossify.commons.extensions.hasOTGConnected
-import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.extensions.hideKeyboard
-import org.fossify.commons.extensions.internalStoragePath
-import org.fossify.commons.extensions.isPathOnOTG
-import org.fossify.commons.extensions.isPathOnSD
-import org.fossify.commons.extensions.onGlobalLayout
-import org.fossify.commons.extensions.onTabSelectionChanged
-import org.fossify.commons.extensions.sdCardPath
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toast
-import org.fossify.commons.extensions.updateBottomTabItemColors
-import org.fossify.commons.extensions.viewBinding
-import org.fossify.commons.helpers.LICENSE_AUTOFITTEXTVIEW
-import org.fossify.commons.helpers.LICENSE_GESTURE_VIEWS
-import org.fossify.commons.helpers.LICENSE_GLIDE
-import org.fossify.commons.helpers.LICENSE_PATTERN
-import org.fossify.commons.helpers.LICENSE_REPRINT
-import org.fossify.commons.helpers.LICENSE_ZIP4J
-import org.fossify.commons.helpers.PERMISSION_WRITE_STORAGE
-import org.fossify.commons.helpers.TAB_FAVORITES
-import org.fossify.commons.helpers.TAB_FILES
-import org.fossify.commons.helpers.TAB_RECENT_FILES
-import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
-import org.fossify.commons.helpers.VIEW_TYPE_GRID
-import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.helpers.isRPlus
+import org.fossify.commons.extensions.*
 import org.fossify.commons.models.FAQItem
 import org.fossify.commons.models.RadioItem
 import org.fossify.commons.models.Release
@@ -64,33 +25,20 @@ import org.fossify.filemanager.databinding.ActivityMainBinding
 import org.fossify.filemanager.dialogs.ChangeSortingDialog
 import org.fossify.filemanager.dialogs.ChangeViewTypeDialog
 import org.fossify.filemanager.dialogs.InsertFilenameDialog
-import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.fragments.ItemsFragment
 import org.fossify.filemanager.fragments.MyViewPagerFragment
 import org.fossify.filemanager.fragments.RecentsFragment
 import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.fragments.StorageFragment
-import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
-import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
 import androidx.core.net.toUri
 import androidx.viewpager2.widget.ViewPager2
 import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.helpers.APP_FAQ
-import org.fossify.commons.helpers.APP_ICON_IDS
-import org.fossify.commons.helpers.APP_LAUNCHER_NAME
-import org.fossify.commons.helpers.APP_LICENSES
-import org.fossify.commons.helpers.APP_NAME
-import org.fossify.commons.helpers.APP_PACKAGE_NAME
-import org.fossify.commons.helpers.APP_REPOSITORY_NAME
-import org.fossify.commons.helpers.APP_VERSION_NAME
+import org.fossify.commons.helpers.*
 import org.fossify.filemanager.about.AboutActivityAlt
-import org.fossify.filemanager.extensions.UUID
-import org.fossify.filemanager.extensions.idFromRemotePath
-import org.fossify.filemanager.extensions.isRemotePath
-import org.fossify.filemanager.helpers.Remote
+import org.fossify.filemanager.extensions.*
+import org.fossify.filemanager.helpers.*
 import java.util.Date
 import java.util.Timer
 import kotlin.concurrent.fixedRateTimer
@@ -378,33 +326,26 @@ class MainActivity: SimpleActivity() {
 
 	private fun handleStoragePermission(callback: (granted: Boolean)->Unit) {
 		actionOnPermission = null
-		if(hasStoragePermission()) {
-			callback(true)
-		} else {
-			if(isRPlus()) {
-				ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt, org.fossify.commons.R.string.ok, 0, false) {success ->
-					if(success) {
-						isAskingPermissions = true
-						actionOnPermission = callback
-						try {
-							val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-							intent.addCategory("android.intent.category.DEFAULT")
-							intent.data = "package:$packageName".toUri()
-							startActivityForResult(intent, MANAGE_STORAGE_RC)
-						} catch(e: Exception) {
-							showErrorToast(e)
-							val intent = Intent()
-							intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
-							startActivityForResult(intent, MANAGE_STORAGE_RC)
-						}
-					} else {
-						finish()
+		if(hasStoragePermission()) callback(true)
+		else if(isRPlus()) {
+			ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt, org.fossify.commons.R.string.ok, 0, false) {success ->
+				if(success) {
+					isAskingPermissions = true
+					actionOnPermission = callback
+					try {
+						val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+						intent.addCategory("android.intent.category.DEFAULT")
+						intent.data = "package:$packageName".toUri()
+						startActivityForResult(intent, MANAGE_STORAGE_RC)
+					} catch(e: Throwable) {
+						error(e)
+						val intent = Intent()
+						intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
+						startActivityForResult(intent, MANAGE_STORAGE_RC)
 					}
-				}
-			} else {
-				handlePermission(PERMISSION_WRITE_STORAGE, callback)
+				} else finish()
 			}
-		}
+		} else handlePermission(PERMISSION_WRITE_STORAGE, callback)
 	}
 
 	private fun initFileManager(refreshRecents: Boolean) {
@@ -669,7 +610,7 @@ class MainActivity: SimpleActivity() {
 			var badFavs = false
 			var noRemoteTest = config.getRemotes(true).isEmpty()
 			config.favorites.forEach {
-				val isBad = if(isRemotePath(it)) config.getRemote(idFromRemotePath(it)) == null
+				val isBad = if(isRemotePath(it)) config.getRemoteForPath(it) == null
 					else (!isPathOnOTG(it) && !isPathOnSD(it) && !File(it).exists())
 				if(isBad) {
 					Log.i("test", "Removed invalid fav $it")
@@ -677,11 +618,31 @@ class MainActivity: SimpleActivity() {
 					badFavs = true
 				}
 			}
-			if(noRemoteTest) { //TODO TEMP
-				val uid = UUID.genUUID()
-				config.addRemote(Remote(uid, "Test Remote", "192.168.1.1:5000", ""))
-				config.favorites.add("r@$uid:/Test Dir")
+			//TODO Temp stuff below
+			if(noRemoteTest) {
+				val r = Remote.newSMB("TestShare", "", "", "")
+				config.addRemote(r)
+				config.favorites.add("r@${r.id}:/Test Dir")
+				badFavs = true
 			}
+			val r = config.getRemotes().values.first()
+			r.host = "192.168.1.69"
+			r.usr = "chu"
+			r.share = "Share"
+			r.domain = ""
+			if(r.pwdKey.isEmpty()) {
+				try {
+					r.setPwd("testpass")
+					config.setRemotes()
+				} catch(e: Throwable) { //TODO Resource string
+					if(e is Remote.KeyException) error(e, "Clear encryption keys? (This will reset all passwords)") {
+						if(!it) return@error
+						Remote.clearKeys()
+						for(r in config.getRemotes()) r.value.pwdKey = ""
+						config.setRemotes()
+					} else error(e)
+				}
+			} else config.setRemotes()
 			if(badFavs) updateFavsList()
 		}
 	}

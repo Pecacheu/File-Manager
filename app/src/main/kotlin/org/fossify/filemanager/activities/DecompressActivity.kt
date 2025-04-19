@@ -17,7 +17,6 @@ import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getRealPathFromURI
 import org.fossify.commons.extensions.internalStoragePath
 import org.fossify.commons.extensions.isGone
-import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.NavigationIcon
@@ -26,6 +25,7 @@ import org.fossify.filemanager.R
 import org.fossify.filemanager.adapters.DecompressItemsAdapter
 import org.fossify.filemanager.databinding.ActivityDecompressBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.models.ListItem
 import java.io.BufferedInputStream
 import java.io.File
@@ -106,9 +106,7 @@ class DecompressActivity: SimpleActivity() {
 		try {
 			val listItems = getFolderItems(currentPath)
 			updateAdapter(listItems = listItems)
-		} catch(e: Exception) {
-			showErrorToast(e)
-		}
+		} catch(e: Throwable) {error(e)}
 	}
 
 	private fun updateAdapter(listItems: MutableList<ListItem>) {
@@ -137,7 +135,6 @@ class DecompressActivity: SimpleActivity() {
 			val zipInputStream = ZipInputStream(BufferedInputStream(inputStream!!))
 			if(password != null) zipInputStream.setPassword(password?.toCharArray())
 			val buffer = ByteArray(1024)
-
 			zipInputStream.use {
 				while(true) {
 					val entry = zipInputStream.nextEntry?:break
@@ -159,13 +156,10 @@ class DecompressActivity: SimpleActivity() {
 					}
 					fos!!.close()
 				}
-
 				toast(R.string.decompression_successful)
 				finish()
 			}
-		} catch(e: Exception) {
-			showErrorToast(e)
-		}
+		} catch(e: Throwable) {error(e)}
 	}
 
 	private fun getFolderItems(parent: String): ArrayList<ListItem> {
@@ -178,8 +172,8 @@ class DecompressActivity: SimpleActivity() {
 	private fun fillAllListItems(uri: Uri, callback: ()->Unit) = ensureBackgroundThread {
 		val inputStream = try {
 			contentResolver.openInputStream(uri)
-		} catch(e: Exception) {
-			showErrorToast(e)
+		} catch(e: Throwable) {
+			this.error(e)
 			return@ensureBackgroundThread
 		}
 

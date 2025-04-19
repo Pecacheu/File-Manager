@@ -7,6 +7,7 @@ import org.fossify.commons.extensions.isPathOnSD
 import org.fossify.commons.extensions.otgPath
 import org.fossify.commons.extensions.sdCardPath
 import org.fossify.filemanager.helpers.REMOTE_URI
+import java.util.Base64
 
 fun String.isZipFile() = endsWith(".zip", true)
 
@@ -19,3 +20,6 @@ fun String.getBasePath(context: Context): String {
 		else -> "/"
 	}
 }
+
+fun ByteArray.toBase64(): String = Base64.getUrlEncoder().withoutPadding().encodeToString(this)
+fun String.fromBase64(): ByteArray = Base64.getUrlDecoder().decode(this)

@@ -12,7 +12,6 @@ import org.fossify.commons.extensions.getDoesFilePathExist
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getStringValue
-import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.FileDirItem
@@ -22,6 +21,7 @@ import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.RecentsFragmentBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.io.File
@@ -126,29 +126,22 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 				if(cursor.moveToFirst()) {
 					do {
 						val path = cursor.getStringValue(FileColumns.DATA)
-						if(File(path).isDirectory) {
-							continue
-						}
+						if(File(path).isDirectory) continue
 
 						val name = cursor.getStringValue(FileColumns.DISPLAY_NAME)?:path.getFilenameFromPath()
 						val size = cursor.getLongValue(FileColumns.SIZE)
 						val modified = cursor.getLongValue(FileColumns.DATE_MODIFIED)*1000
 						val fileDirItem = ListItem(path, name, false, 0, size, modified, false, false)
 						if((showHidden || !name.startsWith(".")) && activity?.getDoesFilePathExist(path) == true) {
-							if(wantedMimeTypes.any {isProperMimeType(it, path, false)}) {
-								listItems.add(fileDirItem)
-							}
+							if(wantedMimeTypes.any {isProperMimeType(it, path, false)}) listItems.add(fileDirItem)
 						}
 					} while(cursor.moveToNext())
 				}
 			}
-		} catch(e: Exception) {
-			activity?.showErrorToast(e)
+		} catch(e: Throwable) {
+			activity?.error(e)
 		}
-
-		activity?.runOnUiThread {
-			callback(listItems)
-		}
+		activity?.runOnUiThread {callback(listItems)}
 	}
 
 	override fun getRecyclerAdapter() = binding.recentsList.adapter as? ItemsAdapter

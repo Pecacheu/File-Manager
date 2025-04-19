@@ -5,6 +5,8 @@ import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
 import androidx.recyclerview.widget.GridLayoutManager
+import com.hierynomus.mserref.NtStatus
+import com.hierynomus.mssmb2.SMBApiException
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
@@ -17,6 +19,7 @@ import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.dialogs.CreateNewItemDialog
 import org.fossify.filemanager.dialogs.StoragePickerDialog
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.humanizePath
@@ -55,14 +58,14 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	override fun onResume(textColor: Int) {
-		context!!.updateTextColors(this)
+		context.updateTextColors(this)
 		getRecyclerAdapter()?.apply {
 			updatePrimaryColor()
 			updateTextColor(textColor)
 			initDrawables()
 		}
 		binding.apply {
-			val properPrimaryColor = context!!.getProperPrimaryColor()
+			val properPrimaryColor = context.getProperPrimaryColor()
 			itemsFastscroller.updateColors(properPrimaryColor)
 			progressBar.setIndicatorColor(properPrimaryColor)
 			progressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
@@ -74,7 +77,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	override fun setupFontSize() {
 		getRecyclerAdapter()?.updateFontSizes()
-		if(currentPath != "") binding.breadcrumbs.updateFontSize(context!!.getTextSize(), false)
+		if(currentPath != "") binding.breadcrumbs.updateFontSize(context.getTextSize(), false)
 	}
 
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
@@ -88,20 +91,19 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 		scrollStates[currentPath] = getScrollState()!!
 		currentPath = realPath
-		showHidden = context!!.config.shouldShowHidden()
+		showHidden = context.config.shouldShowHidden()
 		showProgressBar()
 
 		getItems(currentPath) {originalPath, listItems ->
 			if(currentPath != originalPath) return@getItems
-			FileDirItem.sorting = context!!.config.getFolderSorting(currentPath)
+			FileDirItem.sorting = context.config.getFolderSorting(currentPath)
 			listItems.sort()
 
-			if(context!!.config.getFolderViewType(currentPath) == VIEW_TYPE_GRID && listItems.none {it.isSectionTitle}) {
+			if(context.config.getFolderViewType(currentPath) == VIEW_TYPE_GRID && listItems.none {it.isSectionTitle}) {
 				if(listItems.any {it.mIsDirectory} && listItems.any {!it.mIsDirectory}) {
 					val firstFileIndex = listItems.indexOfFirst {!it.mIsDirectory}
 					if(firstFileIndex != -1) {
-						val sectionTitle = ListItem("", "", false,
-							0, 0, 0, false, true)
+						val sectionTitle = ListItem("", "", false, 0, 0, 0, false, true)
 						listItems.add(firstFileIndex, sectionTitle)
 					}
 				}
@@ -112,7 +114,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 				(activity as? MainActivity)?.refreshMenuItems()
 				addItems(listItems, forceRefresh)
 				if(context != null) {
-					val viewType = context!!.config.getFolderViewType(currentPath)
+					val viewType = context.config.getFolderViewType(currentPath)
 					if(currentViewType != viewType) setupLayoutManager(viewType)
 				}
 				hideProgressBar()
@@ -128,7 +130,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 			storedItems = items
 			if(binding.itemsList.adapter == null) {
-				binding.breadcrumbs.updateFontSize(context!!.getTextSize(), true)
+				binding.breadcrumbs.updateFontSize(context.getTextSize(), true)
 			}
 
 			ItemsAdapter(activity as SimpleActivity, storedItems, this, binding.itemsList, isPickMultipleIntent, binding.itemsSwipeRefresh) {
@@ -154,7 +156,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private fun getItems(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
 		ensureBackgroundThread {
 			if(activity?.isDestroyed == false && activity?.isFinishing == false) {
-				val config = context!!.config
+				val config = context.config
 				if(context.isRemotePath(path)) {
 					getRemoteItemsOf(path, callback)
 				} else if(context.isRestrictedSAFOnlyRoot(path)) {
@@ -165,7 +167,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 							return@handleAndroidSAFDialog
 						}
 						val getProperChildCount = config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
-						context.getAndroidSAFFileItems(path, context.config.shouldShowHidden(), getProperChildCount) {fileItems ->
+						context.getAndroidSAFFileItems(path, config.shouldShowHidden(), getProperChildCount) {fileItems ->
 							callback(path, getListItemsFromFileDirItems(fileItems))
 						}
 					}
@@ -184,12 +186,23 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	private fun getRemoteItemsOf(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
-		val items = arrayListOf(
-			ListItem("$path/test.txt", "test.txt", false, 0, 0, 0, false, false),
-			ListItem("$path/Test Dir", "Test Dir", true, 0, 0, 0, false, false),
-			ListItem("$path/hi.png", "hi.png", false, 0, 0, 0, false, false)
-		)
-		callback(path, items)
+		val shouldGetCnt = context.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
+		try {
+			val r = context.config.getRemoteForPath(path)
+			if(r == null) throw Error("Remote share no longer exists") //TODO Resource string
+			r.connect()
+			val items = r.listDir(path, context.config.shouldShowHidden())
+			callback(path, items)
+			if(shouldGetCnt) getChildCount(items)
+		} catch(e: Throwable) {
+			var ne = e
+			if(e is SMBApiException) ne = when(e.status) {
+				NtStatus.STATUS_LOGON_FAILURE -> Error("Login failed. Are your credentials correct?", e) //TODO Resource string
+				else -> e
+			}
+			activity?.error(ne)
+			callback(path, ArrayList<ListItem>())
+		}
 	}
 
 	private fun getRegularItemsOf(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
@@ -200,9 +213,9 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			return
 		}
 
-		val isSortingBySize = context!!.config.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
-		val getProperChildCount = context!!.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
-		val lastModifieds = context!!.getFolderLastModifieds(path)
+		val isSortingBySize = context.config.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
+		val shouldGetCnt = context.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
+		val lastModifieds = context.getFolderLastModifieds(path)
 
 		for(file in files) {
 			val listItem = getListItemFromFile(file, isSortingBySize, lastModifieds)
@@ -211,14 +224,16 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			}
 		}
 
-		//Send out the initial item list asap, get proper child count asynchronously as it can be slow
+		//Send out initial item list asap, get proper child count asynchronously
 		callback(path, items)
+		if(shouldGetCnt) getChildCount(items)
+	}
 
-		if(getProperChildCount) items.filter {it.mIsDirectory}.forEach {
+	private fun getChildCount(items: ArrayList<ListItem>) {
+		items.filter {it.mIsDirectory}.forEach {
 			if(context != null) {
-				val childrenCount = it.getDirectChildrenCount(activity as BaseSimpleActivity, showHidden)
-				if(childrenCount != 0)
-					activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(it.mPath, childrenCount)}
+				val cnt = it.getChildCount(activity!!, showHidden)
+				if(cnt != 0) activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(it.mPath, cnt)}
 			}
 		}
 	}
@@ -284,12 +299,12 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 						files.forEach {
 							val parent = it.mPath.getParentPath()
 							if(!it.isDirectory && parent != previousParent && context != null) {
-								val sectionTitle = ListItem(parent, context!!.humanizePath(parent), false, 0, 0, 0, true, false)
+								val sectionTitle = ListItem(parent, context.humanizePath(parent), false, 0, 0, 0, true, false)
 								listItems.add(sectionTitle)
 								previousParent = parent
 							}
 							if(it.isDirectory) {
-								val sectionTitle = ListItem(it.path, context!!.humanizePath(it.path), true, 0, 0, 0, true, false)
+								val sectionTitle = ListItem(it.path, context.humanizePath(it.path), true, 0, 0, 0, true, false)
 								listItems.add(sectionTitle)
 								previousParent = parent
 							}
@@ -313,8 +328,8 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		val files = ArrayList<ListItem>()
 		if(context == null) return files
 
-		val sorting = context!!.config.getFolderSorting(path)
-		FileDirItem.sorting = context!!.config.getFolderSorting(currentPath)
+		val sorting = context.config.getFolderSorting(path)
+		FileDirItem.sorting = context.config.getFolderSorting(currentPath)
 		val isSortingBySize = sorting and SORT_BY_SIZE != 0
 		File(path).listFiles()?.sortedBy {it.isDirectory}?.forEach {
 			if(!showHidden && it.isHidden) return@forEach
@@ -381,7 +396,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	override fun columnCountChanged() {
-		(binding.itemsList.layoutManager as MyGridLayoutManager).spanCount = context!!.config.fileColumnCnt
+		(binding.itemsList.layoutManager as MyGridLayoutManager).spanCount = context.config.fileColumnCnt
 		(activity as? MainActivity)?.refreshMenuItems()
 		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
 	}
@@ -397,7 +412,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	override fun breadcrumbClicked(id: Int) {
 		if(id == 0) {
-			StoragePickerDialog(activity as SimpleActivity, currentPath, context!!.config.enableRootAccess) {
+			StoragePickerDialog(activity as SimpleActivity, currentPath, context.config.enableRootAccess) {
 				getRecyclerAdapter()?.finishActMode()
 				openPath(it)
 			}

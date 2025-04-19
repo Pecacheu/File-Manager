@@ -26,7 +26,7 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 		if(showRoot) storages.put(activity.getString(R.string.root), "/")
 
 		val rList = activity.config.getRemotes()
-		for(r in rList) storages.put(r.name, r.getPath())
+		for(r in rList) storages.put(r.value.name, r.value.basePath)
 
 		if(storages.size == 1) callback(storages.values.first())
 		else initDialog()

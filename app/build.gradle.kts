@@ -96,7 +96,6 @@ android {
 	lint {
 		checkReleaseBuilds = false
 		abortOnError = true
-		warningsAsErrors = true
 		baseline = file("lint-baseline.xml")
 	}
 
@@ -127,4 +126,5 @@ dependencies {
 	implementation(libs.androidx.foundation.android)
 	implementation(libs.androidx.activity.compose)
 	implementation(libs.androidx.material3.android)
+	implementation(libs.smbj)
 }

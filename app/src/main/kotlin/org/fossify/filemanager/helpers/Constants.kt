@@ -12,9 +12,13 @@ const val MAX_COLUMN_COUNT = 15
 
 //Keys
 const val KEYSTORE = "AndroidKeyStore"
-const val KEY_TYPE = KeyProperties.KEY_ALGORITHM_EC
 const val KEY_NAME = "remote_key"
-const val CIPHER = "AES_256"
+const val KEY_TYPE = KeyProperties.KEY_ALGORITHM_AES
+const val KEY_BLK = KeyProperties.BLOCK_MODE_GCM
+const val KEY_PAD = KeyProperties.ENCRYPTION_PADDING_NONE
+const val CIPHER = "$KEY_TYPE/$KEY_BLK/$KEY_PAD"
+const val KEY_IV = 12
+const val KEY_TAG = 12 * Byte.SIZE_BITS
 
 //Shared Prefs
 const val SHOW_HIDDEN = "show_hidden"

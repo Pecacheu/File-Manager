@@ -28,7 +28,6 @@ import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getStringValue
 import org.fossify.commons.extensions.queryCursor
-import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.SHORT_ANIMATION_DURATION
@@ -43,6 +42,7 @@ import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.ItemStorageVolumeBinding
 import org.fossify.filemanager.databinding.StorageFragmentBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.formatSizeThousand
 import org.fossify.filemanager.extensions.getAllVolumeNames
 import org.fossify.filemanager.helpers.ARCHIVES
@@ -118,9 +118,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					try {
 						val storageSettingsIntent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
 						activity.startActivity(storageSettingsIntent)
-					} catch(e: Exception) {
-						activity.showErrorToast(e)
-					}
+					} catch(e: Throwable) {activity.error(e)}
 				}
 
 				imagesHolder.setOnClickListener {launchMimetypeActivity(IMAGES, volumeName)}
@@ -411,7 +409,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					} while(cursor.moveToNext())
 				}
 			}
-		} catch(e: Exception) {context?.showErrorToast(e)}
+		} catch(e: Throwable) {activity?.error(e)}
 
 		return fileDirItems
 	}

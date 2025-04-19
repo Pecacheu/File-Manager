@@ -13,6 +13,7 @@ autofittextview = "0.2.1"
 gestureviews = "2.5.2"
 rootshell = "1.6"
 roottools = "87d3d22e93"
+smbj = "0.14.0"
 zip4j = "2.11.5"
 #Gradle
 gradlePlugins-agp = "8.9.1"
@@ -25,7 +26,7 @@ app-build-kotlinJVMTarget = "19"
 #versioning
 app-version-appId = "org.fossify.filemanager"
 app-version-versionCode = "3"
-app-version-versionName = "1.0.2"
+app-version-versionName = "1.0.3"
 runtimeAndroid = "1.7.8"
 uiAndroid = "1.7.8"
 foundationLayoutAndroid = "1.7.8"
@@ -43,6 +44,7 @@ autofittextview = { module = "me.grantland:autofittextview", version.ref = "auto
 gestureviews = { module = "com.alexvasilkov:gesture-views", version.ref = "gestureviews" }
 rootshell = { module = "com.github.Stericson:RootShell", version.ref = "rootshell" }
 roottools = { module = "com.github.naveensingh:RootTools", version.ref = "roottools" }
+smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
 zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
 androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
 androidx-ui-android = { group = "androidx.compose.ui", name = "ui-android", version.ref = "uiAndroid" }

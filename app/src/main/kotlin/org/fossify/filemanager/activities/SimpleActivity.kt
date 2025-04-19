@@ -19,10 +19,7 @@ open class SimpleActivity: BaseSimpleActivity() {
 	override fun getRepositoryName() = "File-Manager"
 
 	fun hasStoragePermission(): Boolean {
-		return if(isRPlus()) {
-			Environment.isExternalStorageManager()
-		} else {
-			hasPermission(PERMISSION_WRITE_STORAGE)
-		}
+		return if(isRPlus()) Environment.isExternalStorageManager()
+		else hasPermission(PERMISSION_WRITE_STORAGE)
 	}
 }

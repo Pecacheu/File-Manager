@@ -21,6 +21,7 @@ import org.fossify.commons.views.MyEditText
 import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ActivityReadTextBinding
 import org.fossify.filemanager.dialogs.SaveAsDialog
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.openPath
 import java.io.File
 import java.io.OutputStream
@@ -162,9 +163,7 @@ class ReadTextActivity: SimpleActivity() {
 				override fun onPageFinished(view: WebView, url: String) {createWebPrintJob(view)}
 			}
 			webView.loadData(binding.readTextView.text.toString(), "text/plain", "UTF-8")
-		} catch(e: Exception) {
-			showErrorToast(e)
-		}
+		} catch(e: Throwable) {error(e)}
 	}
 
 	private fun createWebPrintJob(webView: WebView) {
@@ -181,19 +180,16 @@ class ReadTextActivity: SimpleActivity() {
 			filePath = uri.path!!
 			val file = File(filePath)
 			if(file.exists()) {
-				try {file.readText()} catch(e: Exception) {showErrorToast(e); ""}
+				try {file.readText()} catch(e: Throwable) {error(e); ""}
 			} else {
 				toast(org.fossify.commons.R.string.unknown_error_occurred); ""
 			}
 		} else {
 			try {
 				contentResolver.openInputStream(uri)!!.bufferedReader().use {it.readText()}
-			} catch(e: OutOfMemoryError) {
-				showErrorToast(e.toString())
-				return
-			} catch(e: Exception) {
-				showErrorToast(e)
-				finish()
+			} catch(e: Throwable) {
+				this.error(e)
+				if(e !is OutOfMemoryError) finish()
 				return
 			}
 		}

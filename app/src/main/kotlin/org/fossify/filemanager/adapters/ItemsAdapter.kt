@@ -100,6 +100,7 @@ import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isZipFile
 import org.fossify.filemanager.extensions.setAs
@@ -372,7 +373,7 @@ class ItemsAdapter(
 					val bitmap = builder.get()
 					drawable.findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(0)
 					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, bitmap)
-				} catch(e: Exception) {
+				} catch(_: Throwable) {
 					val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
 					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, fileIcon)
 				}
@@ -563,13 +564,11 @@ class ItemsAdapter(
 							}
 						}
 					}
-				} catch(zipException: ZipException) {
-					if(zipException.type == ZipException.Type.WRONG_PASSWORD)
+				} catch(e: ZipException) {
+					if(e.type == ZipException.Type.WRONG_PASSWORD)
 						activity.showErrorToast(activity.getString(org.fossify.commons.R.string.invalid_password))
-					else activity.showErrorToast(zipException)
-				} catch(exception: Exception) {
-					activity.showErrorToast(exception)
-				}
+					else activity.showErrorToast(e)
+				} catch(e: Throwable) {activity.error(e)}
 			}
 		}
 	}
@@ -605,8 +604,8 @@ class ItemsAdapter(
 						entry = zipInputStream.nextEntry
 					}
 					callback(true)
-				} catch(e: Exception) {
-					activity.showErrorToast(e)
+				} catch(e: Throwable) {
+					activity.error(e)
 					callback(false)
 				}
 			}
@@ -616,8 +615,8 @@ class ItemsAdapter(
 	private fun extractEntry(newPath: String, entry: LocalFileHeader, zipInputStream: ZipInputStream) {
 		if(entry.isDirectory) {
 			if(!activity.createDirectorySync(newPath) && !activity.getDoesFilePathExist(newPath)) {
-				val error = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), newPath)
-				activity.showErrorToast(error)
+				val e = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), newPath)
+				activity.error(Error(e))
 			}
 		} else {
 			val fos = activity.getFileOutputStreamSync(newPath, newPath.getMimeType())
@@ -704,8 +703,8 @@ class ItemsAdapter(
 					}
 				}
 			}
-		} catch(exception: Exception) {
-			activity.showErrorToast(exception)
+		} catch(e: Throwable) {
+			activity.error(e)
 			return false
 		} finally {
 			res.close()

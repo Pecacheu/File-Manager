@@ -23,6 +23,7 @@ import org.fossify.filemanager.databinding.ActivityMimetypesBinding
 import org.fossify.filemanager.dialogs.ChangeSortingDialog
 import org.fossify.filemanager.dialogs.ChangeViewTypeDialog
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.helpers.*
 import org.fossify.filemanager.interfaces.ItemOperationsListener
@@ -239,7 +240,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 					}
 				} catch(_: Exception) {}
 			}
-		} catch(e: Exception) {showErrorToast(e)}
+		} catch(e: Throwable) {this.error(e)}
 		callback(fileDirItems)
 	}
 

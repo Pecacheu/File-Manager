@@ -9,6 +9,7 @@ import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.databinding.ActivitySaveAsBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import java.io.File
 
 class SaveAsActivity: SimpleActivity() {
@@ -45,8 +46,8 @@ class SaveAsActivity: SimpleActivity() {
 							rescanPaths(arrayListOf(destinationPath))
 							toast(org.fossify.commons.R.string.file_saved)
 							finish()
-						} catch(e: Exception) {
-							showErrorToast(e)
+						} catch(e: Throwable) {
+							this.error(e)
 							finish()
 						}
 					}

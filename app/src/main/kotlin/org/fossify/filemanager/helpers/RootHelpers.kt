@@ -4,12 +4,12 @@ import android.app.Activity
 import com.stericson.RootShell.execution.Command
 import com.stericson.RootTools.RootTools
 import org.fossify.commons.extensions.areDigitsOnly
-import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.commons.models.FileDirItem
 import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
@@ -25,7 +25,7 @@ class RootHelpers(val activity: Activity) {
 		try {
 			RootTools.getShell(true).add(command)
 		} catch(exception: Exception) {
-			activity.showErrorToast(exception)
+			activity.error(exception)
 			callback(false)
 		}
 	}
@@ -137,7 +137,7 @@ class RootHelpers(val activity: Activity) {
 
 	private fun runCommand(command: Command) {
 		try {RootTools.getShell(true).add(command)}
-		catch(e: Exception) {activity.showErrorToast(e)}
+		catch(e: Throwable) {activity.error(e)}
 	}
 
 	fun createFileFolder(path: String, isFile: Boolean, callback: (success: Boolean)->Unit) {
