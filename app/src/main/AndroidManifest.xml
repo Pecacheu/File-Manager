@@ -27,7 +27,7 @@
 			android:theme="@style/SplashTheme"/>
 		<activity
 			android:name=".activities.MainActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="true">
 			<intent-filter>
 				<action android:name="android.intent.action.GET_CONTENT"/>
@@ -59,12 +59,12 @@
 		</activity>
 		<activity
 			android:name=".activities.MimeTypesActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="false"
 			android:parentActivityName=".activities.MainActivity"/>
 		<activity
 			android:name=".activities.ReadTextActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="true"
 			android:label="@string/file_editor">
 			<meta-data
@@ -82,7 +82,7 @@
 		</activity>
 		<activity
 			android:name="org.fossify.filemanager.activities.DecompressActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="true"
 			android:label="@string/decompress">
 			<intent-filter>
@@ -93,7 +93,7 @@
 		</activity>
 		<activity
 			android:name=".activities.SaveAsActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="true"
 			android:label="@string/save_as">
 			<intent-filter>
@@ -104,7 +104,7 @@
 		</activity>
 		<activity
 			android:name=".activities.SettingsActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="true"
 			android:label="@string/settings"
 			android:parentActivityName=".activities.MainActivity">
@@ -115,25 +115,25 @@
 		</activity>
 		<activity
 			android:name=".activities.FavoritesActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="false"
 			android:label="@string/favorites"
 			android:parentActivityName=".activities.MainActivity"/>
 		<activity
 			android:name=".about.AboutActivityAlt"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="false"
 			android:label="@string/about"
 			android:parentActivityName=".activities.MainActivity"/>
 		<activity
 			android:name=".about.KbHints"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="false"
 			android:label="@string/about"
 			android:parentActivityName=".about.AboutActivityAlt"/>
 		<activity
 			android:name="org.fossify.commons.activities.CustomizationActivity"
-			android:configChanges="orientation"
+			android:configChanges="orientation|screenSize"
 			android:exported="false"
 			android:label="@string/customize_colors"
 			android:parentActivityName=".activities.SettingsActivity"/>
