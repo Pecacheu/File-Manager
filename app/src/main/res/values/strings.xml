@@ -56,12 +56,15 @@
 	<string name="remote_edit_err">You can only edit remote shares</string>
 	<string name="remote_type_err">Please choose a remote type</string>
 	<string name="login_err">Login failed. Are your credentials correct?</string>
+	<string name="host_err">Unknown host %s. Did you spell it right?</string>
 	<string name="clear_keys">Clear encryption keys? (This will reset all passwords)</string>
+	<string name="pwd_unchanged">&lt;unchanged&gt;</string>
 	<string name="new_remote">New remote</string>
+	<string name="test_success">Connection test succeeded</string>
+	<string name="editing">Editing %s</string>
 	<string name="host">Hostname (port optional)</string>
 	<string name="user">Username</string>
 	<string name="domain">Domain (optional)</string>
-	<string name="type">Type</string>
 	<!--
 		Haven't found some strings? There's more at
 		https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res

@@ -1,22 +1,23 @@
 package org.fossify.filemanager.dialogs
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.marginRight
-import androidx.core.view.marginStart
 import com.google.android.material.button.MaterialButton
 import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databinding.DialogRadioGroupBinding
 import org.fossify.commons.databinding.RadioButtonBinding
 import org.fossify.commons.extensions.*
+import org.fossify.filemanager.activities.NewRemoteActivity
 import org.fossify.filemanager.extensions.getBasePath
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isRemotePath
+import org.fossify.filemanager.helpers.Remote
 
 class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 		showRoot: Boolean, val callback: (pickedPath: String)->Unit) {
@@ -62,17 +63,41 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 		}
 
 		//Remote buttons
+		val btnEdit = MaterialButton(activity)
+		btnEdit.setText(R.string.edit)
+		btnEdit.setOnClickListener(::onEdit)
+
 		val btnNew = MaterialButton(activity)
 		btnNew.setText(R.string.create_new)
 		btnNew.setOnClickListener(::onNew)
-		radioGroup.addView(btnNew)
+
+		val btnRow = LinearLayout(activity)
+		val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+		p.rightMargin = activity.resources.getDimensionPixelSize(R.dimen.medium_margin)
+		btnRow.addView(btnEdit, p)
+		btnRow.addView(btnNew)
+		radioGroup.addView(btnRow, layout)
 
 		activity.setupDialogStuff(view.root, activity.getAlertDialogBuilder(),
 			R.string.select_storage) {dialog = it}
 	}
 
-	private fun onNew(v: View) {
-		NewRemoteDialog(activity, null) {dialog?.dismiss()}
+	private fun onEdit(v: View) {
+		if(!isRemotePath(path)) {
+			activity.toast(org.fossify.filemanager.R.string.remote_edit_err)
+			return
+		}
+		val r = activity.config.getRemoteForPath(path)
+		if(r != null) launchRemote(r)
+		else activity.toast(org.fossify.filemanager.R.string.no_remote_err)
+	}
+	private fun onNew(v: View) = launchRemote(null)
+
+	private fun launchRemote(r: Remote?) {
+		val i = Intent(activity.applicationContext, NewRemoteActivity::class.java)
+		i.putExtra(NewRemoteActivity.EDIT, r?.id?.id)
+		activity.startActivity(i)
+		dialog?.dismiss()
 	}
 
 	private fun onPick(path: String) {

@@ -3,8 +3,6 @@ package org.fossify.filemanager.fragments
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.RelativeLayout
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.Adapter.StateRestorationPolicy
 import androidx.viewbinding.ViewBinding
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
@@ -93,8 +91,8 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 	}
 
 	protected fun initZoomListener(layoutManager: MyGridLayoutManager) {
-		if(currentViewType == VIEW_TYPE_GRID) {
-			zoomListener = object: MyRecyclerView.MyZoomListener {
+		zoomListener = if(currentViewType == VIEW_TYPE_GRID) {
+			object: MyRecyclerView.MyZoomListener {
 				override fun zoomIn() {
 					if(layoutManager.spanCount > 1) incColCount(-1)
 				}
@@ -102,7 +100,7 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 					if(layoutManager.spanCount < MAX_COLUMN_COUNT) incColCount(1)
 				}
 			}
-		} else zoomListener = null
+		} else null
 	}
 
 	abstract fun setupFragment(activity: SimpleActivity)

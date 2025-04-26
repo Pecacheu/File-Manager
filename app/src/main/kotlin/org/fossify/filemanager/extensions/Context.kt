@@ -85,6 +85,8 @@ fun Context.getAllVolumeNames(): List<String> {
 	return volumeNames
 }
 
+fun Context.formatErr(sid: Int, cause: Throwable?, vararg args: Any?) = Error(getString(sid).format(*args), cause)
+
 fun Activity.error(e: Throwable, prompt: String?=null, cb: ((res: Boolean)->Unit)?=null) {
 	Log.e("files", "Error", e)
 	var es = if(e::class == Error::class) e.message?:getString(R.string.unknown_error_occurred) else e.toString()

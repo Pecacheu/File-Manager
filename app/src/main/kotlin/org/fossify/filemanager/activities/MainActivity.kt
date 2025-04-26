@@ -287,7 +287,6 @@ class MainActivity: SimpleActivity() {
 		openPath(config.lastPath.ifEmpty {config.homeFolder})
 		val search = state.getString(LAST_SEARCH)?:""
 		if(search.isNotEmpty()) binding.mainMenu.binding.topToolbarSearch.setText(search)
-		//TODO is this needed after orientation stuffs?
 	}
 
 	override fun onConfigurationChanged(newCon: Configuration) {
@@ -614,7 +613,7 @@ class MainActivity: SimpleActivity() {
 	private fun checkInvalidFavorites() {
 		ensureBackgroundThread {
 			var badFavs = false
-			var noRemoteTest = config.getRemotes(true).isEmpty()
+			config.getRemotes(true)
 			config.favorites.forEach {
 				val isBad = if(isRemotePath(it)) config.getRemoteForPath(it) == null
 					else (!isPathOnOTG(it) && !isPathOnSD(it) && !File(it).exists())
@@ -624,31 +623,6 @@ class MainActivity: SimpleActivity() {
 					badFavs = true
 				}
 			}
-			//TODO Temp stuff below
-			if(noRemoteTest) {
-				val r = Remote.newSMB("TestShare", "", "", "", "")
-				config.addRemote(r)
-				config.favorites.add("r@${r.id}:/Test Dir")
-				badFavs = true
-			}
-			val r = config.getRemotes().values.first()
-			r.host = "192.168.1.69"
-			r.usr = "chu"
-			r.share = "Share"
-			r.domain = ""
-			if(r.pwdKey.isEmpty()) {
-				try {
-					r.setPwd("testpass")
-					config.setRemotes()
-				} catch(e: Throwable) {
-					if(e is Remote.KeyException) error(e, getString(R.string.clear_keys)) {
-						if(!it) return@error
-						Remote.clearKeys()
-						for(r in config.getRemotes()) r.value.pwdKey = ""
-						config.setRemotes()
-					} else error(e)
-				}
-			} else config.setRemotes()
 			if(badFavs) updateFavsList()
 		}
 	}

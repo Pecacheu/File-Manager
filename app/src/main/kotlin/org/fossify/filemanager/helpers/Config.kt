@@ -13,8 +13,6 @@ import org.fossify.filemanager.extensions.idFromRemotePath
 import org.fossify.filemanager.extensions.isRemotePath
 
 class Config(context: Context): BaseConfig(context) {
-	init {Log.i("test", "New config...")} //TODO TEMP
-
 	var showHidden: Boolean
 		get() = prefs.getBoolean(SHOW_HIDDEN, false)
 		set(show) = prefs.edit {putBoolean(SHOW_HIDDEN, show)}
@@ -136,7 +134,6 @@ class Config(context: Context): BaseConfig(context) {
 		synchronized(this) {
 			val rSet = HashSet<String>(remotes!!.size)
 			for(r in remotes!!) rSet.add(r.value.toString())
-			Log.i("test", "Set remotes to $rSet")
 			prefs.edit {remove(REMOTES).putStringSet(REMOTES, rSet)}
 		}
 	}
@@ -144,7 +141,6 @@ class Config(context: Context): BaseConfig(context) {
 	fun getRemotes(removeBad: Boolean=false): HashMap<String, Remote> {
 		synchronized(this) {
 			if(remotes == null) {
-				Log.i("test", "Init remotes...")
 				val rSet = prefs.getStringSet(REMOTES, HashSet())!! as HashSet<String>
 				var changed = false //Haha like the game
 				remotes = HashMap<String, Remote>(rSet.size)

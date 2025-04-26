@@ -1,0 +1,161 @@
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<com.google.android.material.appbar.MaterialToolbar
+		android:id="@+id/toolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="@color/color_primary"
+		app:title="@string/new_remote"
+		app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle"/>
+
+	<androidx.core.widget.NestedScrollView
+		android:id="@+id/scroller"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_marginTop="?attr/actionBarSize"
+		android:fillViewport="true"
+		android:scrollbars="none">
+
+		<LinearLayout
+			android:id="@+id/holder"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginBottom="@dimen/activity_margin"
+			android:orientation="vertical"
+			android:paddingHorizontal="@dimen/activity_margin">
+
+			<org.fossify.commons.views.MyTextInputLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"
+				android:hint="@string/name">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/name"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textCapWords"
+					android:singleLine="true"
+					android:textCursorDrawable="@null"
+					android:textSize="@dimen/bigger_text_size"/>
+			</org.fossify.commons.views.MyTextInputLayout>
+
+			<org.fossify.commons.views.MyAppCompatSpinner
+				android:id="@+id/type"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"/>
+
+			<org.fossify.commons.views.MyTextInputLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"
+				android:hint="@string/host"
+				android:visibility="gone">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/host"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textUri"
+					android:singleLine="true"
+					android:textCursorDrawable="@null"
+					android:textSize="@dimen/bigger_text_size"/>
+			</org.fossify.commons.views.MyTextInputLayout>
+
+			<org.fossify.commons.views.MyTextInputLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"
+				android:hint="@string/user"
+				android:visibility="gone">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/usr"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textCapSentences"
+					android:singleLine="true"
+					android:textCursorDrawable="@null"
+					android:textSize="@dimen/bigger_text_size"
+					android:visibility="visible"/>
+			</org.fossify.commons.views.MyTextInputLayout>
+
+			<org.fossify.commons.views.MyTextInputLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"
+				android:hint="@string/password"
+				android:visibility="gone">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/pwd"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textCapSentences"
+					android:singleLine="true"
+					android:textCursorDrawable="@null"
+					android:textSize="@dimen/bigger_text_size"/>
+			</org.fossify.commons.views.MyTextInputLayout>
+
+			<org.fossify.commons.views.MyTextInputLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"
+				android:hint="@string/share"
+				android:visibility="gone">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/share"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textCapSentences"
+					android:singleLine="true"
+					android:textCursorDrawable="@null"
+					android:textSize="@dimen/bigger_text_size"/>
+			</org.fossify.commons.views.MyTextInputLayout>
+
+			<org.fossify.commons.views.MyTextInputLayout
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginBottom="@dimen/activity_margin"
+				android:hint="@string/domain"
+				android:visibility="gone">
+
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/domain"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="textCapSentences"
+					android:singleLine="true"
+					android:textCursorDrawable="@null"
+					android:textSize="@dimen/bigger_text_size"/>
+			</org.fossify.commons.views.MyTextInputLayout>
+
+			<LinearLayout
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_gravity="center_horizontal"
+				android:orientation="horizontal">
+
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/delBtn"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_gravity="center_horizontal"
+					android:layout_marginRight="@dimen/medium_margin"
+					android:text="@string/delete"/>
+
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/okBtn"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_gravity="center_horizontal"
+					android:text="@string/ok"/>
+			</LinearLayout>
+		</LinearLayout>
+	</androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,7 +1,9 @@
 package org.fossify.filemanager.helpers
 
 import android.app.Activity
+import android.content.ContentResolver
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.ParcelFileDescriptor
@@ -32,13 +34,17 @@ import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.smbj.SMBClient
 import com.hierynomus.smbj.SmbConfig
 import com.hierynomus.smbj.auth.AuthenticationContext
+import com.hierynomus.smbj.connection.Connection
 import com.hierynomus.smbj.share.DiskShare
 import com.hierynomus.smbj.share.File
 import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.*
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.models.ListItem
 import org.json.JSONObject
 import java.io.FileNotFoundException
+import java.net.ConnectException
+import java.net.UnknownHostException
 import java.nio.ByteBuffer
 import java.security.Key
 import java.security.KeyStore
@@ -48,63 +54,88 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
-//TODO Res strings
-val TYPES = arrayOf("SMB")
-
-const val TIMEOUT = 120L
-const val SO_TIMEOUT = 240L
-const val URI_BASE = REMOTE_URI.length + UUID.LENGTH + 1
-
 class Remote(data: JSONObject) {
-	val id: UUID = UUID.from(data.getString("i"))
-	var name: String = data.getString("n")
-	var type: Int = data.getInt("t")
-	var host: String = data.getString("h")
-	var usr: String = data.getString("u")
-	internal var pwdKey: String = data.optString("p") //TODO TEMP, will be private later
-
-	//SMB Only
-	var share: String
-	var domain: String
-	private var mount: DiskShare? = null
-
-	constructor(data: String): this(JSONObject(data))
-	init {
-		if(type == 1) { //SMB
-			share = data.getString("s")
-			domain = data.optString("d")
-		} else {
-			throw IllegalArgumentException("Unknown type $type")
-		}
-	}
-
 	class KeyException(cause: Throwable): Exception(cause)
 	companion object {
-		fun newSMB(name: String, host: String, usr: String, share: String, domain: String): Remote {
+		const val TIMEOUT = 120L
+		const val SO_TIMEOUT = 240L
+		const val URI_BASE = REMOTE_URI.length + UUID.LENGTH + 1
+
+		//Types
+		val TYPES = arrayOf("Type", "SMB") //TODO Res strings
+		const val SMB = 1
+
+		fun SMBData(id: UUID?, name: String, host: String, usr: String, share: String, domain: String): JSONObject {
 			if(name.isBlank()) throw Error("Name not optional")
 			if(host.isBlank()) throw Error("Host not optional")
 			if(share.isBlank()) throw Error("Share not optional")
 			val obj = JSONObject()
-			obj.put("i", UUID.genUUID().toString())
+			obj.put("i", id?:UUID.genUUID().toString())
 			obj.put("n", name)
-			obj.put("t", 1)
+			obj.put("t", SMB)
 			obj.put("h", host)
 			obj.put("u", usr)
 			obj.put("s", share)
-			if(!domain.isBlank()) obj.put("s", domain)
-			return Remote(obj)
+			if(domain.isNotBlank()) obj.put("s", domain)
+			return obj
 		}
 		fun clearKeys() {
 			KeyStore.getInstance(KEYSTORE).apply {load(null); deleteEntry(KEY_NAME)}
 		}
-		fun err(activity: Activity, e: Throwable) {
-			var ne = e
-			if(e is SMBApiException) ne = when(e.status) {
-				NtStatus.STATUS_LOGON_FAILURE -> Error(activity.getString(R.string.login_err), e)
-				else -> e
+		fun err(act: Activity, e: Throwable) {
+			if(e is KeyException) act.error(e, act.getString(R.string.clear_keys)) {
+				if(!it) return@error
+				clearKeys()
+				for(r in act.config.getRemotes()) r.value._pwdKey = ""
+				act.config.setRemotes()
+			} else {
+				act.error(when(e) {
+					is UnknownHostException -> act.formatErr(R.string.host_err, e, e.message)
+					is SMBApiException -> when(e.status) {
+						NtStatus.STATUS_LOGON_FAILURE -> act.formatErr(R.string.login_err, e)
+						else -> e
+					} else -> e
+				})
 			}
-			activity.error(ne)
 		}
+	}
+
+	private lateinit var _name: String
+	private var _type: Int = 0
+	private lateinit var _host: String
+	private lateinit var _usr: String
+	private var _pwdKey: String = ""
+
+	val id = UUID.from(data.getString("i"))
+	val name get() = _name
+	val type get() = _type
+	val host get() = _host
+	val usr get() = _usr
+	internal val pwdKey get() = _pwdKey
+
+	//SMB Only
+	private lateinit var _share: String
+	private lateinit var _domain: String
+	private var mount: DiskShare? = null
+	private var smb: Connection? = null
+
+	val share get() = _share
+	val domain get() = _domain
+
+	constructor(data: String): this(JSONObject(data))
+	init {init(data)}
+
+	fun init(data: JSONObject): Remote {
+		_name = data.getString("n")
+		_type = data.getInt("t")
+		_host = data.getString("h")
+		_usr = data.getString("u")
+		if(pwdKey.isEmpty()) _pwdKey = data.optString("p")
+		if(type == SMB) {
+			_share = data.getString("s")
+			_domain = data.optString("d")
+		} else throw IllegalArgumentException("Unknown type $type")
+		return this
 	}
 
 	val basePath get() = "$REMOTE_URI$id:"
@@ -140,6 +171,10 @@ class Remote(data: JSONObject) {
 	}
 
 	fun setPwd(pwd: String) {
+		if(pwd.isBlank()) {
+			_pwdKey = ""
+			return
+		}
 		val iv = ByteArray(KEY_IV)
 		SecureRandom.getInstanceStrong().nextBytes(iv)
 		val c = Cipher.getInstance(CIPHER)
@@ -149,10 +184,10 @@ class Remote(data: JSONObject) {
 		val buf = ByteBuffer.allocate(KEY_IV + pKey.size)
 		buf.put(iv)
 		buf.put(pKey)
-		pwdKey = buf.array().toBase64()
+		_pwdKey = buf.array().toBase64()
 	}
 
-	fun getPwd(): String {
+	private fun getPwd(): String {
 		try {
 			if(pwdKey.isEmpty()) return ""
 			val pk = pwdKey.fromBase64()
@@ -170,8 +205,13 @@ class Remote(data: JSONObject) {
 	private val mntValid
 		get() = mount != null && mount!!.isConnected
 
+	fun close() {
+		mount?.close(); mount = null
+		smb?.close(); smb = null
+	}
+
 	fun connect() {
-		if(type == 1) { //SMB
+		if(type == SMB) {
 			if(mntValid) return
 			val hs = host.split(':')
 			var port = 445
@@ -181,12 +221,12 @@ class Remote(data: JSONObject) {
 			val pwd = getPwd()
 			Log.i("test", "Connecting to $name @ ${hs[0]}:$port $domain,$usr")
 
-			val con = SMBClient(SmbConfig.builder()
+			smb = SMBClient(SmbConfig.builder()
 				.withTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.withSoTimeout(SO_TIMEOUT, TimeUnit.SECONDS)
 				.build()).connect(hs[0], port)
 			val ac = AuthenticationContext(usr, pwd.toCharArray(), domain)
-			mount = con.authenticate(ac).connectShare(share) as DiskShare
+			mount = smb!!.authenticate(ac).connectShare(share) as DiskShare
 		}
 	}
 

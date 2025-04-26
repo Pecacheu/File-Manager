@@ -120,6 +120,12 @@
 			android:label="@string/favorites"
 			android:parentActivityName=".activities.MainActivity"/>
 		<activity
+			android:name=".activities.NewRemoteActivity"
+			android:configChanges="orientation|screenSize"
+			android:exported="false"
+			android:label="@string/new_remote"
+			android:parentActivityName=".activities.MainActivity"/>
+		<activity
 			android:name=".about.AboutActivityAlt"
 			android:configChanges="orientation|screenSize"
 			android:exported="false"
