@@ -2,6 +2,7 @@ package org.fossify.filemanager.activities
 
 import android.content.ClipData
 import android.content.Intent
+import android.content.res.Configuration
 import android.media.RingtoneManager
 import android.os.Bundle
 import android.os.Environment
@@ -284,9 +285,14 @@ class MainActivity: SimpleActivity() {
 
 	private fun restoreState(state: Bundle) {
 		openPath(config.lastPath.ifEmpty {config.homeFolder})
-
 		val search = state.getString(LAST_SEARCH)?:""
 		if(search.isNotEmpty()) binding.mainMenu.binding.topToolbarSearch.setText(search)
+		//TODO is this needed after orientation stuffs?
+	}
+
+	override fun onConfigurationChanged(newCon: Configuration) {
+		super.onConfigurationChanged(newCon)
+		updateFragmentColumnCounts()
 	}
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -459,7 +465,9 @@ class MainActivity: SimpleActivity() {
 
 	fun openPath(path: String, forceRefresh: Boolean=false) {
 		var newPath = path
-		if(!isRemotePath(path) && (config.OTGPath.isEmpty() || path.trimEnd('/') != config.OTGPath)) {
+		if(isRemotePath(path)) {
+			if(config.getRemoteForPath(path) == null) newPath = config.homeFolder
+		} else if(config.OTGPath.isEmpty() || path.trimEnd('/') != config.OTGPath) {
 			val file = File(path)
 			if(file.exists() && !file.isDirectory) newPath = file.parent?.toString()?:return
 			else if(!file.exists() && !isPathOnOTG(newPath)) newPath = internalStoragePath
@@ -522,15 +530,13 @@ class MainActivity: SimpleActivity() {
 			val newColCount = newVal as Int
 			if(colCount != newColCount) {
 				config.fileColumnCnt = newColCount
-				getAllFragments().forEach {(it as? ItemOperationsListener)?.columnCountChanged()}
+				updateFragmentColumnCounts()
 			}
 		}
 	}
 
 	fun updateFragmentColumnCounts() {
-		getAllFragments().forEach {
-			(it as? ItemOperationsListener)?.columnCountChanged()
-		}
+		getAllFragments().forEach {(it as? ItemOperationsListener)?.columnCountChanged()}
 	}
 
 	private fun setAsHome() {
@@ -620,7 +626,7 @@ class MainActivity: SimpleActivity() {
 			}
 			//TODO Temp stuff below
 			if(noRemoteTest) {
-				val r = Remote.newSMB("TestShare", "", "", "")
+				val r = Remote.newSMB("TestShare", "", "", "", "")
 				config.addRemote(r)
 				config.favorites.add("r@${r.id}:/Test Dir")
 				badFavs = true

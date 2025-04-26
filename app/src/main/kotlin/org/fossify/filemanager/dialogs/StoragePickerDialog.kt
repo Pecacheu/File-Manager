@@ -1,9 +1,14 @@
 package org.fossify.filemanager.dialogs
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.marginRight
+import androidx.core.view.marginStart
+import com.google.android.material.button.MaterialButton
 import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databinding.DialogRadioGroupBinding
@@ -11,6 +16,7 @@ import org.fossify.commons.databinding.RadioButtonBinding
 import org.fossify.commons.extensions.*
 import org.fossify.filemanager.extensions.getBasePath
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.isRemotePath
 
 class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 		showRoot: Boolean, val callback: (pickedPath: String)->Unit) {
@@ -48,25 +54,35 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 				isChecked = basePath == s.value
 				if(isChecked) defaultId = id
 				setOnClickListener {
-					if(s.value == activity.otgPath) handleOTG(s.value)
-					else handlePick(s.value)
+					if(s.value == activity.otgPath) onOTG(s.value)
+					else onPick(s.value)
 				}
 			}
 			radioGroup.addView(btn, layout)
 		}
 
+		//Remote buttons
+		val btnNew = MaterialButton(activity)
+		btnNew.setText(R.string.create_new)
+		btnNew.setOnClickListener(::onNew)
+		radioGroup.addView(btnNew)
+
 		activity.setupDialogStuff(view.root, activity.getAlertDialogBuilder(),
 			R.string.select_storage) {dialog = it}
 	}
 
-	private fun handlePick(path: String) {
+	private fun onNew(v: View) {
+		NewRemoteDialog(activity, null) {dialog?.dismiss()}
+	}
+
+	private fun onPick(path: String) {
 		dialog?.dismiss()
 		callback(path)
 	}
 
-	private fun handleOTG(path: String) {
+	private fun onOTG(path: String) {
 		activity.handleOTGPermission {
-			if(it) handlePick(path)
+			if(it) onPick(path)
 			else radioGroup.check(defaultId)
 		}
 	}

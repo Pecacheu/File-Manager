@@ -1,6 +1,7 @@
 [versions]
 #jetbrains
 kotlin = "1.9.25"
+ksp = "1.9.25-1.0.20"
 #Detekt
 detekt = "1.23.3"
 #AndroidX
@@ -11,6 +12,7 @@ commons = "8439b1b80b"
 #Other
 autofittextview = "0.2.1"
 gestureviews = "2.5.2"
+glide = "5.0.0-rc01"
 rootshell = "1.6"
 roottools = "87d3d22e93"
 smbj = "0.14.0"
@@ -43,6 +45,8 @@ fossify-commons = { module = "org.fossify:commons", version.ref = "commons" }
 #Other
 autofittextview = { module = "me.grantland:autofittextview", version.ref = "autofittextview" }
 gestureviews = { module = "com.alexvasilkov:gesture-views", version.ref = "gestureviews" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+glideKsp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
 rootshell = { module = "com.github.Stericson:RootShell", version.ref = "rootshell" }
 roottools = { module = "com.github.naveensingh:RootTools", version.ref = "roottools" }
 smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
@@ -57,3 +61,4 @@ androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", vers
 android = { id = "com.android.application", version.ref = "gradlePlugins-agp" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

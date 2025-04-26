@@ -16,46 +16,36 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 	private val binding = DialogCreateNewBinding.inflate(activity.layoutInflater)
 
 	init {
-		activity.getAlertDialogBuilder()
-			.setPositiveButton(org.fossify.commons.R.string.ok, null)
-			.setNegativeButton(org.fossify.commons.R.string.cancel, null)
-			.apply {
-				activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.create_new) {alertDialog ->
-					alertDialog.showKeyboard(binding.itemTitle)
-					alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
-						val name = binding.itemTitle.value
-						if(name.isEmpty()) {
-							activity.toast(org.fossify.commons.R.string.empty_name)
-						} else if(name.isAValidFilename()) {
-							val newPath = "$path/$name"
-							if(activity.getDoesFilePathExist(newPath)) {
-								activity.toast(org.fossify.commons.R.string.name_taken)
-								return@OnClickListener
-							}
-
-							if(binding.dialogRadioGroup.checkedRadioButtonId == R.id.dialog_radio_directory) {
-								createDirectory(newPath, alertDialog) {
-									callback(it)
-								}
-							} else {
-								createFile(newPath, alertDialog) {
-									callback(it)
-								}
-							}
-						} else {
-							activity.toast(org.fossify.commons.R.string.invalid_name)
+		activity.getAlertDialogBuilder().apply {
+			setPositiveButton(org.fossify.commons.R.string.ok, null)
+			setNegativeButton(org.fossify.commons.R.string.cancel, null)
+			activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.create_new) {alertDialog ->
+				alertDialog.showKeyboard(binding.itemTitle)
+				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+					val name = binding.itemTitle.value
+					if(name.isEmpty()) {
+						activity.toast(org.fossify.commons.R.string.empty_name)
+					} else if(name.isAValidFilename()) {
+						val newPath = "$path/$name"
+						if(activity.getDoesFilePathExist(newPath)) {
+							activity.toast(org.fossify.commons.R.string.name_taken)
+							return@OnClickListener
 						}
-					})
-				}
+						if(binding.dialogRadioGroup.checkedRadioButtonId == R.id.dialog_radio_directory) {
+							createDirectory(newPath, alertDialog, callback)
+						} else {
+							createFile(newPath, alertDialog, callback)
+						}
+					} else activity.toast(org.fossify.commons.R.string.invalid_name)
+				})
 			}
+		}
 	}
 
 	private fun createDirectory(path: String, alertDialog: AlertDialog, callback: (Boolean)->Unit) {
 		when {
 			activity.needsStupidWritePermissions(path) -> activity.handleSAFDialog(path) {
-				if(!it) {
-					return@handleSAFDialog
-				}
+				if(!it) return@handleSAFDialog
 				val documentFile = activity.getDocumentFile(path.getParentPath())
 				if(documentFile == null) {
 					val e = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_folder), path)
@@ -66,7 +56,6 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 				documentFile.createDirectory(path.getFilenameFromPath())
 				success(alertDialog)
 			}
-
 			isRPlus() || path.startsWith(activity.internalStoragePath, true) -> {
 				if(activity.isRestrictedSAFOnlyRoot(path)) {
 					activity.handleAndroidSAFDialog(path) {
@@ -82,20 +71,12 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 							callback(false)
 						}
 					}
-				} else {
-					if(File(path).mkdirs()) {
-						success(alertDialog)
-					}
-				}
+				} else if(File(path).mkdirs()) success(alertDialog)
 			}
-
 			else -> {
 				RootHelpers(activity).createFileFolder(path, false) {
-					if(it) {
-						success(alertDialog)
-					} else {
-						callback(false)
-					}
+					if(it) success(alertDialog)
+					else callback(false)
 				}
 			}
 		}

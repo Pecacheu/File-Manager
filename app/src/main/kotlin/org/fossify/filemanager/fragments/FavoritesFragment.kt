@@ -104,7 +104,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		favorites.forEach {path ->
 			var name = activity!!.humanizePath(path)
 			if(viewType == VIEW_TYPE_GRID) name = name.getFilenameFromPath()
-			val itm = ListItem(path, name, true, 0, 0, 0, false, false)
+			val itm = ListItem(path, name, true, -2, 0, 0, false, false)
 			items.add(itm)
 		}
 		activity?.runOnUiThread {callback(items)}

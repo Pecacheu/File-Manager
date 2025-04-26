@@ -7,6 +7,7 @@ plugins {
 	alias(libs.plugins.android)
 	alias(libs.plugins.kotlinAndroid)
 	alias(libs.plugins.detekt)
+	alias(libs.plugins.ksp)
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
@@ -101,7 +102,6 @@ android {
 
 	bundle {
 		language {
-			@Suppress("UnstableApiUsage")
 			enableSplit = false
 		}
 	}
@@ -112,6 +112,8 @@ detekt {
 }
 
 dependencies {
+	implementation(libs.glide)
+	ksp(libs.glideKsp)
 	implementation(libs.fossify.commons)
 	implementation(libs.androidx.documentfile)
 	implementation(libs.androidx.swiperefreshlayout)

@@ -20,10 +20,10 @@ import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.dialogs.CreateNewItemDialog
 import org.fossify.filemanager.dialogs.StoragePickerDialog
 import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.helpers.Remote
 import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
@@ -157,27 +157,26 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private fun getItems(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
 		ensureBackgroundThread {
 			if(activity?.isDestroyed == false && activity?.isFinishing == false) {
-				val config = context.config
-				if(context.isRemotePath(path)) {
-					getRemoteItemsOf(path, callback)
-				} else if(context.isRestrictedSAFOnlyRoot(path)) {
+				val conf = context.config
+				if(isRemotePath(path)) getRemoteItemsOf(path, callback)
+				else if(context.isRestrictedSAFOnlyRoot(path)) {
 					activity?.runOnUiThread {hideProgressBar()}
 					activity?.handleAndroidSAFDialog(path, openInSystemAppAllowed = true) {
 						if(!it) {
 							activity?.toast(org.fossify.commons.R.string.no_storage_permissions)
 							return@handleAndroidSAFDialog
 						}
-						val getProperChildCount = config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
-						context.getAndroidSAFFileItems(path, config.shouldShowHidden(), getProperChildCount) {fileItems ->
+						val getFileSize = conf.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
+						context.getAndroidSAFFileItems(path, conf.shouldShowHidden(), getFileSize) {fileItems ->
 							callback(path, getListItemsFromFileDirItems(fileItems))
 						}
 					}
-				} else if(context.isPathOnOTG(path) && config.OTGTreeUri.isNotEmpty()) {
-					val getProperFileSize = config.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
-					context.getOTGItems(path, config.shouldShowHidden(), getProperFileSize) {
+				} else if(context.isPathOnOTG(path) && conf.OTGTreeUri.isNotEmpty()) {
+					val getFileSize = conf.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
+					context.getOTGItems(path, conf.shouldShowHidden(), getFileSize) {
 						callback(path, getListItemsFromFileDirItems(it))
 					}
-				} else if(!config.enableRootAccess || !context.isPathOnRoot(path)) {
+				} else if(!conf.enableRootAccess || !context.isPathOnRoot(path)) {
 					getRegularItemsOf(path, callback)
 				} else {
 					RootHelpers(activity!!).getFiles(path, callback)
@@ -196,12 +195,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			callback(path, items)
 			if(shouldGetCnt) getChildCount(items)
 		} catch(e: Throwable) {
-			var ne = e
-			if(e is SMBApiException) ne = when(e.status) {
-				NtStatus.STATUS_LOGON_FAILURE -> Error(context.getString(R.string.login_err), e)
-				else -> e
-			}
-			activity?.error(ne)
+			Remote.err(activity!!, e)
 			callback(path, ArrayList<ListItem>())
 		}
 	}
@@ -248,7 +242,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		val isDirectory = if(lastModified != null) false else file.isDirectory
 		val size = if(isDirectory) {if(isSortingBySize) file.getProperSize(showHidden) else 0L} else file.length()
 		if(lastModified == null) lastModified = file.lastModified()
-		return ListItem(curPath, curName, isDirectory, 0, size, lastModified, false, false)
+		return ListItem(curPath, curName, isDirectory, -1, size, lastModified, false, false)
 	}
 
 	private fun getListItemsFromFileDirItems(fileDirItems: ArrayList<FileDirItem>): ArrayList<ListItem> {

@@ -10,6 +10,7 @@ import java.util.Locale
 import androidx.core.content.edit
 import org.fossify.filemanager.extensions.UUID
 import org.fossify.filemanager.extensions.idFromRemotePath
+import org.fossify.filemanager.extensions.isRemotePath
 
 class Config(context: Context): BaseConfig(context) {
 	init {Log.i("test", "New config...")} //TODO TEMP
@@ -31,7 +32,7 @@ class Config(context: Context): BaseConfig(context) {
 	var homeFolder: String
 		get(): String {
 			var path = prefs.getString(HOME_FOLDER, "")!!
-			if(path.isEmpty() || !File(path).isDirectory) {
+			if(path.isEmpty() || (!isRemotePath(path) && !File(path).isDirectory)) {
 				path = context.getInternalStoragePath()
 				homeFolder = path
 			}
@@ -119,8 +120,9 @@ class Config(context: Context): BaseConfig(context) {
 
 	fun addRemote(remote: Remote) {
 		if(remotes == null) getRemotes()
+		val ns = remote.name.lowercase()
 		for(r in remotes!!)
-			if(r.value.id == remote.id || r.value.name == remote.name)
+			if(r.value.id == remote.id || r.value.name.lowercase() == ns)
 				throw ArrayStoreException("Remote already exists")
 		remotes!!.put(remote.id.toString(), remote)
 		setRemotes()
@@ -165,6 +167,6 @@ class Config(context: Context): BaseConfig(context) {
 	}
 	fun getRemoteForPath(path: String): Remote? {
 		if(remotes == null) getRemotes()
-		return remotes!![context.idFromRemotePath(path)]
+		return remotes!![idFromRemotePath(path)]
 	}
 }

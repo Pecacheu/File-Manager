@@ -1,13 +1,40 @@
 package org.fossify.filemanager.helpers
 
+import android.app.Activity
+import android.content.Context
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.ParcelFileDescriptor
+import android.os.ProxyFileDescriptorCallback
+import android.os.storage.StorageManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
+import com.bumptech.glide.Glide
+import com.bumptech.glide.Priority
+import com.bumptech.glide.Registry
+import com.bumptech.glide.annotation.GlideModule
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.Options
+import com.bumptech.glide.load.data.DataFetcher
+import com.bumptech.glide.load.model.ModelLoader
+import com.bumptech.glide.load.model.ModelLoaderFactory
+import com.bumptech.glide.load.model.MultiModelLoaderFactory
+import com.bumptech.glide.module.AppGlideModule
+import com.bumptech.glide.signature.ObjectKey
+import com.hierynomus.msdtyp.AccessMask
+import com.hierynomus.mserref.NtStatus
 import com.hierynomus.msfscc.FileAttributes.*
+import com.hierynomus.mssmb2.SMB2CreateDisposition
+import com.hierynomus.mssmb2.SMB2CreateOptions
+import com.hierynomus.mssmb2.SMB2ShareAccess
+import com.hierynomus.mssmb2.SMBApiException
 import com.hierynomus.smbj.SMBClient
 import com.hierynomus.smbj.SmbConfig
 import com.hierynomus.smbj.auth.AuthenticationContext
 import com.hierynomus.smbj.share.DiskShare
+import com.hierynomus.smbj.share.File
+import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.models.ListItem
 import org.json.JSONObject
@@ -20,6 +47,9 @@ import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
+
+//TODO Res strings
+val TYPES = arrayOf("SMB")
 
 const val TIMEOUT = 120L
 const val SO_TIMEOUT = 240L
@@ -50,7 +80,10 @@ class Remote(data: JSONObject) {
 
 	class KeyException(cause: Throwable): Exception(cause)
 	companion object {
-		fun newSMB(name: String, host: String, usr: String, share: String): Remote {
+		fun newSMB(name: String, host: String, usr: String, share: String, domain: String): Remote {
+			if(name.isBlank()) throw Error("Name not optional")
+			if(host.isBlank()) throw Error("Host not optional")
+			if(share.isBlank()) throw Error("Share not optional")
 			val obj = JSONObject()
 			obj.put("i", UUID.genUUID().toString())
 			obj.put("n", name)
@@ -58,10 +91,19 @@ class Remote(data: JSONObject) {
 			obj.put("h", host)
 			obj.put("u", usr)
 			obj.put("s", share)
+			if(!domain.isBlank()) obj.put("s", domain)
 			return Remote(obj)
 		}
 		fun clearKeys() {
 			KeyStore.getInstance(KEYSTORE).apply {load(null); deleteEntry(KEY_NAME)}
+		}
+		fun err(activity: Activity, e: Throwable) {
+			var ne = e
+			if(e is SMBApiException) ne = when(e.status) {
+				NtStatus.STATUS_LOGON_FAILURE -> Error(activity.getString(R.string.login_err), e)
+				else -> e
+			}
+			activity.error(ne)
 		}
 	}
 
@@ -73,9 +115,9 @@ class Remote(data: JSONObject) {
 		obj.put("t", type)
 		obj.put("h", host)
 		obj.put("u", usr)
-		if(pwdKey.isNotEmpty()) obj.put("p", pwdKey)
+		if(pwdKey.isNotBlank()) obj.put("p", pwdKey)
 		obj.put("s", share)
-		if(domain.isNotEmpty()) obj.put("d", domain)
+		if(domain.isNotBlank()) obj.put("d", domain)
 		return obj.toString()
 	}
 
@@ -137,7 +179,7 @@ class Remote(data: JSONObject) {
 			catch(_: NumberFormatException) {}
 			catch(_: IndexOutOfBoundsException) {}
 			val pwd = getPwd()
-			Log.i("test", "Connecting to $name @ ${hs[0]}:$port $domain '$usr','$pwd'")
+			Log.i("test", "Connecting to $name @ ${hs[0]}:$port $domain,$usr")
 
 			val con = SMBClient(SmbConfig.builder()
 				.withTimeout(TIMEOUT, TimeUnit.SECONDS)
@@ -150,8 +192,8 @@ class Remote(data: JSONObject) {
 
 	fun listDir(path: String, hidden: Boolean): ArrayList<ListItem> {
 		val files = ArrayList<ListItem>()
-		val p = "${path.trimEnd('/')}/"
 		if(mntValid) {
+			val p = "${path.trimEnd('/')}/"
 			val psTmp = p.substring(URI_BASE) //TODO TEMP
 			val ls = mount!!.list(psTmp)
 			Log.i("test", "SharePath '$psTmp' got ${ls.size} items")
@@ -160,7 +202,7 @@ class Remote(data: JSONObject) {
 				val attr = f.fileAttributes
 				if(!hidden && attr and FILE_ATTRIBUTE_HIDDEN.value != 0L) continue
 				val isDir = attr and FILE_ATTRIBUTE_DIRECTORY.value != 0L
-				files.add(ListItem("$p${f.fileName}", f.fileName, isDir, 0,
+				files.add(ListItem("$p${f.fileName}", f.fileName, isDir, -1,
 					f.endOfFile, f.lastWriteTime.toEpochMillis(), false, false))
 			}
 		}
@@ -177,4 +219,67 @@ class Remote(data: JSONObject) {
 		}
 		return cnt
 	}
+
+	private fun openFile(path: String, write: Boolean): File {
+		if(!mntValid) throw Error("Remote connection is closed")
+		val p = path.substring(URI_BASE)
+		val mask = mutableSetOf(AccessMask.FILE_READ_DATA)
+		if(write) mask.add(AccessMask.FILE_WRITE_DATA)
+		val acc = mutableSetOf(SMB2ShareAccess.FILE_SHARE_READ)
+		if(write) acc.add(SMB2ShareAccess.FILE_SHARE_WRITE)
+		val mode = SMB2CreateDisposition.FILE_OPEN
+		val cOpt = setOf(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE, SMB2CreateOptions.FILE_RANDOM_ACCESS)
+		val file = mount!!.openFile(p, mask, null, acc, mode, cOpt)
+		return file
+	}
+
+	fun openFileProxy(path: String, write: Boolean, ctx: Context): ParcelFileDescriptor {
+		val file = openFile(path, write)
+		val len = file.fileInformation.standardInformation.endOfFile
+		Log.i("test", "Open file $path with size $len")
+		val sMan = ctx.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+		val mode = ParcelFileDescriptor.MODE_READ_ONLY
+		val ht = HandlerThread("Transfer")
+		ht.start()
+		return sMan.openProxyFileDescriptor(mode, object: ProxyFileDescriptorCallback() {
+			override fun onGetSize() = len
+			override fun onRead(ofs: Long, size: Int, data: ByteArray) = file.read(data, ofs, 0, size)
+			override fun onWrite(ofs: Long, size: Int, data: ByteArray) = file.write(data, ofs, 0, size).toInt()
+			override fun onFsync() = file.flush()
+			override fun onRelease() = file.close()
+		}, Handler(ht.looper))
+	}
+}
+
+// ---- Glide Support ----
+
+@GlideModule
+class RemoteModule: AppGlideModule() {
+	override fun registerComponents(ctx: Context, g: Glide, reg: Registry) {
+		reg.prepend(String::class.java, ParcelFileDescriptor::class.java, RemoteFactory(ctx))
+	}
+}
+
+private class RemoteFactory(val ctx: Context): ModelLoaderFactory<String, ParcelFileDescriptor> {
+	override fun build(mf: MultiModelLoaderFactory) = RemoteLoader(ctx)
+	override fun teardown() {}
+}
+
+private class RemoteLoader(val ctx: Context): ModelLoader<String, ParcelFileDescriptor> {
+	override fun handles(path: String) = isRemotePath(path)
+	override fun buildLoadData(path: String, w: Int, h: Int, opts: Options) =
+		ModelLoader.LoadData(ObjectKey(path), RemoteFetcher(path, ctx))
+}
+
+private class RemoteFetcher(val path: String, val ctx: Context): DataFetcher<ParcelFileDescriptor> {
+	private var proxy: ParcelFileDescriptor? = null
+
+	override fun loadData(pri: Priority, cb: DataFetcher.DataCallback<in ParcelFileDescriptor>) {
+		proxy = ctx.config.getRemoteForPath(path)?.openFileProxy(path, false, ctx)
+		cb.onDataReady(proxy)
+	}
+	override fun cancel() {}
+	override fun cleanup() {proxy?.close()}
+	override fun getDataClass() = ParcelFileDescriptor::class.java
+	override fun getDataSource() = DataSource.REMOTE
 }

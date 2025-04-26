@@ -35,39 +35,37 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 			}
 		}
 
-		activity.getAlertDialogBuilder()
-			.setPositiveButton(org.fossify.commons.R.string.ok, null)
-			.setNegativeButton(org.fossify.commons.R.string.cancel, null)
-			.apply {
-				activity.setupDialogStuff(binding.root, this, R.string.compress_as) {alertDialog ->
-					alertDialog.showKeyboard(binding.filenameValue)
-					alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
-						val name = binding.filenameValue.value
-						var password: String? = null
-						if(binding.passwordProtect.isChecked) {
-							password = binding.password.value
-							if(password.isEmpty()) {
-								activity.toast(org.fossify.commons.R.string.empty_password_new)
+		activity.getAlertDialogBuilder().apply {
+			setPositiveButton(org.fossify.commons.R.string.ok, null)
+			setNegativeButton(org.fossify.commons.R.string.cancel, null)
+			activity.setupDialogStuff(binding.root, this, R.string.compress_as) {alertDialog ->
+				alertDialog.showKeyboard(binding.filenameValue)
+				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+					val name = binding.filenameValue.value
+					var password: String? = null
+					if(binding.passwordProtect.isChecked) {
+						password = binding.password.value
+						if(password.isEmpty()) {
+							activity.toast(org.fossify.commons.R.string.empty_password_new)
+							return@OnClickListener
+						}
+					}
+					when {
+						name.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
+						name.isAValidFilename() -> {
+							val newPath = "$realPath/$name.zip"
+							if(activity.getDoesFilePathExist(newPath)) {
+								activity.toast(org.fossify.commons.R.string.name_taken)
 								return@OnClickListener
 							}
-						}
-						when {
-							name.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
-							name.isAValidFilename() -> {
-								val newPath = "$realPath/$name.zip"
-								if(activity.getDoesFilePathExist(newPath)) {
-									activity.toast(org.fossify.commons.R.string.name_taken)
-									return@OnClickListener
-								}
 
-								alertDialog.dismiss()
-								callback(newPath, password)
-							}
-
-							else -> activity.toast(org.fossify.commons.R.string.invalid_name)
+							alertDialog.dismiss()
+							callback(newPath, password)
 						}
-					})
-				}
+						else -> activity.toast(org.fossify.commons.R.string.invalid_name)
+					}
+				})
 			}
+		}
 	}
 }

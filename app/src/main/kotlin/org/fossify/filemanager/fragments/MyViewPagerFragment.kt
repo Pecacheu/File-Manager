@@ -89,22 +89,17 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 			context!!.config.fileColumnCnt += by
 			(activity as? MainActivity)?.updateFragmentColumnCounts()
 		}
+		getRecyclerAdapter()?.finishActMode()
 	}
 
 	protected fun initZoomListener(layoutManager: MyGridLayoutManager) {
 		if(currentViewType == VIEW_TYPE_GRID) {
 			zoomListener = object: MyRecyclerView.MyZoomListener {
 				override fun zoomIn() {
-					if(layoutManager.spanCount > 1) {
-						incColCount(-1)
-						getRecyclerAdapter()?.finishActMode()
-					}
+					if(layoutManager.spanCount > 1) incColCount(-1)
 				}
 				override fun zoomOut() {
-					if(layoutManager.spanCount < MAX_COLUMN_COUNT) {
-						incColCount(1)
-						getRecyclerAdapter()?.finishActMode()
-					}
+					if(layoutManager.spanCount < MAX_COLUMN_COUNT) incColCount(1)
 				}
 			}
 		} else zoomListener = null

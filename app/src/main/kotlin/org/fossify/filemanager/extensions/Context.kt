@@ -53,8 +53,8 @@ class UUID(val id: ByteArray) {
 }
 
 fun Context.isPathOnRoot(path: String) = !(path.startsWith(config.internalStoragePath) || isPathOnOTG(path) || (isPathOnSD(path)))
-fun Context.isRemotePath(path: String) = path.startsWith(REMOTE_URI)
-fun Context.idFromRemotePath(path: String) = path.substring(REMOTE_URI.length, path.indexOf(':'))
+fun isRemotePath(path: String) = path.startsWith(REMOTE_URI)
+fun idFromRemotePath(path: String) = path.substring(REMOTE_URI.length, path.indexOf(':'))
 
 fun Context.getHumanReadablePath(path: String): String {
 	return when {
@@ -87,7 +87,7 @@ fun Context.getAllVolumeNames(): List<String> {
 
 fun Activity.error(e: Throwable, prompt: String?=null, cb: ((res: Boolean)->Unit)?=null) {
 	Log.e("files", "Error", e)
-	var es = if(e is Error) e.message?:getString(R.string.unknown_error_occurred) else e.toString()
+	var es = if(e::class == Error::class) e.message?:getString(R.string.unknown_error_occurred) else e.toString()
 	if(prompt != null) es += "\n\n$prompt"
 	alert("Error", es, cb)
 }

@@ -18,7 +18,6 @@ class ChangeSortingDialog(val activity: BaseSimpleActivity, val path: String = "
 		currSorting = config.getFolderSorting(path)
 		binding = DialogChangeSortingBinding.inflate(activity.layoutInflater).apply {
 			sortingDialogUseForThisFolder.isChecked = config.hasCustomSorting(path)
-
 			sortingDialogNumericSorting.beVisibleIf(currSorting and SORT_BY_NAME != 0)
 			sortingDialogNumericSorting.isChecked = currSorting and SORT_USE_NUMERIC_VALUE != 0
 		}

@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
+import android.util.Log
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.Menu
@@ -102,6 +103,7 @@ import org.fossify.filemanager.dialogs.CompressAsDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.isPathOnRoot
+import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.isZipFile
 import org.fossify.filemanager.extensions.setAs
 import org.fossify.filemanager.extensions.sharePaths
@@ -246,7 +248,7 @@ class ItemsAdapter(
 		return createViewHolder(binding.root)
 	}
 
-	override fun onBindViewHolder(holder: MyRecyclerViewAdapter.ViewHolder, position: Int) {
+	override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 		val fileDirItem = listItems[position]
 		holder.bindView(fileDirItem, true, !fileDirItem.isSectionTitle) {itemView, layoutPosition ->
 			val viewType = getItemViewType(position)
@@ -363,22 +365,20 @@ class ItemsAdapter(
 		(drawable as LayerDrawable).findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(appIconColor)
 		if(activity.getIsPathDirectory(path)) {
 			callback()
-		} else {
-			ensureBackgroundThread {
-				val options = RequestOptions().format(DecodeFormat.PREFER_ARGB_8888).skipMemoryCache(true)
-					.diskCacheStrategy(DiskCacheStrategy.NONE).fitCenter()
-				val size = activity.resources.getDimension(org.fossify.commons.R.dimen.shortcut_size).toInt()
-				val builder = Glide.with(activity).asDrawable().load(getImagePathToLoad(path)).apply(options).centerCrop().submit(size, size)
-				try {
-					val bitmap = builder.get()
-					drawable.findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(0)
-					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, bitmap)
-				} catch(_: Throwable) {
-					val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
-					drawable.setDrawableByLayerId(R.id.shortcut_folder_image, fileIcon)
-				}
-				activity.runOnUiThread {callback()}
+		} else ensureBackgroundThread {
+			val options = RequestOptions().format(DecodeFormat.PREFER_ARGB_8888).skipMemoryCache(true)
+				.diskCacheStrategy(DiskCacheStrategy.RESOURCE).fitCenter()
+			val size = activity.resources.getDimension(org.fossify.commons.R.dimen.shortcut_size).toInt()
+			val builder = Glide.with(activity).load(getImagePathToLoad(path)).apply(options).centerCrop().submit(size, size)
+			try {
+				val bitmap = builder.get()
+				drawable.findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(0)
+				drawable.setDrawableByLayerId(R.id.shortcut_folder_image, bitmap)
+			} catch(_: Throwable) {
+				val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
+				drawable.setDrawableByLayerId(R.id.shortcut_folder_image, fileIcon)
 			}
+			activity.runOnUiThread {callback()}
 		}
 	}
 
@@ -843,7 +843,11 @@ class ItemsAdapter(
 
 				if(listItem.isDirectory) {
 					itemIcon?.setImageDrawable(folderDrawable)
-					itemDetails?.text = getChildrenCnt(listItem)
+					if(listItem.children == -2) itemDetails?.beGone()
+					else {
+						itemDetails?.text = getChildrenCnt(listItem)
+						itemDetails?.beVisible()
+					}
 					itemDate?.beGone()
 				} else {
 					itemDetails?.text = listItem.size.formatSize()
@@ -851,17 +855,16 @@ class ItemsAdapter(
 					itemDate?.text = listItem.modified.formatDate(activity, dateFormat, timeFormat)
 
 					val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
-					val options = RequestOptions().signature(listItem.getKey())
+					val opts = RequestOptions().signature(listItem.getKey())
 						.diskCacheStrategy(DiskCacheStrategy.RESOURCE)
 						.error(drawable)
 						.transform(CenterCrop(), RoundedCorners(10))
 
-					//TODO Fix icons for remote
-					val itemToLoad = getImagePathToLoad(listItem.path)
+					val item = getImagePathToLoad(listItem.path)
 					if(!activity.isDestroyed && itemIcon != null) {
-						Glide.with(activity).load(itemToLoad)
+						Glide.with(activity).load(item)
 							.transition(DrawableTransitionOptions.withCrossFade())
-							.apply(options).into(itemIcon!!)
+							.apply(opts).into(itemIcon!!)
 					}
 				}
 			}
@@ -870,6 +873,7 @@ class ItemsAdapter(
 
 	private fun getChildrenCnt(item: FileDirItem): String {
 		val children = item.children
+		if(children == -1) return ""
 		return activity.resources.getQuantityString(org.fossify.commons.R.plurals.items, children, children)
 	}
 
@@ -877,20 +881,20 @@ class ItemsAdapter(
 		"${baseConfig.OTGTreeUri}/document/${baseConfig.OTGPartition}%3A${itemToLoad.substring(baseConfig.OTGPath.length).replace("/", "%2F")}"
 
 	private fun getImagePathToLoad(path: String): Any {
-		var itemToLoad: Any = if(path.endsWith(".apk", true)) {
-			val packageInfo = activity.packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
-			if(packageInfo != null) {
-				val appInfo = packageInfo.applicationInfo
-				appInfo.sourceDir = path
-				appInfo.publicSourceDir = path
-				appInfo.loadIcon(activity.packageManager)
-			} else path
-		} else path
-
-		if(activity.isRestrictedSAFOnlyRoot(path)) itemToLoad = activity.getAndroidSAFUri(path)
-		else if(hasOTGConnected && itemToLoad is String && activity.isPathOnOTG(itemToLoad) && baseConfig.OTGTreeUri.isNotEmpty() &&
-			baseConfig.OTGPartition.isNotEmpty()) itemToLoad = getOTGPublicPath(itemToLoad)
-		return itemToLoad
+		if(isRemotePath(path)) return path
+		var item: Any = path
+		if(path.endsWith(".apk", true)) {
+			val info = activity.packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)?.applicationInfo
+			if(info != null) {
+				info.sourceDir = path
+				info.publicSourceDir = path
+				item = info.loadIcon(activity.packageManager)
+			}
+		}
+		if(activity.isRestrictedSAFOnlyRoot(path)) item = activity.getAndroidSAFUri(path)
+		else if(hasOTGConnected && item is String && activity.isPathOnOTG(item) && baseConfig.OTGTreeUri.isNotEmpty()
+			&& baseConfig.OTGPartition.isNotEmpty()) item = getOTGPublicPath(item)
+		return item
 	}
 
 	@SuppressLint("UseCompatLoadingForDrawables")

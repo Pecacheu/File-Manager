@@ -1,7 +1,6 @@
 package org.fossify.filemanager.adapters
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.view.LayoutInflater
