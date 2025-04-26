@@ -5,8 +5,6 @@ import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
 import androidx.recyclerview.widget.GridLayoutManager
-import com.hierynomus.mserref.NtStatus
-import com.hierynomus.mssmb2.SMBApiException
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*

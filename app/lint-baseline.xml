@@ -1,0 +1,260 @@
+<issues by="lint Meerkat | 2024.3.1" format="5">
+	<issue id="ScopedStorage" message="The Google Play store has a policy that limits usage of MANAGE_EXTERNAL_STORAGE">
+		<location file="src/main/AndroidManifest.xml" line="5"/>
+	</issue>
+	<issue id="UnusedAttribute" message="Attribute `localeConfig` is only used in API level 33 and higher (current min is 26)">
+		<location file="src/main/AndroidManifest.xml" line="20"/>
+	</issue>
+	<issue id="CustomSplashScreen" message="The application should not provide its own launch screen">
+		<location file="src/main/kotlin/org/fossify/filemanager/activities/SplashActivity.kt" line="6"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;app_launcher_name&quot; is not translated in &quot;fa&quot; (Persian) or &quot;bn&quot; (Bangla)">
+		<location file="src/main/res/values/strings.xml" line="3"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;press_back_again&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="4"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;go_to_home_folder&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="5"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;set_as_home_folder&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="6"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;home_folder_updated&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="7"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;copy_path&quot; is not translated in &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="8"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;path_copied&quot; is not translated in &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="9"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;select_audio_file&quot; is not translated in &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="10"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;search_folder&quot; is not translated in &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="11"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;rooted_device_only&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="12"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;recents&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="13"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;show_recents&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="14"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;invert_colors&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;nb&quot; (Norwegian Bokmål), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ta&quot; (Tamil), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="15"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;contributors_developers&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="16"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;open_as&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="18"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;text_file&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="19"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;image_file&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="20"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;audio_file&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="21"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;video_file&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="22"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;other_file&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="23"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;compress&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="25"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;decompress&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="26"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;compress_as&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="27"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;compressing&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="28"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;decompressing&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="29"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;compression_successful&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="30"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;decompression_successful&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="31"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;compressing_failed&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="32"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;decompressing_failed&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="33"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;manage_favorites&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="35"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;favorites_activity_placeholder&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;ia&quot; (Interlingua), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="36"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;file_editor&quot; is not translated in &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="38"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;storage_analysis&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;nb&quot; (Norwegian Bokmål), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="40"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;images&quot; is not translated in &quot;az&quot; (Azerbaijani) or &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="41"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;videos&quot; is not translated in &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="42"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;audio&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;bn&quot; (Bangla), &quot;sk&quot; (Slovak), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="43"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;documents&quot; is not translated in &quot;ia&quot; (Interlingua), &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="44"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;downloads&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="45"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;archives&quot; is not translated in &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="46"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;others&quot; is not translated in &quot;nb&quot; (Norwegian Bokmål), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="47"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;storage_free&quot; is not translated in &quot;ar&quot; (Arabic), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ko&quot; (Korean), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="48"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;total_storage&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="49"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;enable_root_access&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="51"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;press_back_twice&quot; is not translated in &quot;lt&quot; (Lithuanian), &quot;ia&quot; (Interlingua), &quot;nb&quot; (Norwegian Bokmål), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;bn&quot; (Bangla), &quot;cy&quot; (Welsh), &quot;ckb&quot;">
+		<location file="src/main/res/values/strings.xml" line="52"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;kb_hints&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="53"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;no_remote_err&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="55"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;remote_edit_err&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="56"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;remote_type_err&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="57"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;login_err&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="58"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;host_err&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="59"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;clear_keys&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="60"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;pwd_unchanged&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="61"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;new_remote&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="62"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;test_success&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="63"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;editing&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="64"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;host&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="65"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;user&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="66"/>
+	</issue>
+	<issue id="MissingTranslation" message="&quot;domain&quot; is not translated in &quot;de&quot; (German), &quot;hi&quot; (Hindi), &quot;pt&quot; (Portuguese), &quot;lt&quot; (Lithuanian), &quot;hr&quot; (Croatian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ia&quot; (Interlingua), &quot;in&quot; (Indonesian), &quot;el&quot; (Greek), &quot;eo&quot; (Esperanto), &quot;is&quot; (Icelandic), &quot;it&quot; (Italian), &quot;my&quot; (Burmese), &quot;es&quot; (Spanish), &quot;iw&quot; (Hebrew), &quot;zh&quot; (Chinese), &quot;et&quot; (Estonian), &quot;eu&quot; (Basque), &quot;ar&quot; (Arabic), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;ro&quot; (Romanian), &quot;nl&quot; (Dutch), &quot;be&quot; (Belarusian), &quot;fi&quot; (Finnish), &quot;ru&quot; (Russian), &quot;bg&quot; (Bulgarian), &quot;bn&quot; (Bangla), &quot;fr&quot; (French), &quot;br&quot; (Breton), &quot;sk&quot; (Slovak), &quot;sl&quot; (Slovenian), &quot;ga&quot; (Irish), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;gl&quot; (Galician), &quot;ta&quot; (Tamil), &quot;cs&quot; (Czech), &quot;pa&quot; (Punjabi), &quot;cy&quot; (Welsh), &quot;ckb&quot;, &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;tr&quot; (Turkish)">
+		<location file="src/main/res/values/strings.xml" line="67"/>
+	</issue>
+	<issue id="Overdraw" message="Possible overdraw: Root element paints background `?attr/selectableItemBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)">
+		<location file="src/main/res/layout/item_dir_grid.xml" line="7"/>
+	</issue>
+	<issue id="Overdraw" message="Possible overdraw: Root element paints background `?attr/selectableItemBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)">
+		<location file="src/main/res/layout/item_file_grid.xml" line="7"/>
+	</issue>
+	<issue id="Overdraw" message="Possible overdraw: Root element paints background `?attr/selectableItemBackground` with a theme that also paints a background (inferred theme is `@style/AppTheme`)">
+		<location file="src/main/res/layout/item_section.xml" line="7"/>
+	</issue>
+	<issue id="UselessParent" message="This `RelativeLayout` layout or its `FrameLayout` parent is possibly unnecessary; transfer the `background` attribute to the other view">
+		<location file="src/main/res/layout/item_dir_grid.xml" line="16"/>
+	</issue>
+	<issue id="UselessParent" message="This `RelativeLayout` layout or its `FrameLayout` parent is possibly unnecessary; transfer the `background` attribute to the other view">
+		<location file="src/main/res/layout/item_file_grid.xml" line="16"/>
+	</issue>
+	<issue id="ContentDescription" message="Missing `contentDescription` attribute on image">
+		<location file="src/main/res/layout/item_decompression_list_file_dir.xml" line="10"/>
+	</issue>
+	<issue id="ContentDescription" message="Missing `contentDescription` attribute on image">
+		<location file="src/main/res/layout/item_dir_grid.xml" line="22"/>
+	</issue>
+	<issue id="ContentDescription" message="Missing `contentDescription` attribute on image">
+		<location file="src/main/res/layout/item_file_dir_list.xml" line="19"/>
+	</issue>
+	<issue id="ContentDescription" message="Missing `contentDescription` attribute on image">
+		<location file="src/main/res/layout/item_manage_favorite.xml" line="20"/>
+	</issue>
+	<issue id="ContentDescription" message="Missing `contentDescription` attribute on image">
+		<location file="src/main/res/layout/item_section.xml" line="19"/>
+	</issue>
+	<issue id="ContentDescription" message="Missing `contentDescription` attribute on image">
+		<location file="src/main/res/layout/item_storage_volume.xml" line="41"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_decompression_list_file_dir.xml" line="8"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_decompression_list_file_dir.xml" line="8"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_decompression_list_file_dir.xml" line="28"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_decompression_list_file_dir.xml" line="28"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_file_dir_list.xml" line="35"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_file_dir_list.xml" line="35"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_file_dir_list.xml" line="50"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingStart` you should probably also define `paddingEnd` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_file_dir_list.xml" line="50"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_section.xml" line="17"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_section.xml" line="17"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_section.xml" line="33"/>
+	</issue>
+	<issue id="RtlSymmetry" message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry">
+		<location file="src/main/res/layout/item_section.xml" line="33"/>
+	</issue>
+	<issue id="RtlHardcoded" message="Consider replacing `android:layout_marginRight` with `android:layout_marginEnd=&quot;@dimen/medium_margin&quot;` to better support right-to-left layouts">
+		<location file="src/main/res/layout/activity_new_remote.xml" line="149"/>
+	</issue>
+	<issue id="RtlHardcoded" message="Consider replacing `android:layout_marginRight` with `android:layout_marginEnd=&quot;@dimen/medium_margin&quot;` to better support right-to-left layouts">
+		<location file="src/main/res/layout/activity_new_remote.xml" line="149"/>
+	</issue>
+</issues>

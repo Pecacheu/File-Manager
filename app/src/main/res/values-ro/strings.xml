@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">Alege ca dosar principal</string>
 	<string name="home_folder_updated">Dosarul principal actualizat</string>
 	<string name="copy_path">Copiază calea în memorie</string>
-	<string name="path_copied">Cale copiată</string>
 	<string name="select_audio_file">Alege un fișier audio</string>
-	<string name="search_folder">Caută dosarul</string>
 	<string name="rooted_device_only">Aceasta funcționează numai dacă se dispune de drepturi de administrator</string>
 	<string name="recents">Recente</string>
-	<string name="show_recents">Arată Recente</string>
-	<string name="invert_colors">Inversează culorile</string>
 	<string name="open_as">Deschide ca</string>
 	<string name="text_file">Fișier text</string>
 	<string name="image_file">Fișier imagine</string>

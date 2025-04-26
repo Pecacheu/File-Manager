@@ -17,7 +17,6 @@ import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
-import java.io.File
 
 class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
 	ItemOperationsListener {

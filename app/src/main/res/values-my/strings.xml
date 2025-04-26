@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">မူရင်းဖိုဒါအဖြစ်သတ်မှတ်</string>
 	<string name="home_folder_updated">မူရင်းဖိုဒါ ကိုပြုပြင်ပြီး</string>
 	<string name="copy_path">ဖိုင်လမ်း​ကြောင်းကို ကူးယူ</string>
-	<string name="path_copied">ကူးယူပြီး</string>
 	<string name="select_audio_file">အသံဖိုင်ကို​ရွေးချယ်ပါ</string>
-	<string name="search_folder">ဖိုဒါရှာရန်</string>
 	<string name="rooted_device_only">ရု​ဖောက်ထား​သော ဖုန်းများအတွက်သာ</string>
 	<string name="recents">လတ်တ​လော</string>
-	<string name="show_recents">လတ်တ​လောဖိုင်များကိုပြပါ</string>
-	<string name="invert_colors">အ​ရောင်​ပြောင်းပြန်</string>
 	<string name="open_as">ဖွင့်ရန်</string>
 	<string name="text_file">စာဖိုင်</string>
 	<string name="image_file">ရုပ်ပုံဖိုင်</string>

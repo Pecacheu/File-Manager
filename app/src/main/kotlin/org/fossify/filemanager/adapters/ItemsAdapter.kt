@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
-import android.util.Log
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.Menu
@@ -799,8 +798,8 @@ class ItemsAdapter(
 		notifyItemChanged(position, Unit)
 	}
 
-	fun isASectionTitle(position: Int) = listItems.getOrNull(position)?.isSectionTitle?:false
-	fun isGridTypeDivider(position: Int) = listItems.getOrNull(position)?.isGridTypeDivider?:false
+	fun isASectionTitle(position: Int) = listItems.getOrNull(position)?.isSectionTitle == true
+	fun isGridTypeDivider(position: Int) = listItems.getOrNull(position)?.isGridTypeDivider == true
 
 	override fun onViewRecycled(holder: ViewHolder) {
 		super.onViewRecycled(holder)

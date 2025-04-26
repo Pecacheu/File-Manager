@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">Nastavi kot domačo mapo</string>
 	<string name="home_folder_updated">Posodobljena mapa domov</string>
 	<string name="copy_path">Kopiraj poti v odložišče</string>
-	<string name="path_copied">Pot skopirana</string>
 	<string name="select_audio_file">Izberi zvočno datoteko</string>
-	<string name="search_folder">Iskanje mape</string>
 	<string name="rooted_device_only">Ta operacija deluje samo v rootanih napravah</string>
 	<string name="recents">Nedavno</string>
-	<string name="show_recents">Prikaži nedavne</string>
-	<string name="invert_colors">Obrni barve</string>
 	<string name="open_as">Odpri kot</string>
 	<string name="text_file">Datoteka z besedilom</string>
 	<string name="image_file">Slikovna datoteka</string>

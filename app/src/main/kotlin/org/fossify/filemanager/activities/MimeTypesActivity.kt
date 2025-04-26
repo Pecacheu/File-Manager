@@ -1,7 +1,6 @@
 package org.fossify.filemanager.activities
 
 import android.app.SearchManager
-import android.content.Context
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.Menu
@@ -148,7 +147,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	override fun finishActMode() {}
 
 	private fun setupSearch(menu: Menu) {
-		val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
+		val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
 		searchMenuItem = menu.findItem(R.id.search)
 		(searchMenuItem!!.actionView as SearchView).apply {
 			setSearchableInfo(searchManager.getSearchableInfo(componentName))

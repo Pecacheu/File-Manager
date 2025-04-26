@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">Postavi kao početnu mapu</string>
 	<string name="home_folder_updated">Početna mapa ažurirana</string>
 	<string name="copy_path">Kopiraj putanju u međuspremnik</string>
-	<string name="path_copied">Putanja kopirana</string>
 	<string name="select_audio_file">Odaberi audio datoteku</string>
-	<string name="search_folder">Pretraži mapu</string>
 	<string name="rooted_device_only">Ova radnja funkcionira samo na uređajima s root pristupom</string>
 	<string name="recents">Nedavni</string>
-	<string name="show_recents">Pokaži nedavne</string>
-	<string name="invert_colors">Invertiraj boje</string>
 	<string name="open_as">Otvori kao</string>
 	<string name="text_file">Tekstualna datoteka</string>
 	<string name="image_file">Slikovna datoteka</string>

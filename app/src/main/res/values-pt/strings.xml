@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">Definir como pasta pessoal</string>
 	<string name="home_folder_updated">Pasta pessoal atualizada</string>
 	<string name="copy_path">Copiar caminho para a área de transferência</string>
-	<string name="path_copied">Caminho copiado</string>
 	<string name="select_audio_file">Selecione um ficheiro de áudio</string>
-	<string name="search_folder">Pesquisar pasta</string>
 	<string name="rooted_device_only">Esta operação apenas funciona em dispositivos com root</string>
 	<string name="recents">Recentes</string>
-	<string name="show_recents">Mostrar recentes</string>
-	<string name="invert_colors">Inverter Cores</string>
 	<string name="open_as">Abrir como</string>
 	<string name="text_file">Texto</string>
 	<string name="image_file">Imagem</string>

@@ -6,12 +6,8 @@
 	<string name="set_as_home_folder">Estableix com a carpeta d\'inici</string>
 	<string name="home_folder_updated">S\'ha actualitzat la carpeta d\'inici</string>
 	<string name="copy_path">Copia el camí al porta-retalls</string>
-	<string name="path_copied">S\'ha copiat el camí</string>
 	<string name="select_audio_file">Seleccioneu un fitxer d\'àudio</string>
-	<string name="search_folder">Cerca carpeta</string>
 	<string name="rooted_device_only">Aquesta operació només funciona en dispositius amb «root»</string>
-	<string name="show_recents">Mostra els recents</string>
-	<string name="invert_colors">Inverteix els colors</string>
 	<string name="open_as">Obre com a</string>
 	<string name="text_file">Fitxer de text</string>
 	<string name="image_file">Fitxer d\'imatge</string>

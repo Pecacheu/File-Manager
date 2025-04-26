@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">Ορισμός ως αρχικού φακέλου</string>
 	<string name="home_folder_updated">Ο Αρχικός φάκελος ενημερώθηκε</string>
 	<string name="copy_path">Αντιγραφή διαδρομής στο πρόχειρο</string>
-	<string name="path_copied">Η διαδρομή αντιγράφηκε</string>
 	<string name="select_audio_file">Επιλέξτε ένα αρχείο ήχου</string>
-	<string name="search_folder">Αναζήτηση φακέλου</string>
 	<string name="rooted_device_only">Αυτό το χαρακτηριστικό λειτουργεί μόνο σε συσκευές με πρόσβαση στον ριζικό κατάλογο.</string>
 	<string name="recents">Πρόσφατα</string>
-	<string name="show_recents">Εμφάνιση προσφάτων</string>
-	<string name="invert_colors">Αντιστροφή χρωμάτων</string>
 	<string name="open_as">Άνοιγμα ως</string>
 	<string name="text_file">Αρχείο Κειμένου</string>
 	<string name="image_file">Αρχείο Εικόνας</string>

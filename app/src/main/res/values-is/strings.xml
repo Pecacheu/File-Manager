@@ -6,13 +6,9 @@
 	<string name="set_as_home_folder">Setja sem heimamöppu</string>
 	<string name="home_folder_updated">Heimamappa uppfærð</string>
 	<string name="copy_path">Afrita slóð á klemmuspjald</string>
-	<string name="path_copied">Slóð afrituð</string>
 	<string name="select_audio_file">Vinsamlegast veldu hljóðskrá</string>
-	<string name="search_folder">Leita í möppu</string>
 	<string name="rooted_device_only">Þessi aðgerð virkar aðeins á tækjum með aðgang að rót</string>
 	<string name="recents">Nýleg</string>
-	<string name="show_recents">Sýna nýleg</string>
-	<string name="invert_colors">Snúa litum við</string>
 	<string name="open_as">Opna sem</string>
 	<string name="text_file">Textaskrá</string>
 	<string name="image_file">Myndskrá</string>

@@ -7,7 +7,6 @@ import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import androidx.appcompat.content.res.AppCompatResources
@@ -112,7 +111,7 @@ class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(c
 			}
 		}
 		val selectedItemView = itemsLayout.getChildAt(selectedIndex)
-		val scrollX = if(layoutDirection == View.LAYOUT_DIRECTION_LTR)
+		val scrollX = if(layoutDirection == LAYOUT_DIRECTION_LTR)
 			selectedItemView.left - itemsLayout.paddingStart
 			else selectedItemView.right - width + itemsLayout.paddingStart
 
