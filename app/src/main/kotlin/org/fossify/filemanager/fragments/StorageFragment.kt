@@ -64,8 +64,7 @@ import java.util.Locale
 
 private const val SIZE_DIVIDER = 100000
 
-class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
-	ItemOperationsListener {
+class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet) {
 	private var allDeviceListItems = ArrayList<ListItem>()
 	private lateinit var binding: StorageFragmentBinding
 	private val volumes = mutableMapOf<String, ItemStorageVolumeBinding>()

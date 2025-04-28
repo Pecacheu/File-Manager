@@ -68,16 +68,11 @@ fun BaseSimpleActivity.toggleItemVisibility(oldPath: String, hide: Boolean, call
 		return
 	}
 
-	filename = if(hide) {
-		".${filename.trimStart('.')}"
-	} else {
-		filename.substring(1, filename.length)
-	}
+	filename = if(hide) ".${filename.trimStart('.')}"
+		else filename.substring(1, filename.length)
 
 	val newPath = "$path/$filename"
-	if(oldPath != newPath) {
-		renameFile(oldPath, newPath, false) {success, useAndroid30Way ->
-			callback?.invoke(newPath)
-		}
-	}
+	//TODO Doesn't account for fav moving, but shouldn't have to (need to override renameFile)
+	if(oldPath != newPath) renameFile(oldPath, newPath, false)
+		{success, useAndroid30Way -> callback?.invoke(newPath)}
 }

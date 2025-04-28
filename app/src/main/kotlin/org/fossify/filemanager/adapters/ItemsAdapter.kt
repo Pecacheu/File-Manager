@@ -108,6 +108,7 @@ import org.fossify.filemanager.extensions.setAs
 import org.fossify.filemanager.extensions.sharePaths
 import org.fossify.filemanager.extensions.toggleItemVisibility
 import org.fossify.filemanager.extensions.tryOpenPathIntent
+import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.helpers.OPEN_AS_AUDIO
 import org.fossify.filemanager.helpers.OPEN_AS_IMAGE
 import org.fossify.filemanager.helpers.OPEN_AS_OTHER
@@ -126,7 +127,7 @@ import java.util.Locale
 class ItemsAdapter(
 	activity: SimpleActivity,
 	var listItems: MutableList<ListItem>,
-	private val listener: ItemOperationsListener?,
+	private val listener: ItemOperationsListener,
 	recyclerView: MyRecyclerView,
 	private val isPickMultipleIntent: Boolean,
 	private val swipeRefreshLayout: SwipeRefreshLayout?,
@@ -175,7 +176,9 @@ class ItemsAdapter(
 	override fun getActionMenuId() = R.menu.cab
 
 	override fun prepareActionMode(menu: Menu) {
+		val isFav = listener is FavoritesFragment
 		menu.apply {
+			findItem(R.id.cab_compress).isVisible = !isFav
 			findItem(R.id.cab_decompress).isVisible = getSelectedFileDirItems().map {it.path}.any {it.isZipFile()}
 			findItem(R.id.cab_confirm_selection).isVisible = isPickMultipleIntent
 			findItem(R.id.cab_copy_path).isVisible = isOneItemSelected()
@@ -183,7 +186,9 @@ class ItemsAdapter(
 			findItem(R.id.cab_open_as).isVisible = isOneFileSelected()
 			findItem(R.id.cab_set_as).isVisible = isOneFileSelected()
 			findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
-			checkHideBtnVisibility(this)
+			findItem(R.id.cab_delete).isVisible = !isFav
+			findItem(R.id.cab_rem_fav).isVisible = isFav
+			checkHideBtnVisibility(this, isFav)
 		}
 	}
 
@@ -208,6 +213,7 @@ class ItemsAdapter(
 			R.id.cab_decompress -> decompressSelection()
 			R.id.cab_select_all -> selectAll()
 			R.id.cab_delete -> if(config.skipDeleteConfirmation) deleteFiles() else askConfirmDelete()
+			R.id.cab_rem_fav -> removeFav()
 		}
 	}
 
@@ -236,6 +242,12 @@ class ItemsAdapter(
 		}
 	}
 
+	private fun removeFav() {
+		if(selectedKeys.isEmpty()) return
+		config.removeFavorite(getFirstSelectedItemPath())
+		(activity as? MainActivity)?.updateFavsList()
+	}
+
 	fun doSelectAll() {
 		if(!actModeCallback.isSelectable) activity.startActionMode(actModeCallback)
 		selectAll()
@@ -260,10 +272,10 @@ class ItemsAdapter(
 	private fun getItemWithKey(key: Int): FileDirItem? = listItems.firstOrNull {it.path.hashCode() == key}
 	private fun isOneFileSelected() = isOneItemSelected() && getItemWithKey(selectedKeys.first())?.isDirectory == false
 
-	private fun checkHideBtnVisibility(menu: Menu) {
+	private fun checkHideBtnVisibility(menu: Menu, noShow: Boolean) {
 		var hiddenCnt = 0
 		var unhiddenCnt = 0
-		getSelectedFileDirItems().map {it.name}.forEach {
+		if(!noShow) getSelectedFileDirItems().map {it.name}.forEach {
 			if(it.startsWith(".")) hiddenCnt++
 			else unhiddenCnt++
 		}
@@ -275,7 +287,7 @@ class ItemsAdapter(
 		if(selectedKeys.isNotEmpty()) {
 			val paths = getSelectedFileDirItems().asSequence().filter {!it.isDirectory}.map {it.path}.toMutableList() as ArrayList<String>
 			if(paths.isEmpty()) finishActMode()
-			else listener?.selectedPaths(paths)
+			else listener.selectedPaths(paths)
 		}
 	}
 
@@ -285,10 +297,11 @@ class ItemsAdapter(
 		when {
 			paths.size == 1 -> {
 				val oldPath = paths.first()
+				//TODO moveFavorite should be part of rename file func, and should account for remote dest
 				RenameItemDialog(activity, oldPath) {
 					config.moveFavorite(oldPath, it)
 					activity.runOnUiThread {
-						listener?.refreshFragment()
+						listener.refreshFragment()
 						(activity as? MainActivity)?.updateFavsList()
 						finishActMode()
 					}
@@ -296,12 +309,12 @@ class ItemsAdapter(
 			}
 			fileDirItems.any {it.isDirectory} -> RenameItemsDialog(activity, paths) {
 				activity.runOnUiThread {
-					listener?.refreshFragment()
+					listener.refreshFragment()
 					finishActMode()
 				}
 			} else -> RenameDialog(activity, paths, false) {
 				activity.runOnUiThread {
-					listener?.refreshFragment()
+					listener.refreshFragment()
 					finishActMode()
 				}
 			}
@@ -330,7 +343,7 @@ class ItemsAdapter(
 				activity.toggleItemVisibility(it.path, hide)
 			}
 			activity.runOnUiThread {
-				listener?.refreshFragment()
+				listener.refreshFragment()
 				finishActMode()
 			}
 		}
@@ -448,7 +461,7 @@ class ItemsAdapter(
 							val sourcePath = sourceFileDir.path
 							if(activity.isRestrictedSAFOnlyRoot(sourcePath) && activity.getDoesFilePathExist(sourcePath)) {
 								activity.deleteFile(sourceFileDir, true) {
-									listener?.refreshFragment()
+									listener.refreshFragment()
 									activity.runOnUiThread {finishActMode()}
 								}
 							} else {
@@ -457,17 +470,17 @@ class ItemsAdapter(
 										?.isEmpty() == true && sourceFile.getProperSize(true) == 0L && sourceFile.getFileCount(true) == 0) {
 									val sourceFolder = sourceFile.toFileDirItem(activity)
 									activity.deleteFile(sourceFolder, true) {
-										listener?.refreshFragment()
+										listener.refreshFragment()
 										activity.runOnUiThread {finishActMode()}
 									}
 								} else {
-									listener?.refreshFragment()
+									listener.refreshFragment()
 									finishActMode()
 								}
 							}
 						}
 					} else {
-						listener?.refreshFragment()
+						listener.refreshFragment()
 						finishActMode()
 					}
 				}
@@ -486,7 +499,7 @@ class ItemsAdapter(
 					else -> activity.toast(org.fossify.commons.R.string.copying_success_partial)
 				}
 				activity.runOnUiThread {
-					listener?.refreshFragment()
+					listener.refreshFragment()
 					finishActMode()
 				}
 			}
@@ -510,7 +523,7 @@ class ItemsAdapter(
 						if(compressPaths(paths, destination, password)) {
 							activity.runOnUiThread {
 								activity.toast(R.string.compression_successful)
-								listener?.refreshFragment()
+								listener.refreshFragment()
 								finishActMode()
 							}
 						} else activity.toast(R.string.compressing_failed)
@@ -534,7 +547,7 @@ class ItemsAdapter(
 					activity.runOnUiThread {
 						if(success) {
 							activity.toast(R.string.decompression_successful)
-							listener?.refreshFragment()
+							listener.refreshFragment()
 							finishActMode()
 						} else activity.toast(R.string.decompressing_failed)
 					}
@@ -750,7 +763,7 @@ class ItemsAdapter(
 				positions.sortDescending()
 				activity.runOnUiThread {
 					removeSelectedItems(positions)
-					listener?.deleteFiles(files)
+					listener.deleteFiles(files)
 					positions.forEach {listItems.removeAt(it)}
 					(activity as? MainActivity)?.updateFavsList()
 				}
@@ -1030,7 +1043,7 @@ class ItemsAdapter(
 		override val itemIcon: ImageView = binding.itemIcon
 		override val itemDetails: TextView? = null
 		override val itemDate: TextView? = null
-		override val itemCheck: ImageView? = null
+		override val itemCheck: ImageView? = binding.itemCheck
 		override val itemSection: TextView? = null
 		override fun getRoot(): View = binding.root
 	}

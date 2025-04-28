@@ -22,14 +22,12 @@ import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.RecentsFragmentBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
 private const val RECENTS_LIMIT = 50
 
-class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
-	ItemOperationsListener {
+class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet) {
 	private var filesIgnoringSearch = ArrayList<ListItem>()
 	private lateinit var binding: RecentsFragmentBinding
 

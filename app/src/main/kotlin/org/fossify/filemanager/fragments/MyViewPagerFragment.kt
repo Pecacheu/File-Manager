@@ -21,9 +21,10 @@ import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
 import org.fossify.filemanager.helpers.RootHelpers
+import org.fossify.filemanager.interfaces.ItemOperationsListener
 
 abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(context: Context, attributeSet: AttributeSet):
-	RelativeLayout(context, attributeSet) {
+		RelativeLayout(context, attributeSet), ItemOperationsListener {
 	protected var activity: SimpleActivity? = null
 	protected var currentViewType = VIEW_TYPE_LIST
 
@@ -105,7 +106,6 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 
 	abstract fun setupFragment(activity: SimpleActivity)
 	abstract fun onResume(textColor: Int)
-	abstract fun refreshFragment()
 	abstract fun searchQueryChanged(text: String)
 	abstract fun getRecyclerAdapter(): ItemsAdapter?
 

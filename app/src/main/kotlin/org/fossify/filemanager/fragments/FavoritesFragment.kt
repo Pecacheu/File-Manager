@@ -15,11 +15,9 @@ import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.FavoritesFragmentBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.humanizePath
-import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 
-class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet),
-	ItemOperationsListener {
+class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet) {
 	private var filesIgnoringSearch = ArrayList<ListItem>()
 	private lateinit var binding: FavoritesFragmentBinding
 

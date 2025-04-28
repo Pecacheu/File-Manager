@@ -23,13 +23,12 @@ import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.helpers.Remote
 import org.fossify.filemanager.helpers.RootHelpers
-import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import org.fossify.filemanager.views.Breadcrumbs
 import java.io.File
 
 class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.ItemsInnerBinding>(context, attributeSet),
-	ItemOperationsListener, Breadcrumbs.BreadcrumbsListener {
+		Breadcrumbs.BreadcrumbsListener {
 	private var showHidden = false
 	private var scrollStates = HashMap<String, Parcelable>()
 	private var storedItems = ArrayList<ListItem>()

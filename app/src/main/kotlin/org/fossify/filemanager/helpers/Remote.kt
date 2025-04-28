@@ -76,7 +76,7 @@ class Remote(data: JSONObject) {
 			obj.put("h", host)
 			obj.put("u", usr)
 			obj.put("s", share)
-			if(domain.isNotBlank()) obj.put("s", domain)
+			obj.put("d", domain)
 			return obj
 		}
 		fun clearKeys() {
@@ -129,7 +129,7 @@ class Remote(data: JSONObject) {
 		_name = data.getString("n")
 		_type = data.getInt("t")
 		_host = data.getString("h")
-		_usr = data.getString("u")
+		_usr = data.optString("u")
 		if(pwdKey.isEmpty()) _pwdKey = data.optString("p")
 		if(type == SMB) {
 			_share = data.getString("s")
@@ -145,7 +145,7 @@ class Remote(data: JSONObject) {
 		obj.put("n", name)
 		obj.put("t", type)
 		obj.put("h", host)
-		obj.put("u", usr)
+		if(usr.isNotBlank()) obj.put("u", usr)
 		if(pwdKey.isNotBlank()) obj.put("p", pwdKey)
 		obj.put("s", share)
 		if(domain.isNotBlank()) obj.put("d", domain)
@@ -225,7 +225,8 @@ class Remote(data: JSONObject) {
 				.withTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.withSoTimeout(SO_TIMEOUT, TimeUnit.SECONDS)
 				.build()).connect(hs[0], port)
-			val ac = AuthenticationContext(usr, pwd.toCharArray(), domain)
+			val ac = if(usr.isBlank() || pwd.isBlank()) AuthenticationContext.guest()
+				else AuthenticationContext(usr, pwd.toCharArray(), domain)
 			mount = smb!!.authenticate(ac).connectShare(share) as DiskShare
 		}
 	}

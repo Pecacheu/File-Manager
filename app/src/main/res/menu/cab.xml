@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
@@ -15,6 +14,11 @@
 		android:showAsAction="always"
 		android:title="@string/confirm_selection"
 		app:showAsAction="always"/>
+	<item
+		android:id="@+id/cab_rem_fav"
+		android:icon="@drawable/ic_star_outline_vector"
+		android:title="@string/remove_from_favorites"
+		app:showAsAction="ifRoom"/>
 	<item
 		android:id="@+id/cab_properties"
 		android:icon="@drawable/ic_info_vector"

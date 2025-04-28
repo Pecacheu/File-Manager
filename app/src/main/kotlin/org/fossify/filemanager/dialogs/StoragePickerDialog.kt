@@ -34,15 +34,13 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 
 		val rList = activity.config.getRemotes()
 		for(r in rList) storages.put(r.value.name, r.value.basePath)
-
-		if(storages.size == 1) callback(storages.values.first())
-		else initDialog()
+		initDialog()
 	}
 
 	private fun initDialog() {
 		val basePath = path.getBasePath(activity)
 		val inflater = LayoutInflater.from(activity)
-		val layout = RadioGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+		var layout = RadioGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 		val view = DialogRadioGroupBinding.inflate(inflater, null, false)
 		var nextId = 0
 		radioGroup = view.dialogRadioGroup
@@ -74,6 +72,8 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 		val btnRow = LinearLayout(activity)
 		val p = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 		p.rightMargin = activity.resources.getDimensionPixelSize(R.dimen.medium_margin)
+		layout = RadioGroup.LayoutParams(layout)
+		layout.topMargin = p.rightMargin
 		btnRow.addView(btnEdit, p)
 		btnRow.addView(btnNew)
 		radioGroup.addView(btnRow, layout)
