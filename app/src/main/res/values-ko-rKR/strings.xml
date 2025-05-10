@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">파일 매니저</string>
 	<string name="press_back_again">뒤로가기 버튼을 다시 누르면 종료됩니다</string>
@@ -16,8 +15,6 @@
 	<string name="decompression_successful">압축 해제 성공</string>
 	<string name="compressing_failed">압축 실패</string>
 	<string name="decompressing_failed">압축해제 실패</string>
-	<string name="manage_favorites">즐겨찾기 관리</string>
-	<string name="favorites_activity_placeholder">자주 사용하는 폴더를 즐겨찾기에 추가하여 어디서나 쉽게 접근 할 수 있습니다.</string>
 	<string name="file_editor">텍스트 편집기</string>
 	<string name="enable_root_access">루트 접근 활성화</string>
 	<string name="images">사진</string>

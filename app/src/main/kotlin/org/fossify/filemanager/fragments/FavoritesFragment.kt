@@ -7,7 +7,6 @@ import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
@@ -38,7 +37,6 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 			getFavs(viewType) {favs ->
 				binding.apply {
 					favsList.beVisibleIf(favs.isNotEmpty())
-					favsPlaceholder.beVisibleIf(favs.isEmpty())
 				}
 				filesIgnoringSearch = favs
 				addItems(favs, false)
@@ -51,11 +49,11 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		if(!forceRefresh && favs.hashCode() == (binding.favsList.adapter as? ItemsAdapter)?.listItems.hashCode()) {
 			return
 		}
-		ItemsAdapter(activity as SimpleActivity, favs, this, binding.favsList, isPickMultipleIntent,
-			null, false) {
+		ItemsAdapter(activity!!, favs, this, binding.favsList, null, false) {
 			val main = activity as MainActivity
-			main.openPath((it as FileDirItem).path)
+			main.openPath(it.path)
 			main.gotoFilesTab()
+			return@ItemsAdapter true
 		}.apply {
 			setItemListZoom(zoomListener)
 			binding.favsList.adapter = this
@@ -66,7 +64,6 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	}
 
 	override fun onResume(textColor: Int) {
-		binding.favsPlaceholder.setTextColor(textColor)
 		getRecyclerAdapter()?.apply {
 			updatePrimaryColor()
 			updateTextColor(textColor)
@@ -101,7 +98,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		favorites.forEach {path ->
 			var name = activity!!.humanizePath(path)
 			if(viewType == VIEW_TYPE_GRID) name = name.getFilenameFromPath()
-			val itm = ListItem(path, name, true, -2, 0, 0, false, false)
+			val itm = ListItem(activity, path, name, true, -2, 0, 0)
 			items.add(itm)
 		}
 		activity?.runOnUiThread {callback(items)}
@@ -122,14 +119,12 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
 	override fun selectedPaths(paths: ArrayList<String>) {(activity as MainActivity).pickedPaths(paths)}
-	override fun deleteFiles(files: ArrayList<FileDirItem>) {}
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text
-		val filtered = filesIgnoringSearch.filter {it.mName.contains(text, true)}.toMutableList() as ArrayList<ListItem>
+		val filtered = filesIgnoringSearch.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
 		binding.apply {
 			(favsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)
-			favsPlaceholder.beVisibleIf(filtered.isEmpty())
 		}
 	}
 

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">फाइल प्रबंधक</string>
 	<string name="press_back_again">फिर से बाहर निकलने के लिए प्रेस करें</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">अवसाद सफल</string>
 	<string name="compressing_failed">संपीड़न विफल</string>
 	<string name="decompressing_failed">अवसाद विफल</string>
-	<string name="manage_favorites">पसंदीदा प्रबंधित करें</string>
-	<string name="favorites_activity_placeholder">आप कहीं से भी आसानी से पहुंच के लिए पसंदीदा में अक्सर इस्तेमाल किए जाने वाले फ़ोल्डर जोड़ सकते हैं।</string>
 	<string name="file_editor">फाइल संपादक</string>
 	<string name="enable_root_access">रूट एक्सेस</string>
 	<string name="storage_analysis">स्टोरेज विश्लेषण</string>

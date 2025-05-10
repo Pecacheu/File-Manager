@@ -33,7 +33,6 @@ import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.SHORT_ANIMATION_DURATION
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.MimeTypesActivity
@@ -57,8 +56,6 @@ import org.fossify.filemanager.helpers.VOLUME_NAME
 import org.fossify.filemanager.helpers.archiveMimeTypes
 import org.fossify.filemanager.helpers.extraAudioMimeTypes
 import org.fossify.filemanager.helpers.extraDocumentMimeTypes
-import org.fossify.filemanager.helpers.getListItemsFromFileDirItems
-import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
 import java.util.Locale
 
@@ -85,13 +82,10 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			val volumeBinding = ItemStorageVolumeBinding.inflate(activity.layoutInflater)
 			volumes[volumeName] = volumeBinding
 			volumeBinding.apply {
-				if(volumeName == PRIMARY_VOLUME_NAME) {
-					storageName.setText(org.fossify.commons.R.string.internal)
-				} else {
-					storageName.setText(org.fossify.commons.R.string.sd_card)
-				}
+				if(volumeName == PRIMARY_VOLUME_NAME) storageName.setText(org.fossify.commons.R.string.internal)
+					else storageName.setText(org.fossify.commons.R.string.sd_card)
 
-				totalSpace.text = String.format(context.getString(R.string.total_storage), "…")
+				totalSpace.text = String.format(context.getString(R.string.total_storage), '…')
 				getSizes(volumeName)
 
 				if(volumeNames.size > 1) {
@@ -109,9 +103,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 							expandButton.setImageResource(R.drawable.ic_arrow_up_vector)
 						}
 					}
-				} else {
-					expandButton.beGone()
-				}
+				} else expandButton.beGone()
 
 				freeSpaceHolder.setOnClickListener {
 					try {
@@ -129,14 +121,8 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			}
 			binding.storageVolumesHolder.addView(volumeBinding.root)
 		}
-
-		ensureBackgroundThread {
-			getVolumeStorageStats(context)
-		}
-
-		Handler(Looper.getMainLooper()).postDelayed({
-			refreshFragment()
-		}, 2000)
+		ensureBackgroundThread {getVolumeStorageStats(context)}
+		Handler(Looper.getMainLooper()).postDelayed({refreshFragment()}, 2000)
 	}
 
 	override fun onResume(textColor: Int) {
@@ -183,10 +169,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			progressBar.setIndicatorColor(properPrimaryColor)
 			progressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
 		}
-
-		ensureBackgroundThread {
-			getVolumeStorageStats(context)
-		}
+		ensureBackgroundThread {getVolumeStorageStats(context)}
 	}
 
 	private fun launchMimetypeActivity(mimetype: String, volumeName: String) {
@@ -253,7 +236,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 						}
 						return@queryCursor
 					}
-					when(mimeType.substringBefore("/")) {
+					when(mimeType.substringBefore('/')) {
 						"image" -> imagesSize += size
 						"video" -> videosSize += size
 						"audio" -> audioSize += size
@@ -341,7 +324,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			} else {
 				showProgressBar()
 				ensureBackgroundThread {
-					val filtered = allDeviceListItems.filter {it.mName.contains(text, true)}.toMutableList() as ArrayList<ListItem>
+					val filtered = allDeviceListItems.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
 					if(lastSearchedText != text) return@ensureBackgroundThread
 					(context as? Activity)?.runOnUiThread {
 						(searchResultsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)
@@ -375,16 +358,14 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	}
 
 	private fun addItems() {
-		ItemsAdapter(context as SimpleActivity, ArrayList(), this, binding.searchResultsList, false, null, false) {
-			clickedPath((it as FileDirItem).path)
-		}.apply {
+		ItemsAdapter(activity!!, ArrayList(), this, binding.searchResultsList, null, false).apply {
 			binding.searchResultsList.adapter = this
 		}
 	}
 
-	private fun getAllFiles(volumeName: String): ArrayList<FileDirItem> {
-		val fileDirItems = ArrayList<FileDirItem>()
-		val showHidden = context?.config?.shouldShowHidden()?:return fileDirItems
+	private fun getAllFiles(volumeName: String): ArrayList<ListItem> {
+		val items = ArrayList<ListItem>()
+		val showHidden = context?.config?.shouldShowHidden()?:return items
 		val uri = MediaStore.Files.getContentUri(volumeName)
 		val projection = arrayOf(MediaStore.Files.FileColumns.DATA, MediaStore.Files.FileColumns.DISPLAY_NAME, MediaStore.Files.FileColumns.SIZE,
 			MediaStore.Files.FileColumns.DATE_MODIFIED)
@@ -398,19 +379,18 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					do {
 						try {
 							val name = cursor.getStringValue(MediaStore.Files.FileColumns.DISPLAY_NAME)
-							if(!showHidden && name.startsWith(".")) continue
+							if(!showHidden && name.startsWith('.')) continue
 							val size = cursor.getLongValue(MediaStore.Files.FileColumns.SIZE)
 							if(size == 0L) continue
 							val path = cursor.getStringValue(MediaStore.Files.FileColumns.DATA)
 							val lastModified = cursor.getLongValue(MediaStore.Files.FileColumns.DATE_MODIFIED)*1000
-							fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
+							items.add(ListItem(activity, path, name, false, 0, size, lastModified))
 						} catch(_: Exception) {}
 					} while(cursor.moveToNext())
 				}
 			}
 		} catch(e: Throwable) {activity?.error(e)}
-
-		return fileDirItems
+		return items
 	}
 
 	private fun showProgressBar() {binding.progressBar.show()}
@@ -419,13 +399,12 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 
 	override fun refreshFragment() {
 		ensureBackgroundThread {
-			val fileDirItems = volumes.keys.map {getAllFiles(it)}.flatten()
-			allDeviceListItems = getListItemsFromFileDirItems(ArrayList(fileDirItems))
+			val items = volumes.keys.map {getAllFiles(it)}.flatten()
+			allDeviceListItems = ArrayList(items)
 		}
 		setupLayoutManager(context!!.config.getFolderViewType(""))
 	}
 
-	override fun deleteFiles(files: ArrayList<FileDirItem>) {handleFileDeleting(files, false)}
 	override fun selectedPaths(paths: ArrayList<String>) {}
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
 	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}

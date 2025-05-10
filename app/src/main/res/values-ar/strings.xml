@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">مدير الملفات</string>
 	<string name="press_back_again">اضغط مرة أخرى للخروج</string>
@@ -18,8 +17,6 @@
 	<string name="decompression_successful">نجح التفكيك</string>
 	<string name="compressing_failed">أخفق الضغط</string>
 	<string name="decompressing_failed">أخفق إلغاء الضغط</string>
-	<string name="manage_favorites">إدارة المفضلة</string>
-	<string name="favorites_activity_placeholder">يمكنك إضافة المجلدات المستخدمة بشكل متكرر إلى المفضلة لسهولة الوصول إليها من أي مكان.</string>
 	<string name="file_editor">محرر الملفات</string>
 	<string name="storage_analysis">تحليل التخزين</string>
 	<string name="images">الصور</string>

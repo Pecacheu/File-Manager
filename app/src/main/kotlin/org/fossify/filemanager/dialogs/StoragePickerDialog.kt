@@ -19,8 +19,7 @@ import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.helpers.Remote
 
-class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
-		showRoot: Boolean, val callback: (pickedPath: String)->Unit) {
+class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, val callback: (pickedPath: String)->Unit) {
 	private lateinit var radioGroup: RadioGroup
 	private var dialog: AlertDialog? = null
 	private val storages = LinkedHashMap<String, String>()
@@ -30,7 +29,7 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String,
 		storages.put(activity.getString(R.string.internal), activity.internalStoragePath)
 		if(activity.hasExternalSDCard()) storages.put(activity.getString(R.string.sd_card), activity.sdCardPath)
 		if(activity.hasOTGConnected()) storages.put(activity.getString(R.string.usb), activity.otgPath)
-		if(showRoot) storages.put(activity.getString(R.string.root), "/")
+		if(activity.config.enableRootAccess) storages.put(activity.getString(R.string.root), "/")
 
 		val rList = activity.config.getRemotes()
 		for(r in rList) storages.put(r.value.name, r.value.basePath)

@@ -9,14 +9,20 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
+import android.util.Log
 import android.util.TypedValue
+import android.view.ActionMode
 import android.view.LayoutInflater
 import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.ActionBar
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewbinding.ViewBinding
 import com.bumptech.glide.Glide
@@ -35,7 +41,6 @@ import net.lingala.zip4j.io.outputstream.ZipOutputStream
 import net.lingala.zip4j.model.LocalFileHeader
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.EncryptionMethod
-import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.dialogs.PropertiesDialog
@@ -44,12 +49,12 @@ import org.fossify.commons.dialogs.RenameDialog
 import org.fossify.commons.dialogs.RenameItemDialog
 import org.fossify.commons.dialogs.RenameItemsDialog
 import org.fossify.commons.extensions.applyColorFilter
+import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.createDirectorySync
 import org.fossify.commons.extensions.deleteFile
 import org.fossify.commons.extensions.deleteFileBg
 import org.fossify.commons.extensions.deleteFolderBg
@@ -58,6 +63,7 @@ import org.fossify.commons.extensions.formatSize
 import org.fossify.commons.extensions.getAndroidSAFFileItems
 import org.fossify.commons.extensions.getAndroidSAFUri
 import org.fossify.commons.extensions.getColoredDrawableWithColor
+import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getDefaultCopyDestinationPath
 import org.fossify.commons.extensions.getDocumentFile
 import org.fossify.commons.extensions.getDoesFilePathExist
@@ -68,28 +74,30 @@ import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getIsPathDirectory
 import org.fossify.commons.extensions.getMimeType
 import org.fossify.commons.extensions.getParentPath
+import org.fossify.commons.extensions.getProperBackgroundColor
+import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperSize
+import org.fossify.commons.extensions.getProperStatusBarColor
+import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.commons.extensions.handleDeletePasswordProtection
-import org.fossify.commons.extensions.hasOTGConnected
 import org.fossify.commons.extensions.highlightTextPart
-import org.fossify.commons.extensions.isPathOnOTG
+import org.fossify.commons.extensions.isAudioFast
+import org.fossify.commons.extensions.isDynamicTheme
 import org.fossify.commons.extensions.isRestrictedSAFOnlyRoot
+import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.extensions.relativizeWith
 import org.fossify.commons.extensions.setupViewBackground
-import org.fossify.commons.extensions.showErrorToast
-import org.fossify.commons.extensions.toFileDirItem
 import org.fossify.commons.extensions.toast
-import org.fossify.commons.helpers.CONFLICT_OVERWRITE
-import org.fossify.commons.helpers.CONFLICT_SKIP
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.getFilePlaceholderDrawables
-import org.fossify.commons.models.FileDirItem
+import org.fossify.commons.interfaces.MyActionModeCallback
 import org.fossify.commons.models.RadioItem
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.DecompressActivity
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.activities.SplashActivity
@@ -106,9 +114,10 @@ import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.isZipFile
 import org.fossify.filemanager.extensions.setAs
 import org.fossify.filemanager.extensions.sharePaths
-import org.fossify.filemanager.extensions.toggleItemVisibility
 import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.fragments.FavoritesFragment
+import org.fossify.filemanager.fragments.ItemsFragment
+import org.fossify.filemanager.fragments.MyViewPagerFragment
 import org.fossify.filemanager.helpers.OPEN_AS_AUDIO
 import org.fossify.filemanager.helpers.OPEN_AS_IMAGE
 import org.fossify.filemanager.helpers.OPEN_AS_OTHER
@@ -120,37 +129,39 @@ import org.fossify.filemanager.models.ListItem
 import java.io.BufferedInputStream
 import java.io.Closeable
 import java.io.File
+import java.io.OutputStream
 import java.util.LinkedList
 import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
 
 @SuppressLint("NotifyDataSetChanged")
 class ItemsAdapter(
-	activity: SimpleActivity,
+	val activity: SimpleActivity,
 	var listItems: MutableList<ListItem>,
 	private val listener: ItemOperationsListener,
-	recyclerView: MyRecyclerView,
-	private val isPickMultipleIntent: Boolean,
+	val recyclerView: MyRecyclerView,
 	private val swipeRefreshLayout: SwipeRefreshLayout?,
 	canHaveIndividualViewType: Boolean = true,
-	itemClick: (Any)->Unit,
-): MyRecyclerViewAdapter(activity, recyclerView, itemClick), RecyclerViewFastScroller.OnPopupTextUpdate {
+	isMainActMode: Boolean = false,
+	val itemClick: ((ListItem)->Boolean)? = null
+): RecyclerView.Adapter<ItemsAdapter.ViewHolder>(), RecyclerViewFastScroller.OnPopupTextUpdate {
+	private val isPickMultipleIntent = (listener as? MyViewPagerFragment<*>)?.isPickMultipleIntent == true
+	private val selected = ArrayList<ListItem>()
 	private lateinit var fileDrawable: Drawable
 	private lateinit var folderDrawable: Drawable
 	private var fileDrawables = HashMap<String, Drawable>()
 	private var currentItemsHash = listItems.hashCode()
 	private var textToHighlight = ""
-	private val hasOTGConnected = activity.hasOTGConnected()
 	private var fontSize = 0f
 	private var smallerFontSize = 0f
 	private var dateFormat = ""
 	private var timeFormat = ""
 
 	private val config = activity.config
-	private val viewType = if(canHaveIndividualViewType) {
-		config.getFolderViewType(listItems.firstOrNull {!it.isSectionTitle}?.mPath?.getParentPath()?:"")
-	} else {
-		config.viewType
-	}
+	private val viewType = if(canHaveIndividualViewType)
+		config.getFolderViewType(listItems.firstOrNull {!it.isSectionTitle}?.path?.getParentPath()?:"")
+		else config.viewType
 	private val isListViewType = viewType == VIEW_TYPE_LIST
 	private var displayFilenamesInGrid = config.displayFilenames
 
@@ -161,25 +172,15 @@ class ItemsAdapter(
 		private const val TYPE_GRID_TYPE_DIVIDER = 4
 	}
 
-	init {
-		setupDragListener(true)
-		initDrawables()
-		updateFontSizes()
-		dateFormat = config.dateFormat
-		timeFormat = activity.getTimeFormat()
-	}
-
 	fun setItemListZoom(zoomListener: MyRecyclerView.MyZoomListener?) {
 		(recyclerView as ItemsList).setZoomListener(zoomListener, swipeRefreshLayout)
 	}
 
-	override fun getActionMenuId() = R.menu.cab
-
-	override fun prepareActionMode(menu: Menu) {
+	private fun prepareActionMode(menu: Menu) {
 		val isFav = listener is FavoritesFragment
 		menu.apply {
 			findItem(R.id.cab_compress).isVisible = !isFav
-			findItem(R.id.cab_decompress).isVisible = getSelectedFileDirItems().map {it.path}.any {it.isZipFile()}
+			findItem(R.id.cab_decompress).isVisible = isOneFileSelected() && selected.first().name.isZipFile()
 			findItem(R.id.cab_confirm_selection).isVisible = isPickMultipleIntent
 			findItem(R.id.cab_copy_path).isVisible = isOneItemSelected()
 			findItem(R.id.cab_open_with).isVisible = isOneFileSelected()
@@ -188,112 +189,112 @@ class ItemsAdapter(
 			findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
 			findItem(R.id.cab_delete).isVisible = !isFav
 			findItem(R.id.cab_rem_fav).isVisible = isFav
-			checkHideBtnVisibility(this, isFav)
+			checkHideBtnVisibility(this, isFav || isOnRemote())
 		}
 	}
 
-	//TODO Fix all below for remote
-	override fun actionItemPressed(id: Int) {
-		if(selectedKeys.isEmpty()) return
+	private fun isOnRemote(): Boolean {
+		if(listener !is ItemsFragment || selected.isEmpty()) return false
+		return isRemotePath(selected.first().path)
+	}
+
+	private fun actionItemPressed(id: Int) {
+		if(selected.isEmpty()) return
 		when(id) {
-			R.id.cab_confirm_selection -> confirmSelection()
-			R.id.cab_rename -> displayRenameDialog()
-			R.id.cab_properties -> showProperties()
+			R.id.cab_confirm_selection -> confirmSelection() //TODO Fix for remote
+			R.id.cab_rename -> displayRenameDialog() //TODO Fix for remote
+			R.id.cab_properties -> showProperties() //TODO Fix for remote
 			R.id.cab_share -> shareFiles()
-			R.id.cab_hide -> toggleFileVisibility(true)
-			R.id.cab_unhide -> toggleFileVisibility(false)
+			R.id.cab_hide -> setHidden(true)
+			R.id.cab_unhide -> setHidden(false)
 			R.id.cab_create_shortcut -> createShortcut()
 			R.id.cab_copy_path -> copyPath()
 			R.id.cab_set_as -> setAs()
 			R.id.cab_open_with -> openWith()
 			R.id.cab_open_as -> openAs()
 			R.id.cab_copy_to -> copyMoveTo(true)
-			R.id.cab_move_to -> tryMoveFiles()
-			R.id.cab_compress -> compressSelection()
-			R.id.cab_decompress -> decompressSelection()
+			R.id.cab_move_to -> copyMoveTo(false)
+			R.id.cab_compress -> compress() //TODO Fix for remote
+			R.id.cab_decompress -> decompress(selected.first())
 			R.id.cab_select_all -> selectAll()
-			R.id.cab_delete -> if(config.skipDeleteConfirmation) deleteFiles() else askConfirmDelete()
+			R.id.cab_delete -> askConfirmDelete()
 			R.id.cab_rem_fav -> removeFav()
 		}
 	}
 
-	override fun getSelectableItemCount() = listItems.filter {!it.isSectionTitle && !it.isGridTypeDivider}.size
-	override fun getIsItemSelectable(position: Int) = !listItems[position].isSectionTitle && !listItems[position].isGridTypeDivider
-	override fun getItemSelectionKey(position: Int) = listItems.getOrNull(position)?.path?.hashCode()
-	override fun getItemKeyPosition(key: Int) = listItems.indexOfFirst {it.path.hashCode() == key}
-
-	override fun onActionModeCreated() {
+	private fun onActionModeCreated() {
 		swipeRefreshLayout?.isRefreshing = false
 		swipeRefreshLayout?.isEnabled = false
 		(recyclerView as? ItemsList)?.zoomEnabled = false
 	}
 
-	override fun onActionModeDestroyed() {
+	private fun onActionModeDestroyed() {
 		swipeRefreshLayout?.isEnabled = true
 		(recyclerView as? ItemsList)?.zoomEnabled = true
 	}
 
 	override fun getItemViewType(position: Int): Int {
 		return when {
-			listItems[position].isGridTypeDivider -> TYPE_GRID_TYPE_DIVIDER
+			listItems[position].isGridDivider -> TYPE_GRID_TYPE_DIVIDER
 			listItems[position].isSectionTitle -> TYPE_SECTION
-			listItems[position].mIsDirectory -> TYPE_DIR
+			listItems[position].isDir -> TYPE_DIR
 			else -> TYPE_FILE
 		}
 	}
 
 	private fun removeFav() {
-		if(selectedKeys.isEmpty()) return
-		config.removeFavorite(getFirstSelectedItemPath())
+		for(f in selected) config.removeFavorite(f.path)
 		(activity as? MainActivity)?.updateFavsList()
 	}
 
-	fun doSelectAll() {
+	fun selectAll() {
 		if(!actModeCallback.isSelectable) activity.startActionMode(actModeCallback)
-		selectAll()
+		val cnt = itemCount - positionOffset
+		for(i in 0 until cnt) setSelected(true, i, false)
+		lastLongPressedItem = -1
+		updateTitle()
 	}
 
-	fun isActMode() = selectedKeys.isNotEmpty()
+	fun isActMode() = selected.isNotEmpty()
 	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
 		val binding = Binding.getByItemViewType(viewType, isListViewType).inflate(layoutInflater, parent, false)
 		return createViewHolder(binding.root)
 	}
 
 	override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-		val fileDirItem = listItems[position]
-		holder.bindView(fileDirItem, true, !fileDirItem.isSectionTitle) {itemView, layoutPosition ->
+		val item = listItems[position]
+		holder.bindView(item, true, !item.isSectionTitle) {view ->
 			val viewType = getItemViewType(position)
-			setupView(Binding.getByItemViewType(viewType, isListViewType).bind(itemView), fileDirItem)
+			setupView(Binding.getByItemViewType(viewType, isListViewType).bind(view), item)
 		}
 		bindViewHolder(holder)
 	}
 
 	override fun getItemCount() = listItems.size
-	private fun getItemWithKey(key: Int): FileDirItem? = listItems.firstOrNull {it.path.hashCode() == key}
-	private fun isOneFileSelected() = isOneItemSelected() && getItemWithKey(selectedKeys.first())?.isDirectory == false
+	private fun getSelectableItemCount() = listItems.filter {!it.isSectionTitle && !it.isGridDivider}.size
+	private fun isOneFileSelected() = isOneItemSelected() && selected.first().isDir == false
+	private fun isOneItemSelected() = selected.size == 1
+	private fun firstSharePath() = selected.first().sharePath()
 
 	private fun checkHideBtnVisibility(menu: Menu, noShow: Boolean) {
 		var hiddenCnt = 0
 		var unhiddenCnt = 0
-		if(!noShow) getSelectedFileDirItems().map {it.name}.forEach {
-			if(it.startsWith(".")) hiddenCnt++
-			else unhiddenCnt++
+		if(!noShow) selected.forEach {
+			if(it.isHidden) hiddenCnt++ else unhiddenCnt++
 		}
 		menu.findItem(R.id.cab_hide).isVisible = unhiddenCnt > 0
 		menu.findItem(R.id.cab_unhide).isVisible = hiddenCnt > 0
 	}
 
 	private fun confirmSelection() {
-		if(selectedKeys.isNotEmpty()) {
-			val paths = getSelectedFileDirItems().asSequence().filter {!it.isDirectory}.map {it.path}.toMutableList() as ArrayList<String>
-			if(paths.isEmpty()) finishActMode()
-			else listener.selectedPaths(paths)
-		}
+		val paths = selected.asSequence().filter {!it.isDir}.map {it.path}.toMutableList() as ArrayList<String>
+		if(paths.isEmpty()) finishActMode()
+		else listener.selectedPaths(paths)
 	}
 
 	fun displayRenameDialog() {
-		val fileDirItems = getSelectedFileDirItems()
-		val paths = fileDirItems.asSequence().map {it.path}.toMutableList() as ArrayList<String>
+		val items = selected
+		val paths = items.asSequence().map {it.path}.toMutableList() as ArrayList<String>
 		when {
 			paths.size == 1 -> {
 				val oldPath = paths.first()
@@ -307,7 +308,7 @@ class ItemsAdapter(
 					}
 				}
 			}
-			fileDirItems.any {it.isDirectory} -> RenameItemsDialog(activity, paths) {
+			items.any {it.isDir} -> RenameItemsDialog(activity, paths) {
 				activity.runOnUiThread {
 					listener.refreshFragment()
 					finishActMode()
@@ -321,30 +322,38 @@ class ItemsAdapter(
 		}
 	}
 
+	//TODO Is share path needed?
 	fun showProperties() {
-		if(selectedKeys.size <= 1) {
-			PropertiesDialog(activity, getFirstSelectedItemPath(), config.shouldShowHidden())
+		if(selected.size <= 1) {
+			PropertiesDialog(activity, firstSharePath(), config.shouldShowHidden())
 		} else {
-			val paths = getSelectedFileDirItems().map {it.path}
+			val paths = selected.map {it.path}
 			PropertiesDialog(activity, paths, config.shouldShowHidden())
 		}
 	}
 
 	fun shareFiles() {
-		val selectedItems = getSelectedFileDirItems()
-		val paths = ArrayList<String>(selectedItems.size)
-		selectedItems.forEach {addFileUris(it.path, paths)}
-		activity.sharePaths(paths)
+		ensureBackgroundThread {
+			try {
+				val paths = ArrayList<String>(selected.size)
+				for(f in selected) addFileUris(f, paths)
+				activity.sharePaths(paths)
+			} catch(e: Throwable) {
+				activity.error(e)
+			}
+		}
 	}
 
-	private fun toggleFileVisibility(hide: Boolean) {
+	private fun setHidden(hide: Boolean) {
 		ensureBackgroundThread {
-			getSelectedFileDirItems().forEach {
-				activity.toggleItemVisibility(it.path, hide)
-			}
-			activity.runOnUiThread {
-				listener.refreshFragment()
-				finishActMode()
+			try {
+				for(f in selected) f.setHidden(hide)
+				activity.runOnUiThread {
+					listener.refreshFragment()
+					finishActMode()
+				}
+			} catch(e: Throwable) {
+				activity.error(e)
 			}
 		}
 	}
@@ -353,18 +362,18 @@ class ItemsAdapter(
 	private fun createShortcut() {
 		val manager = activity.getSystemService(ShortcutManager::class.java)
 		if(manager.isRequestPinShortcutSupported) {
-			val path = getFirstSelectedItemPath()
+			val item = selected.first()
 			val drawable = resources.getDrawable(R.drawable.shortcut_folder, null).mutate()
-			getShortcutImage(path, drawable) {
-				val intent = Intent(activity, SplashActivity::class.java)
-				intent.action = Intent.ACTION_VIEW
-				intent.flags = intent.flags or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY
-				intent.data = Uri.fromFile(File(path))
+			getShortcutImage(item, drawable) {
+				val i = Intent(activity, SplashActivity::class.java)
+				i.action = Intent.ACTION_VIEW
+				i.flags = i.flags or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY
+				i.data = Uri.fromFile(File(item.path))
 
-				val shortcut = ShortcutInfo.Builder(activity, path)
-					.setShortLabel(path.getFilenameFromPath())
+				val shortcut = ShortcutInfo.Builder(activity, item.path)
+					.setShortLabel(item.name)
 					.setIcon(Icon.createWithBitmap(drawable.convertToBitmap()))
-					.setIntent(intent)
+					.setIntent(i)
 					.build()
 
 				manager.requestPinShortcut(shortcut, null)
@@ -372,83 +381,59 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun getShortcutImage(path: String, drawable: Drawable, callback: ()->Unit) {
-		val appIconColor = baseConfig.appIconColor
+	private fun getShortcutImage(item: ListItem, drawable: Drawable, callback: ()->Unit) {
+		val appIconColor = activity.baseConfig.appIconColor
 		(drawable as LayerDrawable).findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(appIconColor)
-		if(activity.getIsPathDirectory(path)) {
-			callback()
-		} else ensureBackgroundThread {
+		if(item.isDir) callback()
+		else ensureBackgroundThread {
 			val options = RequestOptions().format(DecodeFormat.PREFER_ARGB_8888).skipMemoryCache(true)
 				.diskCacheStrategy(DiskCacheStrategy.RESOURCE).fitCenter()
 			val size = activity.resources.getDimension(org.fossify.commons.R.dimen.shortcut_size).toInt()
-			val builder = Glide.with(activity).load(getImagePathToLoad(path)).apply(options).centerCrop().submit(size, size)
+			val builder = Glide.with(activity).load(item.previewPath()).apply(options).centerCrop().submit(size, size)
 			try {
 				val bitmap = builder.get()
 				drawable.findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(0)
 				drawable.setDrawableByLayerId(R.id.shortcut_folder_image, bitmap)
 			} catch(_: Throwable) {
-				val fileIcon = fileDrawables.getOrElse(path.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
+				val fileIcon = fileDrawables.getOrElse(item.path.substringAfterLast('.').lowercase(Locale.getDefault())) {fileDrawable}
 				drawable.setDrawableByLayerId(R.id.shortcut_folder_image, fileIcon)
 			}
 			activity.runOnUiThread {callback()}
 		}
 	}
 
-	private fun addFileUris(path: String, paths: ArrayList<String>) {
-		if(activity.getIsPathDirectory(path)) {
-			val shouldShowHidden = config.shouldShowHidden()
-			when {
-				activity.isRestrictedSAFOnlyRoot(path) -> {
-					activity.getAndroidSAFFileItems(path, shouldShowHidden, false) {files ->
-						files.forEach {
-							addFileUris(activity.getAndroidSAFUri(it.path).toString(), paths)
-						}
-					}
-				} activity.isPathOnOTG(path) -> {
-					activity.getDocumentFile(path)?.listFiles()?.filter {if(shouldShowHidden) true else !it.name!!.startsWith(".")}?.forEach {
-						addFileUris(it.uri.toString(), paths)
-					}
-				} else -> {
-					File(path).listFiles()?.filter {if(shouldShowHidden) true else !it.name.startsWith('.')}?.forEach {
-						addFileUris(it.absolutePath, paths)
-					}
-				}
-			}
-		} else paths.add(path)
+	private fun addFileUris(itm: ListItem, paths: ArrayList<String>) {
+		if(itm.isDir) {
+			val dir = ListItem.listDir(activity, itm.path, true) {recyclerView.context == null}
+			if(dir != null) for(li in dir) if(!li.isDir) paths.add(li.sharePath())
+		} else paths.add(itm.sharePath())
 	}
 
 	private fun copyPath() {
-		activity.copyToClipboard(getFirstSelectedItemPath())
+		activity.copyToClipboard(firstSharePath())
 		finishActMode()
 	}
 
-	private fun setAs() {
-		activity.setAs(getFirstSelectedItemPath())
-	}
-
-	private fun openWith() {
-		activity.tryOpenPathIntent(getFirstSelectedItemPath(), true)
-	}
+	private fun setAs() = activity.setAs(firstSharePath())
+	private fun openWith() = activity.tryOpenPathIntent(firstSharePath(), true)
 
 	private fun openAs() {
 		val res = activity.resources
 		val items = arrayListOf(RadioItem(OPEN_AS_TEXT, res.getString(R.string.text_file)), RadioItem(OPEN_AS_IMAGE, res.getString(R.string.image_file)),
 			RadioItem(OPEN_AS_AUDIO, res.getString(R.string.audio_file)), RadioItem(OPEN_AS_VIDEO, res.getString(R.string.video_file)),
 			RadioItem(OPEN_AS_OTHER, res.getString(R.string.other_file)))
+		RadioGroupDialog(activity, items) {activity.tryOpenPathIntent(firstSharePath(), false, it as Int)}
+	}
 
-		RadioGroupDialog(activity, items) {
-			activity.tryOpenPathIntent(getFirstSelectedItemPath(), false, it as Int)
+	fun copyMoveTo(isCopy: Boolean, confirmed: Boolean = false) {
+		if(!isCopy && !confirmed) {
+			activity.handleDeletePasswordProtection {copyMoveTo(false,true)}
+			return
 		}
-	}
-
-	private fun tryMoveFiles() {
-		activity.handleDeletePasswordProtection {copyMoveTo(false)}
-	}
-
-	fun copyMoveTo(isCopyOperation: Boolean) {
-		val files = getSelectedFileDirItems()
+		//TODO Fix FilePickerDialog
+		/*val files = selected
 		val firstFile = files[0]
-		val source = firstFile.getParentPath()
+		val source = firstFile.path.getParentPath()
 		FilePickerDialog(activity = activity, currPath = activity.getDefaultCopyDestinationPath(config.shouldShowHidden(), source), pickFile = false,
 			showHidden = config.shouldShowHidden(), showFAB = true, canAddShowHiddenButton = true, showFavoritesButton = true) {
 			config.lastCopyPath = it
@@ -466,7 +451,7 @@ class ItemsAdapter(
 								}
 							} else {
 								val sourceFile = File(sourcePath)
-								if(activity.getDoesFilePathExist(source) && activity.getIsPathDirectory(source) && sourceFile.list()
+								if(activity.getDoesFilePathExist(source) && ListItem.dirExists(activity, source) && sourceFile.list()
 										?.isEmpty() == true && sourceFile.getProperSize(true) == 0L && sourceFile.getFileCount(true) == 0) {
 									val sourceFolder = sourceFile.toFileDirItem(activity)
 									activity.deleteFile(sourceFolder, true) {
@@ -485,10 +470,10 @@ class ItemsAdapter(
 					}
 				}
 			}
-		}
+		}*/
 	}
 
-	private fun copyMoveRootItems(files: ArrayList<FileDirItem>, destinationPath: String, isCopyOperation: Boolean) {
+	/*private fun copyMoveRootItems(files: ArrayList<FileDirItem>, destinationPath: String, isCopyOperation: Boolean) {
 		activity.toast(org.fossify.commons.R.string.copying)
 		ensureBackgroundThread {
 			val fileCnt = files.size
@@ -504,153 +489,36 @@ class ItemsAdapter(
 				}
 			}
 		}
+	}*/
+
+	private fun decompress(li: ListItem) {
+		val i = Intent(activity, DecompressActivity::class.java)
+		i.putExtra(DecompressActivity.PATH, li.path)
+		activity.startActivity(i)
 	}
 
-	private fun compressSelection() {
-		val firstPath = getFirstSelectedItemPath()
-		if(activity.isPathOnOTG(firstPath)) {
-			activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-			return
-		}
-		CompressAsDialog(activity, firstPath) {destination, password ->
-			activity.handleAndroidSAFDialog(firstPath) {grant1 ->
-				if(!grant1) return@handleAndroidSAFDialog
-				activity.handleSAFDialog(firstPath) {grant2 ->
-					if(!grant2) return@handleSAFDialog
-					activity.toast(R.string.compressing)
-					val paths = getSelectedFileDirItems().map {it.path}
-					ensureBackgroundThread {
-						if(compressPaths(paths, destination, password)) {
-							activity.runOnUiThread {
-								activity.toast(R.string.compression_successful)
-								listener.refreshFragment()
-								finishActMode()
-							}
-						} else activity.toast(R.string.compressing_failed)
-					}
-				}
-			}
-		}
-	}
-
-	private fun decompressSelection() {
-		val firstPath = getFirstSelectedItemPath()
-		if(activity.isPathOnOTG(firstPath)) {
-			activity.toast(org.fossify.commons.R.string.unknown_error_occurred)
-			return
-		}
-		activity.handleSAFDialog(firstPath) {grant ->
-			if(!grant) return@handleSAFDialog
-			val paths = getSelectedFileDirItems().asSequence().map {it.path}.filter {it.isZipFile()}.toList()
-			ensureBackgroundThread {
-				tryDecompressingPaths(paths) {success ->
-					activity.runOnUiThread {
-						if(success) {
-							activity.toast(R.string.decompression_successful)
+	private fun compress() {
+		val firstPath = selected.first().path
+		handleSAF {
+			CompressAsDialog(activity, firstPath) {dest, pwd ->
+				activity.toast(R.string.compressing)
+				val paths = selected.map {it.path}
+				ensureBackgroundThread {
+					if(compressPaths(paths, dest, pwd)) {
+						activity.runOnUiThread {
+							activity.toast(R.string.compression_successful)
 							listener.refreshFragment()
 							finishActMode()
-						} else activity.toast(R.string.decompressing_failed)
-					}
-				}
-			}
-		}
-	}
-
-	private fun tryDecompressingPaths(sourcePaths: List<String>, callback: (success: Boolean)->Unit) {
-		sourcePaths.forEach {path ->
-			ZipInputStream(BufferedInputStream(activity.getFileInputStreamSync(path))).use {zipInputStream ->
-				try {
-					val fileDirItems = ArrayList<FileDirItem>()
-					var entry = zipInputStream.nextEntry
-					while(entry != null) {
-						val currPath = if(entry.isDirectory) path else "${path.getParentPath().trimEnd('/')}/${entry.fileName}"
-						val fileDirItem = FileDirItem(currPath, entry.fileName, entry.isDirectory, 0, entry.uncompressedSize)
-						fileDirItems.add(fileDirItem)
-						entry = zipInputStream.nextEntry
-					}
-					val destinationPath = fileDirItems.first().getParentPath().trimEnd('/')
-					activity.runOnUiThread {
-						activity.checkConflicts(fileDirItems, destinationPath, 0, LinkedHashMap()) {
-							ensureBackgroundThread {
-								decompressPaths(sourcePaths, it, callback)
-							}
 						}
-					}
-				} catch(e: ZipException) {
-					if(e.type == ZipException.Type.WRONG_PASSWORD)
-						activity.showErrorToast(activity.getString(org.fossify.commons.R.string.invalid_password))
-					else activity.showErrorToast(e)
-				} catch(e: Throwable) {activity.error(e)}
-			}
-		}
-	}
-
-	private fun decompressPaths(paths: List<String>, conflictResolutions: LinkedHashMap<String, Int>, callback: (success: Boolean)->Unit) {
-		paths.forEach {path ->
-			val zipInputStream = ZipInputStream(BufferedInputStream(activity.getFileInputStreamSync(path)))
-			zipInputStream.use {
-				try {
-					var entry = zipInputStream.nextEntry
-					val zipFileName = path.getFilenameFromPath()
-					val newFolderName = zipFileName.subSequence(0, zipFileName.length - 4)
-					while(entry != null) {
-						val parentPath = path.getParentPath()
-						val newPath = "$parentPath/$newFolderName/${entry.fileName.trimEnd('/')}"
-						val resolution = getConflictResolution(conflictResolutions, newPath)
-						val doesPathExist = activity.getDoesFilePathExist(newPath)
-
-						if(doesPathExist && resolution == CONFLICT_OVERWRITE) {
-							val fileDirItem = FileDirItem(newPath, newPath.getFilenameFromPath(), entry.isDirectory)
-							if(activity.getIsPathDirectory(path)) {
-								activity.deleteFolderBg(fileDirItem, false) {
-									if(it) extractEntry(newPath, entry, zipInputStream)
-									else callback(false)
-								}
-							} else {
-								activity.deleteFileBg(fileDirItem, false, false) {
-									if(it) extractEntry(newPath, entry, zipInputStream)
-									else callback(false)
-								}
-							}
-						} else if(!doesPathExist) extractEntry(newPath, entry, zipInputStream)
-						entry = zipInputStream.nextEntry
-					}
-					callback(true)
-				} catch(e: Throwable) {
-					activity.error(e)
-					callback(false)
+					} else activity.toast(R.string.compressing_failed)
 				}
 			}
-		}
-	}
-
-	private fun extractEntry(newPath: String, entry: LocalFileHeader, zipInputStream: ZipInputStream) {
-		if(entry.isDirectory) {
-			if(!activity.createDirectorySync(newPath) && !activity.getDoesFilePathExist(newPath)) {
-				val e = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), newPath)
-				activity.error(Error(e))
-			}
-		} else {
-			val fos = activity.getFileOutputStreamSync(newPath, newPath.getMimeType())
-			if(fos != null) zipInputStream.copyTo(fos)
-		}
-	}
-
-	private fun getConflictResolution(conflictResolutions: LinkedHashMap<String, Int>, path: String): Int {
-		return if(conflictResolutions.size == 1 && conflictResolutions.containsKey("")) {
-			conflictResolutions[""]!!
-		} else if(conflictResolutions.containsKey(path)) {
-			conflictResolutions[path]!!
-		} else {
-			CONFLICT_SKIP
 		}
 	}
 
 	private fun compressPaths(sourcePaths: List<String>, targetPath: String, password: String? = null): Boolean {
 		val queue = LinkedList<String>()
-		val fos = activity.getFileOutputStreamSync(targetPath, "application/zip")?:return false
-		val zout = password?.let {ZipOutputStream(fos, password.toCharArray())}?:ZipOutputStream(fos)
-		var res: Closeable = fos
+		var res: Closeable? = null
 
 		fun zipEntry(name: String) = ZipParameters().also {
 			it.fileNameInZip = name
@@ -659,58 +527,60 @@ class ItemsAdapter(
 				it.encryptionMethod = EncryptionMethod.AES
 			}
 		}
-
 		try {
-			sourcePaths.forEach {currentPath ->
+			val fos = ListItem.getOutputStream(activity, targetPath)
+			res = fos
+			val zout = password?.let {ZipOutputStream(fos, password.toCharArray())}?:ZipOutputStream(fos)
+
+			sourcePaths.forEach {currPath ->
 				var name: String
-				var mainFilePath = currentPath
-				val base = "${mainFilePath.getParentPath()}/"
+				var mainPath = currPath
+				val base = "${mainPath.getParentPath()}/"
 				res = zout
-				queue.push(mainFilePath)
-				if(activity.getIsPathDirectory(mainFilePath)) {
-					name = "${mainFilePath.getFilenameFromPath()}/"
+				queue.push(mainPath)
+				if(ListItem.dirExists(activity, mainPath)) {
+					name = "${mainPath.getFilenameFromPath()}/"
 					zout.putNextEntry(ZipParameters().also {
 						it.fileNameInZip = name
 					})
 				}
-
 				while(!queue.isEmpty()) {
-					mainFilePath = queue.pop()
-					if(activity.getIsPathDirectory(mainFilePath)) {
-						if(activity.isRestrictedSAFOnlyRoot(mainFilePath)) {
-							activity.getAndroidSAFFileItems(mainFilePath, true) {files ->
+					mainPath = queue.pop()
+					if(ListItem.dirExists(activity, mainPath)) {
+						if(activity.isRestrictedSAFOnlyRoot(mainPath)) {
+							activity.getAndroidSAFFileItems(mainPath, true) {files ->
 								for(file in files) {
 									name = file.path.relativizeWith(base)
-									if(activity.getIsPathDirectory(file.path)) {
+									if(ListItem.dirExists(activity, file.path)) {
 										queue.push(file.path)
 										name = "${name.trimEnd('/')}/"
 										zout.putNextEntry(zipEntry(name))
 									} else {
 										zout.putNextEntry(zipEntry(name))
-										activity.getFileInputStreamSync(file.path)!!.copyTo(zout)
+										ListItem.getInputStream(activity, file.path).use {it.copyTo(zout)}
 										zout.closeEntry()
 									}
 								}
 							}
 						} else {
-							val mainFile = File(mainFilePath)
+							val mainFile = File(mainPath) //TODO USE listDir
 							for(file in mainFile.listFiles()!!) {
 								name = file.path.relativizeWith(base)
-								if(activity.getIsPathDirectory(file.absolutePath)) {
+								if(ListItem.dirExists(activity, file.absolutePath)) {
 									queue.push(file.absolutePath)
 									name = "${name.trimEnd('/')}/"
 									zout.putNextEntry(zipEntry(name))
 								} else {
 									zout.putNextEntry(zipEntry(name))
-									activity.getFileInputStreamSync(file.path)!!.copyTo(zout)
+									ListItem.getInputStream(activity, file.path).use {it.copyTo(zout)}
 									zout.closeEntry()
 								}
 							}
 						}
 					} else {
-						name = if(base == currentPath) currentPath.getFilenameFromPath() else mainFilePath.relativizeWith(base)
+						name = if(base == currPath) currPath.getFilenameFromPath() else mainPath.relativizeWith(base)
 						zout.putNextEntry(zipEntry(name))
-						activity.getFileInputStreamSync(mainFilePath)!!.copyTo(zout)
+						ListItem.getInputStream(activity, mainPath).use {it.copyTo(zout)}
 						zout.closeEntry()
 					}
 				}
@@ -719,66 +589,52 @@ class ItemsAdapter(
 			activity.error(e)
 			return false
 		} finally {
-			res.close()
+			res?.close()
 		}
 		return true
 	}
 
 	private fun askConfirmDelete() {
-		activity.handleDeletePasswordProtection {
-			val itemsCnt = selectedKeys.size
-			val items = if(itemsCnt == 1) {
-				"\"${getFirstSelectedItemPath().getFilenameFromPath()}\""
-			} else {
-				resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
-			}
-			val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), items)
+		if(config.skipDeleteConfirmation) deleteFiles()
+		else activity.handleDeletePasswordProtection {
+			val itemsCnt = selected.size
+			val str = if(itemsCnt == 1) "\"${selected.first().name}\""
+				else resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
+			val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), str)
 			ConfirmationDialog(activity, question) {deleteFiles()}
 		}
 	}
 
 	private fun deleteFiles() {
-		if(selectedKeys.isEmpty()) return
-		val safPath = getFirstSelectedItemPath()
-		if(activity.isPathOnRoot(safPath) && !RootTools.isRootAvailable()) {
-			activity.toast(R.string.rooted_device_only)
-			return
-		}
-
-		activity.handleSAFDialog(safPath) {granted ->
-			if(!granted) return@handleSAFDialog
-			val files = ArrayList<FileDirItem>(selectedKeys.size)
-			val positions = ArrayList<Int>()
-
+		handleSAF {
 			ensureBackgroundThread {
-				selectedKeys.forEach {key ->
-					config.removeFavorite(getItemWithKey(key)?.path?:"")
-					val position = listItems.indexOfFirst {it.path.hashCode() == key}
-					if(position != -1) {
-						positions.add(position)
-						files.add(listItems[position])
+				try {
+					for(f in selected) f.delete()
+					activity.runOnUiThread {
+						if(listener !is FavoritesFragment) listener.refreshFragment()
+						(activity as? MainActivity)?.updateFavsList()
 					}
-				}
-
-				positions.sortDescending()
-				activity.runOnUiThread {
-					removeSelectedItems(positions)
-					listener.deleteFiles(files)
-					positions.forEach {listItems.removeAt(it)}
-					(activity as? MainActivity)?.updateFavsList()
+				} catch(e: Throwable) {
+					activity.error(e)
 				}
 			}
 		}
 	}
 
-	private fun getFirstSelectedItemPath() = getSelectedFileDirItems().first().path
-	private fun getSelectedFileDirItems() = listItems.filter {selectedKeys.contains(it.path.hashCode())} as ArrayList<FileDirItem>
+	private fun handleSAF(cb: ()->Unit) {
+		val safPath = selected.first().path
+		if(!isRemotePath(safPath) && activity.isPathOnRoot(safPath) && !RootTools.isRootAvailable()) {
+			activity.toast(R.string.rooted_device_only)
+			return
+		}
+		activity.handleSAFDialog(safPath) {if(it) cb()}
+	}
 
 	fun updateItems(newItems: ArrayList<ListItem>, highlightText: String = "") {
 		if(newItems.hashCode() != currentItemsHash) {
 			currentItemsHash = newItems.hashCode()
 			textToHighlight = highlightText
-			listItems = newItems.clone() as ArrayList<ListItem>
+			listItems = newItems
 			notifyDataSetChanged()
 			finishActMode()
 		} else if(textToHighlight != highlightText) {
@@ -804,15 +660,15 @@ class ItemsAdapter(
 		notifyDataSetChanged()
 	}
 
-	fun updateChildCount(path: String, count: Int) {
-		val position = getItemKeyPosition(path.hashCode())
-		val item = listItems.getOrNull(position)?:return
+	fun updateChildCount(item: ListItem, count: Int) {
+		val pos = listItems.indexOf(item)
+		if(pos == -1) return
 		item.children = count
-		notifyItemChanged(position, Unit)
+		notifyItemChanged(pos, Unit)
 	}
 
-	fun isASectionTitle(position: Int) = listItems.getOrNull(position)?.isSectionTitle == true
-	fun isGridTypeDivider(position: Int) = listItems.getOrNull(position)?.isGridTypeDivider == true
+	fun isSectionTitle(pos: Int) = listItems.getOrNull(pos)?.isSectionTitle == true
+	fun isGridDivider(pos: Int) = listItems.getOrNull(pos)?.isGridDivider == true
 
 	override fun onViewRecycled(holder: ViewHolder) {
 		super.onViewRecycled(holder)
@@ -822,19 +678,18 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun setupView(binding: ItemViewBinding, listItem: ListItem) {
-		val isSelected = selectedKeys.contains(listItem.path.hashCode())
+	private fun setupView(binding: ItemViewBinding, item: ListItem) {
+		val isSelected = selected.contains(item)
 		binding.apply {
-			if(listItem.isSectionTitle) {
+			if(item.isSectionTitle) {
 				itemIcon?.setImageDrawable(folderDrawable)
-				itemSection?.text = if(textToHighlight.isEmpty()) listItem.mName else listItem.mName.highlightTextPart(textToHighlight, properPrimaryColor)
+				itemSection?.text = if(textToHighlight.isEmpty()) item.name else item.name.highlightTextPart(textToHighlight, properPrimaryColor)
 				itemSection?.setTextColor(textColor)
 				itemSection?.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-			} else if(!listItem.isGridTypeDivider) {
+			} else if(!item.isGridDivider) {
 				root.setupViewBackground(activity)
 				itemFrame.isSelected = isSelected
-				val fileName = listItem.name
-				itemName?.text = if(textToHighlight.isEmpty()) fileName else fileName.highlightTextPart(textToHighlight, properPrimaryColor)
+				itemName?.text = if(textToHighlight.isEmpty()) item.name else item.name.highlightTextPart(textToHighlight, properPrimaryColor)
 				itemName?.setTextColor(textColor)
 				itemName?.setTextSize(TypedValue.COMPLEX_UNIT_PX, if(isListViewType) fontSize else smallerFontSize)
 
@@ -850,63 +705,38 @@ class ItemsAdapter(
 					itemCheck?.applyColorFilter(contrastColor)
 				}
 
-				if(!isListViewType && !listItem.isDirectory) itemName?.beVisibleIf(displayFilenamesInGrid)
+				if(!isListViewType && !item.isDir) itemName?.beVisibleIf(displayFilenamesInGrid)
 				else itemName?.beVisible()
 
-				if(listItem.isDirectory) {
+				if(item.isDir) {
 					itemIcon?.setImageDrawable(folderDrawable)
-					if(listItem.children == -2) itemDetails?.beGone()
+					if(item.children == -2) itemDetails?.beGone()
 					else {
-						itemDetails?.text = getChildrenCnt(listItem)
+						itemDetails?.text = if(item.children == -1) ""
+							else activity.resources.getQuantityString(org.fossify.commons.R.plurals.items, item.children, item.children)
 						itemDetails?.beVisible()
 					}
 					itemDate?.beGone()
 				} else {
-					itemDetails?.text = listItem.size.formatSize()
+					itemDetails?.text = item.size.formatSize()
 					itemDate?.beVisible()
-					itemDate?.text = listItem.modified.formatDate(activity, dateFormat, timeFormat)
+					itemDate?.text = item.modified.formatDate(activity, dateFormat, timeFormat)
 
-					val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
-					val opts = RequestOptions().signature(listItem.getKey())
+					val drawable = fileDrawables.getOrElse(item.name.substringAfterLast('.').lowercase(Locale.getDefault())) {fileDrawable}
+					val opts = RequestOptions().signature(item.getKey())
 						.diskCacheStrategy(DiskCacheStrategy.RESOURCE)
 						.error(drawable)
 						.transform(CenterCrop(), RoundedCorners(10))
 
-					val item = getImagePathToLoad(listItem.path)
+					val imgPath = item.previewPath()
 					if(!activity.isDestroyed && itemIcon != null) {
-						Glide.with(activity).load(item)
+						Glide.with(activity).load(imgPath)
 							.transition(DrawableTransitionOptions.withCrossFade())
 							.apply(opts).into(itemIcon!!)
 					}
 				}
 			}
 		}
-	}
-
-	private fun getChildrenCnt(item: FileDirItem): String {
-		val children = item.children
-		if(children == -1) return ""
-		return activity.resources.getQuantityString(org.fossify.commons.R.plurals.items, children, children)
-	}
-
-	private fun getOTGPublicPath(itemToLoad: String) =
-		"${baseConfig.OTGTreeUri}/document/${baseConfig.OTGPartition}%3A${itemToLoad.substring(baseConfig.OTGPath.length).replace("/", "%2F")}"
-
-	private fun getImagePathToLoad(path: String): Any {
-		if(isRemotePath(path)) return path
-		var item: Any = path
-		if(path.endsWith(".apk", true)) {
-			val info = activity.packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)?.applicationInfo
-			if(info != null) {
-				info.sourceDir = path
-				info.publicSourceDir = path
-				item = info.loadIcon(activity.packageManager)
-			}
-		}
-		if(activity.isRestrictedSAFOnlyRoot(path)) item = activity.getAndroidSAFUri(path)
-		else if(hasOTGConnected && item is String && activity.isPathOnOTG(item) && baseConfig.OTGTreeUri.isNotEmpty()
-			&& baseConfig.OTGPartition.isNotEmpty()) item = getOTGPublicPath(item)
-		return item
 	}
 
 	@SuppressLint("UseCompatLoadingForDrawables")
@@ -1046,5 +876,213 @@ class ItemsAdapter(
 		override val itemCheck: ImageView? = binding.itemCheck
 		override val itemSection: TextView? = null
 		override fun getRoot(): View = binding.root
+	}
+
+	//---------------------------- From MyRecyclerViewAdapter ----------------------------
+
+	private val resources = activity.resources!!
+	private val layoutInflater = activity.layoutInflater
+	private var textColor = activity.getProperTextColor()
+	private var properPrimaryColor = activity.getProperPrimaryColor()
+	private var contrastColor = properPrimaryColor.getContrastColor()
+	private var actModeCallback: MyActionModeCallback
+	private var positionOffset = 0
+	private var actMode: ActionMode? = null
+	private var actBarTextView: TextView? = null
+	private var lastLongPressedItem = -1
+
+	init {
+		actModeCallback = object: MyActionModeCallback() {
+			private var savedStatusBarColor = activity.getProperStatusBarColor()
+			override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+				actionItemPressed(item.itemId)
+				return true
+			}
+
+			override fun onCreateActionMode(actionMode: ActionMode, menu: Menu?): Boolean {
+				selected.clear()
+				isSelectable = true
+				actMode = actionMode
+				//if(isMainActMode) {
+					actBarTextView = layoutInflater.inflate(org.fossify.commons.R.layout.actionbar_title, null) as TextView
+					actBarTextView!!.layoutParams = ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
+					actMode!!.customView = actBarTextView
+					actBarTextView!!.setOnClickListener {
+						if(getSelectableItemCount() == selected.size) finishActMode()
+						else selectAll()
+					}
+
+					activity.menuInflater.inflate(R.menu.cab, menu)
+					val bgColor = if(activity.isDynamicTheme()) resources.getColor(org.fossify.commons.R.color.you_contextual_status_bar_color, activity.theme)
+					else resources.getColor(org.fossify.commons.R.color.dark_grey, activity.theme)
+
+					savedStatusBarColor = activity.window.statusBarColor
+					activity.animateStatusBarColor(bgColor, savedStatusBarColor, 300L)
+
+					actBarTextView!!.setTextColor(bgColor.getContrastColor())
+					activity.updateMenuItemColors(menu, baseColor = bgColor)
+
+					if(activity.isDynamicTheme()) {
+						actBarTextView?.onGlobalLayout {
+							val backArrow = activity.findViewById<ImageView>(androidx.appcompat.R.id.action_mode_close_button)
+							backArrow?.applyColorFilter(bgColor.getContrastColor())
+						}
+					}
+				//}
+				onActionModeCreated()
+				return true
+			}
+
+			override fun onPrepareActionMode(actionMode: ActionMode, menu: Menu): Boolean {
+				/*if(isMainActMode)*/ prepareActionMode(menu)
+				return true
+			}
+
+			override fun onDestroyActionMode(actionMode: ActionMode) {
+				isSelectable = false
+				for(f in selected.clone() as ArrayList<ListItem>) {
+					val pos = listItems.indexOf(f)
+					if(pos != -1) setSelected(false, pos, false)
+				}
+				//if(isMainActMode) {
+					activity.animateStatusBarColor(savedStatusBarColor, activity.window.statusBarColor, 400L)
+					updateTitle()
+					actBarTextView?.text = ""
+					actMode = null
+				//}
+				lastLongPressedItem = -1
+				selected.clear()
+				onActionModeDestroyed()
+			}
+		}
+		setupDragListener()
+		initDrawables()
+		updateFontSizes()
+		dateFormat = config.dateFormat
+		timeFormat = activity.getTimeFormat()
+	}
+
+	private fun setSelected(sel: Boolean, pos: Int, updateTitle: Boolean = true) {
+		val item = listItems[pos]
+		if((sel && selected.contains(item)) || (!sel && !selected.contains(item))) return
+		if(sel) selected.add(item) else selected.remove(item)
+		notifyItemChanged(pos + positionOffset)
+
+		if(updateTitle) updateTitle()
+		if(selected.isEmpty()) finishActMode()
+	}
+
+	private fun updateTitle() {
+		val oldTitle = actBarTextView?.text
+		val newTitle = "${selected.size} / ${getSelectableItemCount()}"
+		if(oldTitle != newTitle) {
+			actBarTextView?.text = newTitle
+			actMode?.invalidate()
+		}
+	}
+
+	private fun itemLongClicked(position: Int) {
+		recyclerView.setDragSelectActive(position)
+		lastLongPressedItem = if(lastLongPressedItem == -1) {
+			position
+		} else {
+			val min = min(lastLongPressedItem, position)
+			val max = max(lastLongPressedItem, position)
+			for(i in min..max) setSelected(true, i, false)
+			updateTitle()
+			position
+		}
+	}
+
+	private fun setupDragListener() {
+		recyclerView.setupDragListener(object: MyRecyclerView.MyDragListener {
+			override fun selectItem(pos: Int) {setSelected(true, pos)}
+			override fun selectRange(initialSelection: Int, lastDraggedIndex: Int, minReached: Int, maxReached: Int) {
+				selectItemRange(initialSelection, 0.coerceAtLeast(lastDraggedIndex - positionOffset),
+					0.coerceAtLeast(minReached - positionOffset), maxReached - positionOffset)
+				if(minReached != maxReached) lastLongPressedItem = -1
+			}
+		})
+	}
+
+	private fun selectItemRange(from: Int, to: Int, min: Int, max: Int) {
+		if(from == to) {
+			(min..max).filter {it != from}.forEach {setSelected(false, it)}
+			return
+		}
+		if(to < from) {
+			for(i in to..from) setSelected(true, i, true)
+			if(min > -1 && min < to) (min until to).filter {it != from}.forEach {setSelected(false, it, true)}
+			if(max > -1) for(i in from + 1..max) setSelected(false, i)
+		} else {
+			for(i in from..to) setSelected(true, i, true)
+			if(max > -1 && max > to) (to + 1..max).filter {it != from}.forEach {setSelected(false, it, true)}
+			if(min > -1) for(i in min until from) setSelected(false, i)
+		}
+	}
+
+	fun finishActMode() = actMode?.finish()
+
+	fun updateTextColor(textColor: Int) {
+		this.textColor = textColor
+		notifyDataSetChanged()
+	}
+
+	fun updatePrimaryColor() {
+		properPrimaryColor = activity.getProperPrimaryColor()
+		contrastColor = properPrimaryColor.getContrastColor()
+	}
+
+	private fun createViewHolder(view: View): ViewHolder {
+		return ViewHolder(view)
+	}
+
+	private fun bindViewHolder(holder: ViewHolder) {
+		holder.itemView.tag = holder
+	}
+
+	//TODO Fix for remote
+	private fun openItem(item: ListItem) {
+		val pager = listener as? MyViewPagerFragment<*>
+		if(pager?.isGetContentIntent == true || pager?.isCreateDocumentIntent == true) {
+			(activity as MainActivity).pickedPath(item.path)
+		} else if(pager?.isGetRingtonePicker == true) {
+			if(item.name.isAudioFast()) (activity as MainActivity).pickedRingtone(item.path)
+			else activity.toast(R.string.select_audio_file)
+		} else if(item.name.isZipFile()) decompress(item)
+		else activity.tryOpenPathIntent(item.path, false)
+	}
+
+	open inner class ViewHolder(view: View): RecyclerView.ViewHolder(view) {
+		fun bindView(any: Any, allowSingleClick: Boolean, allowLongClick: Boolean, callback: (view: View)->Unit): View {
+			return itemView.apply {
+				callback(this)
+				if(allowSingleClick) {
+					setOnClickListener {viewClicked(any)}
+					setOnLongClickListener {if(allowLongClick) viewLongClicked() else viewClicked(any); true}
+				} else {
+					setOnClickListener(null)
+					setOnLongClickListener(null)
+				}
+			}
+		}
+
+		fun viewClicked(any: Any) {
+			if(actModeCallback.isSelectable) {
+				val pos = absoluteAdapterPosition - positionOffset
+				val isSelected = selected.contains(listItems[pos])
+				setSelected(!isSelected, pos)
+			} else if(itemClick?.invoke(any as ListItem) != true) {
+				openItem(any as ListItem)
+			}
+			lastLongPressedItem = -1
+		}
+
+		fun viewLongClicked() {
+			val pos = absoluteAdapterPosition - positionOffset
+			if(!actModeCallback.isSelectable) activity.startActionMode(actModeCallback)
+			setSelected(true, pos)
+			itemLongClicked(pos)
+		}
 	}
 }

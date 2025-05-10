@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Менеджер Файлів</string>
 	<string name="press_back_again">Для виходу натисніть Назад ще раз</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Успішно розпаковано</string>
 	<string name="compressing_failed">Не вдалося стиснути</string>
 	<string name="decompressing_failed">Не вдалося розпакувати</string>
-	<string name="manage_favorites">Керувати вибраним</string>
-	<string name="favorites_activity_placeholder">Ви можете додати теки, які часто відкриваєте, у вибране, щоб швидко отримати до них доступ.</string>
 	<string name="file_editor">Редактор файлів</string>
 	<string name="storage_analysis">Аналіз сховища</string>
 	<string name="images">Зображення</string>

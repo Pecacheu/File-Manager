@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Ficheiros</string>
 	<string name="press_back_again">Preme outra vez para saír</string>
@@ -23,8 +22,6 @@
 	<string name="decompression_successful">Descompresión terminada</string>
 	<string name="compressing_failed">Erro ao comprimir</string>
 	<string name="decompressing_failed">Erro ao descomprimir</string>
-	<string name="manage_favorites">Xestionar favoritos</string>
-	<string name="favorites_activity_placeholder">Pode adiccionar cartafoles como favoritos para un acesso mais rápido.</string>
 	<string name="file_editor">Editor de ficheiros</string>
 	<string name="storage_analysis">Análise da almacenaxe</string>
 	<string name="images">Imaxes</string>

@@ -26,6 +26,8 @@ import org.fossify.filemanager.extensions.openPath
 import java.io.File
 import java.io.OutputStream
 
+//TODO Remote?
+
 class ReadTextActivity: SimpleActivity() {
 	companion object {
 		private const val SELECT_SAVE_FILE_INTENT = 1

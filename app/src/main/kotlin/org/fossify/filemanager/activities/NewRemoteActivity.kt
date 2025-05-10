@@ -107,11 +107,11 @@ class NewRemoteActivity(): SimpleActivity() {
 		ensureBackgroundThread {
 			if(t == Remote.SMB) {
 				try {
-					val d = Remote.SMBData(rEdit?.id, text(binding.name), text(binding.host),
+					val d = Remote.SMBData(this, rEdit?.id, text(binding.name), text(binding.host),
 						text(binding.usr), text(binding.share), text(binding.domain))
 
 					//Edit/update remote
-					val r = rEdit?.init(d)?:Remote(d)
+					val r = rEdit?.init(d)?:Remote(this.applicationContext, d)
 					val pwd = text(binding.pwd)
 					if(pwd != unchanged) r.setPwd(text(binding.pwd))
 
@@ -121,7 +121,7 @@ class NewRemoteActivity(): SimpleActivity() {
 					else config.addRemote(r)
 					toast(org.fossify.filemanager.R.string.test_success)
 					finish()
-				} catch(e: Throwable) {Remote.err(this, e)}
+				} catch(e: Throwable) {error(e)}
 			} else toast(org.fossify.filemanager.R.string.remote_type_err)
 		}
 	}

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="press_back_again">Tekan sekali lagi untuk keluar</string>
 	<string name="go_to_home_folder">Buka folder beranda</string>
@@ -23,8 +22,6 @@
 	<string name="decompression_successful">Berhasil dekompresi</string>
 	<string name="compressing_failed">Gagal mengompres</string>
 	<string name="decompressing_failed">Gagal dekompresi</string>
-	<string name="manage_favorites">Kelola favorit</string>
-	<string name="favorites_activity_placeholder">Anda bisa menambahkan folder yang sering digunakan ke favorit untuk kemudahan akses dari mana saja.</string>
 	<string name="file_editor">Penyunting File</string>
 	<string name="storage_analysis">Analisis penyimpanan</string>
 	<string name="images">Gambar</string>

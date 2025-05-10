@@ -1,6 +1,5 @@
 package org.fossify.filemanager.activities
 
-import android.content.Intent
 import android.os.Bundle
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
@@ -35,7 +34,6 @@ class SettingsActivity: SimpleActivity() {
 		setupCustomizeColors()
 		setupUseEnglish()
 		setupLanguage()
-		setupManageFavorites()
 		setupManageShownTabs()
 		setupChangeDateTimeFormat()
 		setupFontSize()
@@ -81,12 +79,6 @@ class SettingsActivity: SimpleActivity() {
 			settingsLanguageHolder.setOnClickListener {
 				if(isTiramisuPlus()) launchChangeAppLanguageIntent()
 			}
-		}
-	}
-
-	private fun setupManageFavorites() {
-		binding.settingsManageFavoritesHolder.setOnClickListener {
-			startActivity(Intent(this, FavoritesActivity::class.java))
 		}
 	}
 

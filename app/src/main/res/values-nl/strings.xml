@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Bestandsbeheer</string>
 	<string name="press_back_again">Druk nogmaals op \'Terug\' om te sluiten</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Uitpakken voltooid</string>
 	<string name="compressing_failed">Fout bij inpakken</string>
 	<string name="decompressing_failed">Fout bij uitpakken</string>
-	<string name="manage_favorites">Favorieten beheren</string>
-	<string name="favorites_activity_placeholder">Voeg vaak gebruikte mappen toe aan de favorieten voor snelle toegang vanuit ieder scherm.</string>
 	<string name="file_editor">Bewerken</string>
 	<string name="storage_analysis">Opslaganalyse</string>
 	<string name="images">Afbeeldingen</string>

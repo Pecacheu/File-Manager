@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">கோப்பு நிர்வாகி</string>
 	<string name="press_back_again">வெளியேற மீண்டும் பின் அழுத்து</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">சுருக்குநீக்கம் வெற்றி</string>
 	<string name="compressing_failed">சுருக்கம் தோல்வி</string>
 	<string name="decompressing_failed">சுருக்குநீக்கம் தோல்வி</string>
-	<string name="manage_favorites">அபிமானவையை நிர்வகி</string>
-	<string name="favorites_activity_placeholder">எங்கிருந்தும் எளிதாக அணுகுவதற்கு அபிமானவைக்கு அடிக்கடி பயன்படுத்தப்படும் அடைவுகளை நீங்கள் சேர்க்கலாம்.</string>
 	<string name="file_editor">கோப்பு திருத்தி</string>
 	<string name="storage_analysis">சேமிப்பிட பகுப்பாய்வு</string>
 	<string name="images">படங்கள்</string>

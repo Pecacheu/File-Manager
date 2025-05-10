@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Rheolwr Ffeiliau</string>
 	<string name="press_back_again">Gwasga nôl eto i adael</string>
@@ -23,8 +22,6 @@
 	<string name="decompression_successful">Datgywasgwyd yn llwyddiannus</string>
 	<string name="compressing_failed">Methodd y cywasgu</string>
 	<string name="decompressing_failed">Methodd y datgywasgu</string>
-	<string name="manage_favorites">Rheoli ffefrynnau</string>
-	<string name="favorites_activity_placeholder">Gellir ychwanegu ffolder a ddefnyddir yn aml at y ffefrynnau i gael atyn nhw\'n hawdd o unrhyw fan.</string>
 	<string name="file_editor">Golygydd Ffeiliau</string>
 	<string name="enable_root_access">Galluogi mynediad craidd</string>
 	<string name="images">Delweddau</string>

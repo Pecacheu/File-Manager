@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Файлавы менеджар</string>
 	<string name="press_back_again">Націсніце назад яшчэ раз, каб выйсці</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Распакаванне паспяхова выканана</string>
 	<string name="compressing_failed">Не атрымалася сціснуць</string>
 	<string name="decompressing_failed">Не атрымалася распакаваць</string>
-	<string name="manage_favorites">Кіраванне абранымі</string>
-	<string name="favorites_activity_placeholder">Вы можаце дадаць часта выкарыстоўваюцца папкі ў абранае для лёгкага доступу з любога месца.</string>
 	<string name="file_editor">Рэдактар файлаў</string>
 	<string name="storage_analysis">Аналіз сховішча</string>
 	<string name="images">Выявы</string>

@@ -40,6 +40,7 @@ import org.fossify.commons.helpers.*
 import org.fossify.filemanager.about.AboutActivityAlt
 import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.helpers.*
+import org.fossify.filemanager.models.ListItem
 import java.util.Date
 import java.util.Timer
 import kotlin.concurrent.fixedRateTimer
@@ -102,6 +103,8 @@ class MainActivity: SimpleActivity() {
 			getAllFragments().forEach {(it as? ItemOperationsListener)?.setupDateTimeFormat()}
 		}
 		if(binding.mainViewPager.adapter == null) initFragments()
+		else if(config.reloadPath) openPath(config.lastPath)
+		config.reloadPath = false
 	}
 
 	override fun onPause() {
@@ -168,7 +171,7 @@ class MainActivity: SimpleActivity() {
 			if(event?.isCtrlPressed == true) {
 				val adapter = getCurrentFragment()?.getRecyclerAdapter()
 				if(keyCode == KeyEvent.KEYCODE_A) {
-					adapter?.doSelectAll()
+					adapter?.selectAll()
 					return true
 				}
 				if(adapter?.isActMode() == true) when(keyCode) { //Action mode
@@ -251,7 +254,6 @@ class MainActivity: SimpleActivity() {
 
 			getToolbar().setOnMenuItemClickListener {menuItem ->
 				if(getCurrentFragment() == null) return@setOnMenuItemClickListener true
-				//TODO Add "Manage favorites" to menu in favorites tab
 				when(menuItem.itemId) {
 					R.id.go_home -> goHome()
 					R.id.sort -> showSortingDialog()
@@ -354,15 +356,22 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private fun initFileManager(refreshRecents: Boolean) {
-		val path = config.lastPath.ifEmpty {config.homeFolder}
+		var path = config.lastPath.ifEmpty {config.homeFolder}
 		if(intent.action == Intent.ACTION_VIEW && intent.data != null) {
-			val data = intent.data
-			if(data?.scheme == "file") openPath(data.path!!)
-			else openPath(getRealPathFromURI(data!!)?:path)
-
-			if(!File(data.path!!).isDirectory)
-				tryOpenPathIntent(data.path!!, false, finishActivity = true)
-
+			val data = intent.data!!
+			Log.i("test", "Intent data $data (${data.scheme}) -> '${data.path}'")
+			if(data.scheme == "file" && data.path != null) {
+				path = data.path!!
+				val pTrim = path.trimStart('/') //URI may have leading / for remote path
+				if(isRemotePath(pTrim)) path = pTrim
+				ensureBackgroundThread {
+					val isFile = ListItem.fileExists(this, path)
+					runOnUiThread {
+						if(isFile) tryOpenPathIntent(path, false, finishActivity=true)
+						else openPath(path)
+					}
+				}
+			} else openPath(getRealPathFromURI(data)?:path)
 			binding.mainViewPager.currentItem = 0
 		} else openPath(path)
 		if(refreshRecents) getRecentsFragment()?.refreshFragment()
@@ -616,7 +625,7 @@ class MainActivity: SimpleActivity() {
 			config.getRemotes(true)
 			config.favorites.forEach {
 				val isBad = if(isRemotePath(it)) config.getRemoteForPath(it) == null
-					else (!isPathOnOTG(it) && !isPathOnSD(it) && !File(it).exists())
+					else (!isPathOnOTG(it) && !isPathOnSD(it) && !ListItem.pathExists(this,it))
 				if(isBad) {
 					Log.i("test", "Removed invalid fav $it")
 					config.removeFavorite(it)
@@ -637,16 +646,14 @@ class MainActivity: SimpleActivity() {
 		finish()
 	}
 
-	// used at apps that have no file access at all, but need to work with files. For example Simple Calendar uses this at exporting events into a file
+	//Used w/ apps that have no file access but need to work with files. Eg. Simple Calendar exporting events into a file
 	fun createDocumentConfirmed(path: String) {
 		val filename = intent.getStringExtra(Intent.EXTRA_TITLE)?:""
 		if(filename.isEmpty()) {
-			InsertFilenameDialog(this, internalStoragePath) {newFilename ->
-				finishCreateDocumentIntent(path, newFilename)
+			InsertFilenameDialog(this, internalStoragePath) {newFn ->
+				finishCreateDocumentIntent(path, newFn)
 			}
-		} else {
-			finishCreateDocumentIntent(path, filename)
-		}
+		} else finishCreateDocumentIntent(path, filename)
 	}
 
 	private fun finishCreateDocumentIntent(path: String, filename: String) {

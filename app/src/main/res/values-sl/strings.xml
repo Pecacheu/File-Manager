@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Upravitelj datotek</string>
 	<string name="press_back_again">Za izhod ponovno pritisnite Nazaj</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Razširjanje uspešno</string>
 	<string name="compressing_failed">Stiskanje ni uspelo</string>
 	<string name="decompressing_failed">Razširjanje ni uspelo</string>
-	<string name="manage_favorites">Upravljanje priljubljenih</string>
-	<string name="favorites_activity_placeholder">Pogosto uporabljene mape lahko dodate med priljubljene in do njih enostavno dostopate od kjer koli.</string>
 	<string name="file_editor">Urejevalnik datotek</string>
 	<string name="storage_analysis">Analiza shranjevanja</string>
 	<string name="images">Slike</string>

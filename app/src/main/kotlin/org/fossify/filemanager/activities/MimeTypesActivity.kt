@@ -13,7 +13,6 @@ import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.filemanager.R
@@ -23,7 +22,6 @@ import org.fossify.filemanager.dialogs.ChangeSortingDialog
 import org.fossify.filemanager.dialogs.ChangeViewTypeDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.helpers.*
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
@@ -31,6 +29,7 @@ import java.util.Locale
 
 class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	private val binding by viewBinding(ActivityMimetypesBinding::inflate)
+	private val layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
 	private var isSearchOpen = false
 	private var currentMimeType = ""
 	private var lastSearchedText = ""
@@ -91,13 +90,6 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	}
 
 	override fun refreshFragment() {reFetchItems()}
-
-	override fun deleteFiles(files: ArrayList<FileDirItem>) {
-		deleteFiles(files, false) {
-			if(!it) runOnUiThread {toast(org.fossify.commons.R.string.unknown_error_occurred)}
-		}
-	}
-
 	override fun selectedPaths(paths: ArrayList<String>) {}
 
 	fun searchQueryChanged(text: String) {
@@ -138,13 +130,12 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	override fun setupDateTimeFormat() {}
 	override fun setupFontSize() {}
 	override fun toggleFilenameVisibility() {}
+	override fun finishActMode() {}
 
 	override fun columnCountChanged() {
-		(binding.mimetypesList.layoutManager as MyGridLayoutManager).spanCount = fileColumnCnt
+		layoutManager.spanCount = fileColumnCnt
 		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
 	}
-
-	override fun finishActMode() {}
 
 	private fun setupSearch(menu: Menu) {
 		val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
@@ -165,93 +156,59 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 		MenuItemCompat.setOnActionExpandListener(searchMenuItem, object: MenuItemCompat.OnActionExpandListener {
 			override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
 				isSearchOpen = true
-				searchOpened()
+				lastSearchedText = ""
 				return true
 			}
-
 			override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
 				isSearchOpen = false
-				searchClosed()
+				lastSearchedText = ""
+				searchQueryChanged("")
 				return true
 			}
 		})
 	}
 
-	fun searchOpened() {
-		isSearchOpen = true
-		lastSearchedText = ""
-	}
-
-	fun searchClosed() {
-		isSearchOpen = false
-		lastSearchedText = ""
-		searchQueryChanged("")
-	}
-
-	private fun getProperFileDirItems(callback: (ArrayList<FileDirItem>)->Unit) {
-		val fileDirItems = ArrayList<FileDirItem>()
+	private fun getProperItems(callback: (ArrayList<ListItem>)->Unit) {
+		val items = ArrayList<ListItem>()
 		val showHidden = config.shouldShowHidden()
 		val uri = MediaStore.Files.getContentUri(currentVolume)
 		val projection = arrayOf(MediaStore.Files.FileColumns.MIME_TYPE, MediaStore.Files.FileColumns.DATA, MediaStore.Files.FileColumns.DISPLAY_NAME,
 			MediaStore.Files.FileColumns.SIZE, MediaStore.Files.FileColumns.DATE_MODIFIED)
-
 		try {
 			queryCursor(uri, projection) {cursor ->
 				try {
 					val fullMimetype = cursor.getStringValue(MediaStore.Files.FileColumns.MIME_TYPE)?.lowercase(Locale.getDefault())?:return@queryCursor
 					val name = cursor.getStringValue(MediaStore.Files.FileColumns.DISPLAY_NAME)
-					if(!showHidden && name.startsWith(".")) return@queryCursor
-
+					if(!showHidden && name.startsWith('.')) return@queryCursor
 					val size = cursor.getLongValue(MediaStore.Files.FileColumns.SIZE)
 					if(size == 0L) return@queryCursor
 
 					val path = cursor.getStringValue(MediaStore.Files.FileColumns.DATA)
 					val lastModified = cursor.getLongValue(MediaStore.Files.FileColumns.DATE_MODIFIED)*1000
-
-					val mimetype = fullMimetype.substringBefore("/")
-					when(currentMimeType) {
-						IMAGES -> {
-							if(mimetype == "image") {
-								fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-							}
-						} VIDEOS -> {
-							if(mimetype == "video") {
-								fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-							}
-						} AUDIO -> {
-							if(mimetype == "audio" || extraAudioMimeTypes.contains(fullMimetype)) {
-								fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-							}
-						} DOCUMENTS -> {
-							if(mimetype == "text" || extraDocumentMimeTypes.contains(fullMimetype)) {
-								fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-							}
-						} ARCHIVES -> {
-							if(archiveMimeTypes.contains(fullMimetype)) {
-								fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-							}
-						} OTHERS -> {
-							if(mimetype != "image" && mimetype != "video" && mimetype != "audio" && mimetype != "text" && !extraAudioMimeTypes.contains(
-									fullMimetype) && !extraDocumentMimeTypes.contains(fullMimetype) && !archiveMimeTypes.contains(fullMimetype)) {
-								fileDirItems.add(FileDirItem(path, name, false, 0, size, lastModified))
-							}
-						}
-					}
+					val mimetype = fullMimetype.substringBefore('/')
+					if(when(currentMimeType) {
+						IMAGES -> mimetype == "image"
+						VIDEOS -> mimetype == "video"
+						AUDIO -> mimetype == "audio" || extraAudioMimeTypes.contains(fullMimetype)
+						DOCUMENTS -> mimetype == "text" || extraDocumentMimeTypes.contains(fullMimetype)
+						ARCHIVES -> archiveMimeTypes.contains(fullMimetype)
+						OTHERS -> mimetype != "image" && mimetype != "video" && mimetype != "audio" && mimetype != "text" && !extraAudioMimeTypes
+							.contains(fullMimetype) && !extraDocumentMimeTypes.contains(fullMimetype) && !archiveMimeTypes.contains(fullMimetype)
+						else -> false
+					}) items.add(ListItem(this, path, name, false, 0, size, lastModified))
 				} catch(_: Exception) {}
 			}
 		} catch(e: Throwable) {this.error(e)}
-		callback(fileDirItems)
+		callback(items)
 	}
 
 	private fun addItems(items: ArrayList<ListItem>) {
-		FileDirItem.sorting = config.getFolderSorting(currentMimeType)
+		ListItem.sorting = config.getFolderSorting(currentMimeType)
 		items.sort()
 		if(isDestroyed || isFinishing) return
 
 		storedItems = items
-		ItemsAdapter(this as SimpleActivity, storedItems, this, binding.mimetypesList, false, null) {
-			tryOpenPathIntent((it as ListItem).path, false)
-		}.apply {
+		ItemsAdapter(this, storedItems, this, binding.mimetypesList, null, true, true).apply {
 			setItemListZoom(zoomListener)
 			binding.mimetypesList.adapter = this
 		}
@@ -274,19 +231,16 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 
 	private fun reFetchItems() {
 		fileColumnCnt = config.fileColumnCnt
-		getProperFileDirItems {fileDirItems ->
-			val listItems = getListItemsFromFileDirItems(fileDirItems)
-			runOnUiThread {
-				addItems(listItems)
-				val viewType = config.getFolderViewType(currentMimeType)
-				if(currentViewType != viewType) setupLayoutManager(viewType)
-			}
-		}
+		getProperItems {runOnUiThread {
+			addItems(it)
+			val viewType = config.getFolderViewType(currentMimeType)
+			if(currentViewType != viewType) setupLayoutManager(viewType)
+		}}
 	}
 
 	private fun recreateList() {
-		val listItems = getRecyclerAdapter()?.listItems
-		if(listItems != null) addItems(listItems as ArrayList<ListItem>)
+		val items = getRecyclerAdapter()?.listItems
+		if(items != null) addItems(items as ArrayList<ListItem>)
 	}
 
 	private fun setupLayoutManager(viewType: Int) {
@@ -300,44 +254,34 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	}
 
 	private fun setupGridLayoutManager() {
-		val layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
 		layoutManager.spanCount = fileColumnCnt
 		layoutManager.spanSizeLookup = object: GridLayoutManager.SpanSizeLookup() {
-			override fun getSpanSize(position: Int): Int {
-				return if(getRecyclerAdapter()?.isASectionTitle(position) == true) layoutManager.spanCount else 1
+			override fun getSpanSize(pos: Int): Int {
+				return if(getRecyclerAdapter()?.isSectionTitle(pos) == true) layoutManager.spanCount else 1
 			}
 		}
 	}
 
-	private fun setupListLayoutManager() {
-		val layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = 1
-	}
+	private fun setupListLayoutManager() {layoutManager.spanCount = 1}
 
 	private fun incColCount(by: Int) {
 		if(currentViewType == VIEW_TYPE_GRID) {
-			fileColumnCnt += by
+			config.fileColumnCnt += by
 			columnCountChanged()
 		}
+		getRecyclerAdapter()?.finishActMode()
 	}
 
 	private fun initZoomListener() {
-		if(currentViewType == VIEW_TYPE_GRID) {
-			val layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
-			zoomListener = object: MyRecyclerView.MyZoomListener {
+		zoomListener = if(currentViewType == VIEW_TYPE_GRID) {
+			object: MyRecyclerView.MyZoomListener {
 				override fun zoomIn() {
-					if(layoutManager.spanCount > 1) {
-						incColCount(-1)
-						getRecyclerAdapter()?.finishActMode()
-					}
+					if(layoutManager.spanCount > 1) incColCount(-1)
 				}
 				override fun zoomOut() {
-					if(layoutManager.spanCount < MAX_COLUMN_COUNT) {
-						incColCount(1)
-						getRecyclerAdapter()?.finishActMode()
-					}
+					if(layoutManager.spanCount < MAX_COLUMN_COUNT) incColCount(1)
 				}
 			}
-		} else zoomListener = null
+		} else null
 	}
 }

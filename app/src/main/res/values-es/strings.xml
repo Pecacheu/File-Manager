@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Administrador de archivos</string>
 	<string name="press_back_again">Presione atrás de nuevo para salir</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Descompresión exitosa</string>
 	<string name="compressing_failed">Compresión fallida</string>
 	<string name="decompressing_failed">Descompresión fallida</string>
-	<string name="manage_favorites">Administrar favoritos</string>
-	<string name="favorites_activity_placeholder">Puede agregar carpetas de uso frecuente a favoritos para facilitar el acceso desde cualquier lugar.</string>
 	<string name="file_editor">Editor de archivos</string>
 	<string name="storage_analysis">Análisis de almacenamiento</string>
 	<string name="images">Imágenes</string>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Gestor de ficheiros</string>
 	<string name="press_back_again">Prima novamente para sair</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Descompactação terminada</string>
 	<string name="compressing_failed">Falha ao compactar</string>
 	<string name="decompressing_failed">Falha ao descompactar</string>
-	<string name="manage_favorites">Gerir favoritos</string>
-	<string name="favorites_activity_placeholder">Pode adicionar pastas como favoritos para um acesso mais rápido.</string>
 	<string name="file_editor">Editor de ficheiros</string>
 	<string name="storage_analysis">Análise ao armazenamento</string>
 	<string name="images">Imagens</string>

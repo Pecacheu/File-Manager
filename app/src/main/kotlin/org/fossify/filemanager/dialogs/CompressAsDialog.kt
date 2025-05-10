@@ -5,23 +5,24 @@ import androidx.appcompat.app.AlertDialog
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
+import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.DialogCompressAsBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.models.ListItem
 
 class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val callback: (destination: String, password: String?)->Unit) {
 	private val binding = DialogCompressAsBinding.inflate(activity.layoutInflater)
 
 	init {
 		val filename = path.getFilenameFromPath()
-		val indexOfDot = if(filename.contains('.') && !activity.getIsPathDirectory(path)) filename.lastIndexOf(".") else filename.length
+		val indexOfDot = if(filename.contains('.')) filename.lastIndexOf('.') else filename.length
 		val baseFilename = filename.substring(0, indexOfDot)
 		var realPath = path.getParentPath()
 
 		binding.apply {
 			filenameValue.setText(baseFilename)
-
 			folder.setText(activity.humanizePath(realPath))
 			folder.setOnClickListener {
 				FilePickerDialog(activity, realPath, false, activity.config.shouldShowHidden(), true, true, showFavoritesButton = true) {
@@ -29,7 +30,6 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 					realPath = it
 				}
 			}
-
 			passwordProtect.setOnCheckedChangeListener {_, _ ->
 				enterPasswordHint.beVisibleIf(passwordProtect.isChecked)
 			}
@@ -53,14 +53,17 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 					when {
 						name.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
 						name.isAValidFilename() -> {
-							val newPath = "$realPath/$name.zip"
-							if(activity.getDoesFilePathExist(newPath)) {
-								activity.toast(org.fossify.commons.R.string.name_taken)
-								return@OnClickListener
+							val path = "$realPath/$name.zip"
+							ensureBackgroundThread {
+								if(ListItem.pathExists(activity, path)) {
+									activity.toast(org.fossify.commons.R.string.name_taken)
+									return@ensureBackgroundThread
+								}
+								activity.runOnUiThread {
+									alertDialog.dismiss()
+									callback(path, password)
+								}
 							}
-
-							alertDialog.dismiss()
-							callback(newPath, password)
 						}
 						else -> activity.toast(org.fossify.commons.R.string.invalid_name)
 					}

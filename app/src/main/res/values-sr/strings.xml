@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Филе Манагер</string>
 	<string name="press_back_again">Притисните поново да бисте изашли</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Декомпресија успела</string>
 	<string name="compressing_failed">Компресовање није успело</string>
 	<string name="decompressing_failed">Декомпресија није успела</string>
-	<string name="manage_favorites">Управљајте омиљеним</string>
-	<string name="favorites_activity_placeholder">Често коришћене фасцикле можете да додате у фаворите за лак приступ са било ког места.</string>
 	<string name="file_editor">Уређивач датотека</string>
 	<string name="storage_analysis">Анализа складиштења</string>
 	<string name="images">Слике</string>

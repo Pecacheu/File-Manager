@@ -195,7 +195,7 @@ class AboutActivityAlt: BaseComposeActivity() {
 		}
 		clicksSinceFirstClick++
 		if(clicksSinceFirstClick >= EASTER_EGG_REQUIRED_CLICKS) {
-			toast(R.string.hello)
+			toast("⚡ Rai Rai :3 ⚡")
 			firstVersionClickTS = 0L
 			clicksSinceFirstClick = 0
 		}

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Skráastjóri</string>
 	<string name="press_back_again">Ýttu aftur til baka til að hætta</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Afþjöppun tókst</string>
 	<string name="compressing_failed">Þjöppun mistókst</string>
 	<string name="decompressing_failed">Afþjöppun mistókst</string>
-	<string name="manage_favorites">Stjórna eftirlæti</string>
-	<string name="favorites_activity_placeholder">Þú getur sett möppur í eftirlæti til að auðvelda aðgang hvaðan sem er.</string>
 	<string name="file_editor">Skráaritill</string>
 	<string name="storage_analysis">Geymslugreining</string>
 	<string name="images">Myndir</string>

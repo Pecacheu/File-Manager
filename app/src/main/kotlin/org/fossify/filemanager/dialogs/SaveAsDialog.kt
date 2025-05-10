@@ -5,9 +5,12 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
+import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.databinding.DialogSaveAsBinding
+import org.fossify.filemanager.models.ListItem
 
+//TODO Test
 class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 	private val hidePath: Boolean, val callback: (path: String, filename: String)->Unit) {
 
@@ -20,17 +23,14 @@ class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 		val binding = DialogSaveAsBinding.inflate(activity.layoutInflater).apply {
 			folderValue.setText(activity.humanizePath(realPath))
 
-			val fullName = path.getFilenameFromPath()
-			val dotAt = fullName.lastIndexOf(".")
-			var name = fullName
-
+			var name = path.getFilenameFromPath()
+			val dotAt = name.lastIndexOf('.')
 			if(dotAt > 0) {
-				name = fullName.substring(0, dotAt)
-				val extension = fullName.substring(dotAt + 1)
-				extensionValue.setText(extension)
+				extensionValue.setText(name.substring(dotAt+1))
+				name = name.substring(0, dotAt)
 			}
-
 			filenameValue.setText(name)
+
 			if(hidePath) {
 				folderHint.beGone()
 			} else {
@@ -49,34 +49,33 @@ class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 			activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.save_as) {alertDialog ->
 				alertDialog.showKeyboard(binding.filenameValue)
 				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-					val filename = binding.filenameValue.value
-					val extension = binding.extensionValue.value
+					var filename = binding.filenameValue.value
+					val ext = binding.extensionValue.value
 
 					if(filename.isEmpty()) {
 						activity.toast(org.fossify.commons.R.string.filename_cannot_be_empty)
 						return@setOnClickListener
 					}
 
-					var newFilename = filename
-					if(extension.isNotEmpty()) {
-						newFilename += ".$extension"
-					}
+					if(ext.isNotEmpty()) filename += ".$ext"
+					val path = "$realPath/$filename"
 
-					val newPath = "$realPath/$newFilename"
-					if(!newFilename.isAValidFilename()) {
+					if(!filename.isAValidFilename()) {
 						activity.toast(org.fossify.commons.R.string.filename_invalid_characters)
 						return@setOnClickListener
 					}
 
-					if(!hidePath && activity.getDoesFilePathExist(newPath)) {
-						val title = String.format(activity.getString(org.fossify.commons.R.string.file_already_exists_overwrite), newFilename)
-						ConfirmationDialog(activity, title) {
-							callback(newPath, newFilename)
+					ensureBackgroundThread {
+						if(!hidePath && ListItem.pathExists(activity, path)) activity.runOnUiThread {
+							val title = String.format(activity.getString(org.fossify.commons.R.string.file_already_exists_overwrite), filename)
+							ConfirmationDialog(activity, title) {
+								callback(path, filename)
+								alertDialog.dismiss()
+							}
+						} else activity.runOnUiThread {
+							callback(path, filename)
 							alertDialog.dismiss()
 						}
-					} else {
-						callback(newPath, newFilename)
-						alertDialog.dismiss()
 					}
 				}
 			}

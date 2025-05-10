@@ -1,19 +1,18 @@
 package org.fossify.filemanager.helpers
 
-import android.app.Activity
 import com.stericson.RootShell.execution.Command
 import com.stericson.RootTools.RootTools
+import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.areDigitsOnly
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.SORT_BY_SIZE
-import org.fossify.commons.models.FileDirItem
 import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
-class RootHelpers(val activity: Activity) {
+class RootHelpers(val activity: BaseSimpleActivity) {
 	fun askRootIfNeeded(callback: (success: Boolean)->Unit) {
 		val cmd = "ls -lA"
 		val command = object: Command(0, cmd) {
@@ -41,9 +40,8 @@ class RootHelpers(val activity: Activity) {
 				override fun commandOutput(id: Int, line: String) {
 					val file = File(path, line)
 					val fullLine = fullLines.firstOrNull {ln -> ln.endsWith(" $line")}
-					val isDirectory = fullLine?.startsWith('d')?:file.isDirectory
-					val fileDirItem = ListItem(file.absolutePath, line, isDirectory, 0, 0, 0, false, false)
-					files.add(fileDirItem)
+					val isDir = fullLine?.startsWith('d')?:file.isDirectory
+					files.add(ListItem(activity, file.absolutePath, line, isDir, 0, 0, 0))
 					super.commandOutput(id, line)
 				}
 
@@ -75,12 +73,10 @@ class RootHelpers(val activity: Activity) {
 		runCommand(command)
 	}
 
-	private fun getChildrenCount(files: ArrayList<ListItem>, path: String, callback: (originalPath: String, listItems: ArrayList<ListItem>)->Unit) {
+	private fun getChildrenCount(files: ArrayList<ListItem>, path: String, callback: (origPath: String, items: ArrayList<ListItem>)->Unit) {
 		val hiddenArgument = if(activity.config.shouldShowHidden()) "-A " else ""
 		var cmd = ""
-		files.filter {it.isDirectory}.forEach {
-			cmd += "ls $hiddenArgument${it.path} |wc -l;"
-		}
+		files.filter {it.isDir}.forEach {cmd += "ls $hiddenArgument${it.path} |wc -l;"}
 		cmd = cmd.trimEnd(';') + " | cat"
 
 		val lines = ArrayList<String>()
@@ -90,24 +86,21 @@ class RootHelpers(val activity: Activity) {
 				super.commandOutput(id, line)
 			}
 			override fun commandCompleted(id: Int, exitcode: Int) {
-				files.filter {it.isDirectory}.forEachIndexed {index, fileDirItem ->
-					val childrenCount = lines[index]
-					if(childrenCount.areDigitsOnly()) {
-						fileDirItem.children = childrenCount.toInt()
-					}
+				files.filter {it.isDir}.forEachIndexed {idx, item ->
+					val childrenCount = lines[idx]
+					if(childrenCount.areDigitsOnly()) item.children = childrenCount.toInt()
 				}
 				if(activity.config.getFolderSorting(path) and SORT_BY_SIZE == 0) callback(path, files)
 				else getFileSizes(files, path, callback)
 				super.commandCompleted(id, exitcode)
 			}
 		}
-
 		runCommand(command)
 	}
 
-	private fun getFileSizes(files: ArrayList<ListItem>, path: String, callback: (originalPath: String, listItems: ArrayList<ListItem>)->Unit) {
+	private fun getFileSizes(items: ArrayList<ListItem>, path: String, callback: (origPath: String, items: ArrayList<ListItem>)->Unit) {
 		var cmd = ""
-		files.filter {!it.isDirectory}.forEach {cmd += "stat -t ${it.path};"}
+		items.filter {!it.isDir}.forEach {cmd += "stat -t ${it.path};"}
 
 		val lines = ArrayList<String>()
 		val command = object: Command(0, cmd) {
@@ -116,19 +109,17 @@ class RootHelpers(val activity: Activity) {
 				super.commandOutput(id, line)
 			}
 			override fun commandCompleted(id: Int, exitcode: Int) {
-				files.filter {!it.isDirectory}.forEachIndexed {index, fileDirItem ->
-					var line = lines[index]
+				items.filter {!it.isDir}.forEachIndexed {idx, item ->
+					var line = lines[idx]
 					if(line.isNotEmpty() && line != "0") {
-						if(line.length >= fileDirItem.path.length) {
-							line = line.substring(fileDirItem.path.length).trim()
+						if(line.length >= item.path.length) {
+							line = line.substring(item.path.length).trim()
 							val size = line.split(" ")[0]
-							if(size.areDigitsOnly()) {
-								fileDirItem.size = size.toLong()
-							}
+							if(size.areDigitsOnly()) item.size = size.toLong()
 						}
 					}
 				}
-				callback(path, files)
+				callback(path, items)
 				super.commandCompleted(id, exitcode)
 			}
 		}
@@ -217,18 +208,16 @@ class RootHelpers(val activity: Activity) {
 		runCommand(command)
 	}
 
-	fun deleteFiles(fileDirItems: ArrayList<FileDirItem>) {
+	fun deleteFiles(items: ArrayList<ListItem>) {
 		if(!RootTools.isRootAvailable()) {
 			activity.toast(R.string.rooted_device_only)
 			return
 		}
-		tryMountAsRW(fileDirItems.first().path) {
-			fileDirItems.forEach {
+		tryMountAsRW(items.first().path) {
+			items.forEach {
 				val targetPath = it.path.trim('/')
-				if(targetPath.isEmpty()) {
-					return@forEach
-				}
-				val mainCommand = if(it.isDirectory) "rm -rf" else "rm"
+				if(targetPath.isEmpty()) return@forEach
+				val mainCommand = if(it.isDir) "rm -rf" else "rm"
 				val cmd = "$mainCommand \"/$targetPath\""
 				val command = object: Command(0, cmd) {}
 				runCommand(command)
@@ -236,25 +225,25 @@ class RootHelpers(val activity: Activity) {
 		}
 	}
 
-	fun copyMoveFiles(fileDirItems: ArrayList<FileDirItem>, destination: String, isCopyOperation: Boolean, successes: Int = 0, callback: (Int)->Unit) {
+	fun copyMoveFiles(items: ArrayList<ListItem>, destination: String, isCopyOperation: Boolean, successes: Int = 0, callback: (Int)->Unit) {
 		if(!RootTools.isRootAvailable()) {
 			activity.toast(R.string.rooted_device_only)
 			return
 		}
-		val fileDirItem = fileDirItems.first()
+		val item = items.first()
 		val mainCommand = if(isCopyOperation) {
-			if(fileDirItem.isDirectory) "cp -R" else "cp"
+			if(item.isDir) "cp -R" else "cp"
 		} else "mv"
 
-		val cmd = "$mainCommand \"${fileDirItem.path}\" \"$destination\""
+		val cmd = "$mainCommand \"${item.path}\" \"$destination\""
 		val command = object: Command(0, cmd) {
 			override fun commandCompleted(id: Int, exitcode: Int) {
 				val newSuccesses = successes + (if(exitcode == 0) 1 else 0)
-				if(fileDirItems.size == 1) {
+				if(items.size == 1) {
 					callback(newSuccesses)
 				} else {
-					fileDirItems.removeAt(0)
-					copyMoveFiles(fileDirItems, destination, isCopyOperation, newSuccesses, callback)
+					items.removeAt(0)
+					copyMoveFiles(items, destination, isCopyOperation, newSuccesses, callback)
 				}
 				super.commandCompleted(id, exitcode)
 			}

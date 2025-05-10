@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Gestor de fitxers</string>
 	<string name="press_back_again">Premeu enrere de nou per a sortir</string>
@@ -23,8 +22,6 @@
 	<string name="decompression_successful">Descompressió correcta</string>
 	<string name="compressing_failed">Ha fallat la compressió</string>
 	<string name="decompressing_failed">Ha fallat la descompressió</string>
-	<string name="manage_favorites">Gestiona els preferits</string>
-	<string name="favorites_activity_placeholder">Podeu afegir carpetes que utilitzeu amb freqüència als preferits per a accedir fàcilment des de qualsevol lloc.</string>
 	<string name="file_editor">Editor de fitxers</string>
 	<string name="storage_analysis">Anàlisi d\'emmagatzematge</string>
 	<string name="images">Imatges</string>

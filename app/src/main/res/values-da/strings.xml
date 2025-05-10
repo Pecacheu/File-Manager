@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Filhåndtering</string>
 	<string name="press_back_again">Tryk tilbage igen for at afslutte</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Dekomprimeret</string>
 	<string name="compressing_failed">Komprimering mislykkedes</string>
 	<string name="decompressing_failed">Dekomprimering mislykkedes</string>
-	<string name="manage_favorites">Håndter favoritter</string>
-	<string name="favorites_activity_placeholder">Du kan tilføje ofte benyttede mapper til favoritter, så du hurtigt kan finde dem igen.</string>
 	<string name="file_editor">Fileditor</string>
 	<string name="storage_analysis">Lagersanalyse</string>
 	<string name="images">Billeder</string>

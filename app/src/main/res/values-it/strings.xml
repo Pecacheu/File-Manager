@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Gestore di File</string>
 	<string name="press_back_again">Premi di nuovo indietro per uscire</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Decompressione completata</string>
 	<string name="compressing_failed">Impossibile comprimere</string>
 	<string name="decompressing_failed">Impossibile decomprimere</string>
-	<string name="manage_favorites">Gestisci i preferiti</string>
-	<string name="favorites_activity_placeholder">Si possono aggiungere le cartelle usate frequentemente ai preferiti, per un rapido accesso da qualsiasi posizione.</string>
 	<string name="file_editor">Editor dei file</string>
 	<string name="storage_analysis">Analisi dello stoccaggio</string>
 	<string name="images">Immagini</string>

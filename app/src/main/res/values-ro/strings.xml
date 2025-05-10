@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Fișiere</string>
 	<string name="press_back_again">Apasă din nou pe înapoi pentru a închide</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Decomprimare reușită</string>
 	<string name="compressing_failed">Comprimare nereușită</string>
 	<string name="decompressing_failed">Decomprimare nereușită</string>
-	<string name="manage_favorites">Gestionare preferate</string>
-	<string name="favorites_activity_placeholder">Poți adăuga în preferate dosarele utilizate frecvent pentru a le accesa ușor de oriunde.</string>
 	<string name="file_editor">Editor de fișiere</string>
 	<string name="storage_analysis">Analiza stocării</string>
 	<string name="images">Imagini</string>

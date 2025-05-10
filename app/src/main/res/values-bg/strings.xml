@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Управление на файлове</string>
 	<string name="press_back_again">Натиснете назад отново, за да излезете</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Декомпресирането е успешно</string>
 	<string name="compressing_failed">Неуспешно компресиране</string>
 	<string name="decompressing_failed">Неуспешно декомпресиране</string>
-	<string name="manage_favorites">Управление на любими</string>
-	<string name="favorites_activity_placeholder">Можете да добавяте често използвани папки към любими за лесен достъп от всякъде.</string>
 	<string name="file_editor">Файлов редактор</string>
 	<string name="storage_analysis">Анализ на съхранението</string>
 	<string name="images">Изображения</string>

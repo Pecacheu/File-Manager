@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Filbehandler</string>
 	<string name="press_back_again">Trykk tilbake igjen for å avslutte</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Dekomprimering vellykket</string>
 	<string name="compressing_failed">Komprimering mislyktes</string>
 	<string name="decompressing_failed">Dekomprimering mislyktes</string>
-	<string name="manage_favorites">Håndter favoritter</string>
-	<string name="favorites_activity_placeholder">Du kan legge til ofte brukte mapper i favoritter, for enkel tilgang fra hvor som helst.</string>
 	<string name="file_editor">Filredigerer</string>
 	<string name="images">Bilder</string>
 	<string name="videos">Videoer</string>

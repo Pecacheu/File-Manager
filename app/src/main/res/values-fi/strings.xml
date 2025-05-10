@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Tiedostonhallinta</string>
 	<string name="press_back_again">Paina takaisin-painiketta uudelleen lopettaaksesi</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Purkaminen valmis</string>
 	<string name="compressing_failed">Pakkaaminen epäonnistui</string>
 	<string name="decompressing_failed">Purkaminen epäonnistui</string>
-	<string name="manage_favorites">Hallitse suosikkeja</string>
-	<string name="favorites_activity_placeholder">Voit lisätä usein käyttämiäsi kansiota suosikeiksi, jolloin niiden käyttö on helppoa mistä vain.</string>
 	<string name="file_editor">Tiedostoeditori</string>
 	<string name="storage_analysis">Tallennustilan analyysi</string>
 	<string name="images">Kuvat</string>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Dateimanager</string>
 	<string name="press_back_again">Drücke erneut zum Schließen</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Entpacken erfolgreich</string>
 	<string name="compressing_failed">Komprimieren fehlgeschlagen</string>
 	<string name="decompressing_failed">Entpacken fehlgeschlagen</string>
-	<string name="manage_favorites">Favoriten verwalten</string>
-	<string name="favorites_activity_placeholder">Du kannst häufig benutzte Ordner für einen einfacheren Zugriff zu den Favoriten hinzufügen.</string>
 	<string name="file_editor">Dateieditor</string>
 	<string name="storage_analysis">Speicheranalyse</string>
 	<string name="images">Bilder</string>

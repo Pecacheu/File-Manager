@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="open_as">Digeriñ evel</string>
 	<string name="text_file">Restr testenn</string>
@@ -15,9 +14,7 @@
 	<string name="compression_successful">Koazhet gant berzh</string>
 	<string name="compressing_failed">C\'hwitadenn war ar c\'hoazhañ</string>
 	<string name="decompressing_failed">C\'hwitadenn war an digoazhañ</string>
-	<string name="favorites_activity_placeholder">Gallout a rit ouzhpennañ teuliadoù arveret alies d\'ho sinedoù evit gallout mont eno adalek n\'eus forzh pelec\'h.</string>
 	<string name="file_editor">Embanner restr</string>
-	<string name="manage_favorites">Ardeiñ ar sinedoù</string>
 	<string name="images">Skeudennoù</string>
 	<string name="audio">Aodio</string>
 	<string name="documents">Teulioù</string>

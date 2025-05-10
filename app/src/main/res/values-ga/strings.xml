@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Bainisteoir Comhad</string>
 	<string name="go_to_home_folder">Téigh go dtí an fillteán baile</string>
@@ -32,11 +31,9 @@
 	<string name="text_file">Comhad téacs</string>
 	<string name="decompress">Dí-chomhbhrú</string>
 	<string name="compressing">Ag comhbhrúite…</string>
-	<string name="favorites_activity_placeholder">Is féidir leat fillteáin a úsáidtear go minic a chur le ceanáin ar mhaithe le rochtain éasca ó áit ar bith.</string>
 	<string name="videos">Físeáin</string>
 	<string name="documents">Doiciméid</string>
 	<string name="compression_successful">Comhbhrú rathúil</string>
 	<string name="decompressing_failed">Theip ar dhí-chomhbhrú</string>
-	<string name="manage_favorites">Theip ar an dí-chomhbhrú</string>
 	<string name="audio">Fuaime</string>
 </resources>

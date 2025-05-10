@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="images">Irudiak</string>
 	<string name="videos">Bideoak</string>
 	<string name="open_as">Ireki honela</string>
-	<string name="favorites_activity_placeholder">Gogokoetara maiz erabiltzen diren karpetak gehi ditzakezu edonondik erraz sartzeko.</string>
 	<string name="storage_analysis">Biltegiratze-analisia</string>
 	<string name="documents">Dokumentuak</string>
 	<string name="downloads">Deskargak</string>
@@ -14,7 +12,6 @@
 	<string name="audio_file">Audio-fitxategia</string>
 	<string name="compression_successful">Trinkotzea behar bezala burutu da</string>
 	<string name="decompressing_failed">Deskonprimatzeak huts egin du</string>
-	<string name="manage_favorites">Kudeatu gogokoak</string>
 	<string name="file_editor">Fitxategien editorea</string>
 	<string name="audio">Audio</string>
 	<string name="select_audio_file">Hautatu audio-fitxategi bat</string>

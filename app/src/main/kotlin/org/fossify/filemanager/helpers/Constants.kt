@@ -5,8 +5,6 @@ import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
-import org.fossify.commons.models.FileDirItem
-import org.fossify.filemanager.models.ListItem
 
 const val MAX_COLUMN_COUNT = 15
 
@@ -65,12 +63,3 @@ val extraDocumentMimeTypes = arrayListOf("application/pdf", "application/msword"
 val archiveMimeTypes = arrayListOf("application/zip", "application/octet-stream", "application/json", "application/x-tar", "application/x-rar-compressed",
 	"application/x-zip-compressed", "application/x-7z-compressed", "application/x-compressed", "application/x-gzip", "application/java-archive",
 	"multipart/x-zip")
-
-fun getListItemsFromFileDirItems(fileDirItems: ArrayList<FileDirItem>): ArrayList<ListItem> {
-	val listItems = ArrayList<ListItem>()
-	fileDirItems.forEach {
-		val listItem = ListItem(it.path, it.name, false, -2, it.size, it.modified, false, false)
-		listItems.add(listItem)
-	}
-	return listItems
-}

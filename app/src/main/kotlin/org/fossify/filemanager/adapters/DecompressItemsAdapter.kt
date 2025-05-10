@@ -1,16 +1,11 @@
 package org.fossify.filemanager.adapters
 
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.RequestOptions
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.getTextSize
@@ -58,45 +53,18 @@ class DecompressItemsAdapter(activity: SimpleActivity, var listItems: MutableLis
 
 	override fun getItemCount() = listItems.size
 
-	override fun onViewRecycled(holder: ViewHolder) {
-		super.onViewRecycled(holder)
-		if(!activity.isDestroyed && !activity.isFinishing) {
-			ItemDecompressionListFileDirBinding.bind(holder.itemView).apply {
-				Glide.with(activity).clear(itemIcon)
-			}
-		}
-	}
-
-	private fun setupView(view: View, listItem: ListItem) {
+	private fun setupView(view: View, item: ListItem) {
 		ItemDecompressionListFileDirBinding.bind(view).apply {
-			val fileName = listItem.name
-			itemName.text = fileName
+			itemName.text = item.name
 			itemName.setTextColor(textColor)
 			itemName.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-
-			if(listItem.isDirectory) {
+			if(item.isDir) {
 				itemIcon.setImageDrawable(folderDrawable)
 			} else {
-				val drawable = fileDrawables.getOrElse(fileName.substringAfterLast(".").lowercase(Locale.getDefault())) {fileDrawable}
-				val options = RequestOptions().signature(listItem.getKey()).diskCacheStrategy(DiskCacheStrategy.RESOURCE).error(drawable).centerCrop()
-				val itemToLoad = getImagePathToLoad(listItem.path)
-				if(!activity.isDestroyed) {
-					Glide.with(activity).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(options).into(itemIcon)
-				}
+				val drawable = fileDrawables.getOrElse(item.name.substringAfterLast('.').lowercase(Locale.getDefault())) {fileDrawable}
+				itemIcon.setImageDrawable(drawable)
 			}
 		}
-	}
-
-	private fun getImagePathToLoad(path: String): Any {
-		return if(path.endsWith(".apk", true)) {
-			val packageInfo = activity.packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
-			if(packageInfo != null) {
-				val appInfo = packageInfo.applicationInfo
-				appInfo.sourceDir = path
-				appInfo.publicSourceDir = path
-				appInfo.loadIcon(activity.packageManager)
-			} else path
-		} else path
 	}
 
 	@SuppressLint("UseCompatLoadingForDrawables")

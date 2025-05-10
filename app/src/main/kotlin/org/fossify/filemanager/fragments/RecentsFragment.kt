@@ -14,7 +14,6 @@ import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getStringValue
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
@@ -65,10 +64,7 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		if(!forceRefresh && recents.hashCode() == (binding.recentsList.adapter as? ItemsAdapter)?.listItems.hashCode()) {
 			return
 		}
-		ItemsAdapter(activity as SimpleActivity, recents, this, binding.recentsList, isPickMultipleIntent,
-			binding.recentsSwipeRefresh, false) {
-			clickedPath((it as FileDirItem).path)
-		}.apply {
+		ItemsAdapter(activity!!, recents, this, binding.recentsList, binding.recentsSwipeRefresh, false).apply {
 			setItemListZoom(zoomListener)
 			binding.recentsList.adapter = this
 		}
@@ -129,8 +125,8 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 						val name = cursor.getStringValue(FileColumns.DISPLAY_NAME)?:path.getFilenameFromPath()
 						val size = cursor.getLongValue(FileColumns.SIZE)
 						val modified = cursor.getLongValue(FileColumns.DATE_MODIFIED)*1000
-						val item = ListItem(path, name, false, -2, size, modified, false, false)
-						if((showHidden || !name.startsWith(".")) && activity?.getDoesFilePathExist(path) == true) {
+						val item = ListItem(activity, path, name, false, -2, size, modified)
+						if((showHidden || !name.startsWith('.')) && activity?.getDoesFilePathExist(path) == true) {
 							if(wantedMimeTypes.any {isProperMimeType(it, path, false)}) listItems.add(item)
 						}
 					} while(cursor.moveToNext())
@@ -154,11 +150,10 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
 	override fun selectedPaths(paths: ArrayList<String>) {(activity as MainActivity).pickedPaths(paths)}
-	override fun deleteFiles(files: ArrayList<FileDirItem>) {handleFileDeleting(files, false)}
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text
-		val filtered = filesIgnoringSearch.filter {it.mName.contains(text, true)}.toMutableList() as ArrayList<ListItem>
+		val filtered = filesIgnoringSearch.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
 		binding.apply {
 			(recentsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)
 			recentsPlaceholder.beVisibleIf(filtered.isEmpty())

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">فائلاں والا</string>
 	<string name="press_back_again">بند کرن لئی پچھے دبارہ دباؤ</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">اݨزیپ کیتیاں گیاں</string>
 	<string name="compressing_failed">زیپ کر نہیں سکدیاں</string>
 	<string name="decompressing_failed">زیپ کر نہیں سکدیاں</string>
-	<string name="manage_favorites">منپسند دیاں چوݨاں</string>
-	<string name="favorites_activity_placeholder">منپسنداں وچ تسیں فولڈر پا سکدے، سادی پہنچ اے</string>
 	<string name="file_editor">فائل سودھݨ والا</string>
 	<string name="storage_analysis">سٹوریج دی جاݨکاری</string>
 	<string name="images">تصویراں</string>

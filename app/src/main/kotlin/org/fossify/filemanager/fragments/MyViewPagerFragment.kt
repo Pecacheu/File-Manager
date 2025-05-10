@@ -7,20 +7,15 @@ import androidx.viewbinding.ViewBinding
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
-import org.fossify.commons.models.FileDirItem
 import org.fossify.commons.views.MyFloatingActionButton
 import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.commons.views.MyRecyclerView
-import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.extensions.isPathOnRoot
-import org.fossify.filemanager.extensions.tryOpenPathIntent
 import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
-import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 
 abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(context: Context, attributeSet: AttributeSet):
@@ -33,22 +28,10 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 	var isGetContentIntent = false
 	var isGetRingtonePicker = false
 	var isPickMultipleIntent = false
+	var isCreateDocumentIntent = false
 	var wantedMimeTypes = listOf("")
-	protected var isCreateDocumentIntent = false
 	protected lateinit var innerBinding: BINDING
 	protected var zoomListener: MyRecyclerView.MyZoomListener? = null
-
-	//TODO Fix for remote
-	protected fun clickedPath(path: String) {
-		if(isGetContentIntent || isCreateDocumentIntent) {
-			(activity as MainActivity).pickedPath(path)
-		} else if(isGetRingtonePicker) {
-			if(path.isAudioFast()) (activity as MainActivity).pickedRingtone(path)
-			else activity?.toast(R.string.select_audio_file)
-		} else {
-			activity?.tryOpenPathIntent(path, false)
-		}
-	}
 
 	fun updateIsCreateDocumentIntent(isCreateDocumentIntent: Boolean) {
 		val iconId = if(isCreateDocumentIntent) org.fossify.commons.R.drawable.ic_check_vector
@@ -59,27 +42,13 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 		innerBinding.itemsFab?.setImageDrawable(fabIcon)
 	}
 
-	//TODO Fix for remote
-	fun handleFileDeleting(files: ArrayList<FileDirItem>, hasFolder: Boolean) {
-		val firstPath = files.firstOrNull()?.path
-		if(firstPath.isNullOrEmpty() || context == null) return
-
-		if(context!!.isPathOnRoot(firstPath)) RootHelpers(activity!!).deleteFiles(files)
-		else (activity as SimpleActivity).deleteFiles(files, hasFolder) {
-			if(!it) activity!!.runOnUiThread {activity!!.toast(org.fossify.commons.R.string.unknown_error_occurred)}
-		}
-	}
-
 	protected fun isProperMimeType(wantedMimeType: String, path: String, isDirectory: Boolean): Boolean {
 		return if(wantedMimeType.isEmpty() || wantedMimeType == "*/*" || isDirectory) {
 			true
 		} else {
-			val fileMimeType = path.getMimeType()
-			if(wantedMimeType.endsWith("/*")) {
-				fileMimeType.substringBefore("/").equals(wantedMimeType.substringBefore("/"), true)
-			} else {
-				fileMimeType.equals(wantedMimeType, true)
-			}
+			val mimeType = path.getMimeType()
+			if(wantedMimeType.endsWith("/*")) mimeType.substringBefore("/").equals(wantedMimeType.substringBefore("/"), true)
+				else mimeType.equals(wantedMimeType, true)
 		}
 	}
 

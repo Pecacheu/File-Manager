@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Διαχείριση αρχείων</string>
 	<string name="press_back_again">Πατήστε πίσω ξανά για έξοδο</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Η Αποσυμπίεση ολοκληρώθηκε</string>
 	<string name="compressing_failed">Σφάλμα Συμπίεσης</string>
 	<string name="decompressing_failed">Σφάλμα Αποσυμπίεσης</string>
-	<string name="manage_favorites">Διαχείριση Αγαπημένων</string>
-	<string name="favorites_activity_placeholder">Μπορείτε να προσθέσετε φακέλους που χρησιμοποιούνται συχνά στα Αγαπημένα για εύκολη πρόσβαση από οπουδήποτε.</string>
 	<string name="file_editor">Επεξεργαστής αρχείων</string>
 	<string name="storage_analysis">Ανάλυση Αποθήκευσης</string>
 	<string name="images">Εικόνες</string>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">文件管理器</string>
 	<string name="press_back_again">再次按返回退出</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">解压缩成功</string>
 	<string name="compressing_failed">压缩失败</string>
 	<string name="decompressing_failed">解压缩失败</string>
-	<string name="manage_favorites">管理收藏</string>
-	<string name="favorites_activity_placeholder">您可以将经常访问的文件夹添加至收藏便于从任意位置快速访问。</string>
 	<string name="file_editor">文件编辑器</string>
 	<string name="storage_analysis">存储分析</string>
 	<string name="images">图片</string>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">Menedżer plików</string>
 	<string name="press_back_again">Naciśnij ponownie przycisk wstecz, aby wyjść</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">Rozpakowywanie powiodło się</string>
 	<string name="compressing_failed">Pakowanie nie powiodło się</string>
 	<string name="decompressing_failed">Rozpakowywanie nie powiodło się</string>
-	<string name="manage_favorites">Zarządzaj ulubionymi</string>
-	<string name="favorites_activity_placeholder">Możesz dodać często używane foldery do ulubionych, aby mieć do nich łatwy dostęp z dowolnego miejsca.</string>
 	<string name="file_editor">Edytor plików</string>
 	<string name="storage_analysis">Analiza pamięci</string>
 	<string name="images">Obrazy</string>

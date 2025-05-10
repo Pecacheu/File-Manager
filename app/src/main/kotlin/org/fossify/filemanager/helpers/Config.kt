@@ -8,7 +8,9 @@ import org.fossify.commons.helpers.BaseConfig
 import java.io.File
 import java.util.Locale
 import androidx.core.content.edit
+import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.UUID
+import org.fossify.filemanager.extensions.formatErr
 import org.fossify.filemanager.extensions.idFromRemotePath
 import org.fossify.filemanager.extensions.isRemotePath
 
@@ -23,6 +25,8 @@ class Config(context: Context): BaseConfig(context) {
 
 	fun shouldShowHidden() = showHidden || temporarilyShowHidden
 
+	var reloadPath = false
+
 	var pressBackTwice: Boolean
 		get() = prefs.getBoolean(PRESS_BACK_TWICE, true)
 		set(pressBackTwice) = prefs.edit {putBoolean(PRESS_BACK_TWICE, pressBackTwice)}
@@ -30,7 +34,7 @@ class Config(context: Context): BaseConfig(context) {
 	var homeFolder: String
 		get(): String {
 			var path = prefs.getString(HOME_FOLDER, "")!!
-			if(path.isEmpty() || (!isRemotePath(path) && !File(path).isDirectory)) {
+			if(path.isEmpty() || (!isRemotePath(path) && !File(path).isDirectory)) { //TODO Handle remotes
 				path = context.getInternalStoragePath()
 				homeFolder = path
 			}
@@ -148,7 +152,7 @@ class Config(context: Context): BaseConfig(context) {
 				for(rs in rSet) {
 					r = null
 					try {
-						r = Remote(rs)
+						r = Remote(context, rs)
 					} catch(e: Throwable) {
 						Log.e("files", "Error loading remote $rs", e)
 						if(!removeBad) throw e
@@ -161,8 +165,10 @@ class Config(context: Context): BaseConfig(context) {
 			return remotes!!
 		}
 	}
-	fun getRemoteForPath(path: String): Remote? {
+	fun getRemoteForPath(path: String, force: Boolean=false): Remote? {
 		if(remotes == null) getRemotes()
-		return remotes!![idFromRemotePath(path)]
+		val r = remotes!![idFromRemotePath(path)]
+		if(r == null && force) throw context.formatErr(R.string.no_remote_err)
+		return r
 	}
 }

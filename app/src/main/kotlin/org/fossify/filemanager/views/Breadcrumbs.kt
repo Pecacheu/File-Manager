@@ -22,11 +22,11 @@ import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.extensions.setDrawablesRelativeWithIntrinsicBounds
 import org.fossify.commons.helpers.MEDIUM_ALPHA
-import org.fossify.commons.models.FileDirItem
 import androidx.core.view.isNotEmpty
 import org.fossify.commons.views.MyTextView
 import org.fossify.filemanager.extensions.getBasePath
 import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.models.ListItem
 
 class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(context, attrs) {
 	private val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -105,7 +105,7 @@ class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(c
 		val cnt = itemsLayout.childCount
 		for(i in 0 until cnt) {
 			val child = itemsLayout.getChildAt(i)
-			if((child.tag as? FileDirItem)?.path?.trimEnd('/') == lastPath.trimEnd('/')) {
+			if((child.tag as? ListItem)?.path?.trimEnd('/') == lastPath.trimEnd('/')) {
 				selectedIndex = i
 				break
 			}
@@ -138,20 +138,18 @@ class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(c
 			if(dir.isEmpty()) return@forEachIndexed
 			currPath = "${currPath.trimEnd('/')}/"
 
-			val item = FileDirItem(currPath.trimEnd('/'), dir, true, 0, 0, 0)
-			addBreadcrumb(item = item, index = i, isLast = item.path.trimEnd('/') == lastPath.trimEnd('/'))
+			val item = ListItem(null, currPath.trimEnd('/'), dir, true, 0, 0, 0)
+			addBreadcrumb(item, i, item.path.trimEnd('/') == lastPath.trimEnd('/'))
 			scrollToSelectedItem()
 		}
 	}
 
-	private fun addBreadcrumb(item: FileDirItem, index: Int, isLast: Boolean) {
+	private fun addBreadcrumb(item: ListItem, index: Int, isLast: Boolean) {
 		ItemBreadcrumbBinding.inflate(inflater, itemsLayout, false).apply {
 			breadcrumbText.isActivated = isLast && index != 0
-
 			breadcrumbText.text = item.name
 			breadcrumbText.setTextColor(textColorStateList)
 			breadcrumbText.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-
 			itemsLayout.addView(root)
 			if(index > 0) {
 				breadcrumbText.setDrawablesRelativeWithIntrinsicBounds(start = AppCompatResources.getDrawable(context, R.drawable.ic_chevron_right_vector))
@@ -163,7 +161,6 @@ class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(c
 				breadcrumbText.updatePadding(left = horizontalPadding, right = horizontalPadding)
 				setPadding(rootStartPadding, 0, 0, 0)
 			}
-
 			breadcrumbText.setOnClickListener {v ->
 				if(itemsLayout.getChildAt(index) != null && itemsLayout.getChildAt(index) == v) {
 					if(index != 0 && isLast) scrollToSelectedItem()
@@ -196,8 +193,8 @@ class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(c
 		itemsLayout.removeView(itemsLayout.getChildAt(itemsLayout.childCount - 1))
 	}
 
-	fun getItem(index: Int) = itemsLayout.getChildAt(index).tag as FileDirItem
-	fun getLastItem() = itemsLayout.getChildAt(itemsLayout.childCount - 1).tag as FileDirItem
+	fun getItem(index: Int) = itemsLayout.getChildAt(index).tag as ListItem
+	fun getLastItem() = itemsLayout.getChildAt(itemsLayout.childCount - 1).tag as ListItem
 	fun getItemCount() = itemsLayout.childCount
 	interface BreadcrumbsListener {fun breadcrumbClicked(id: Int)}
 }

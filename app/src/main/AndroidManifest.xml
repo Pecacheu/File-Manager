@@ -103,12 +103,6 @@
 			</intent-filter>
 		</activity>
 		<activity
-			android:name=".activities.FavoritesActivity"
-			android:configChanges="orientation|screenSize"
-			android:exported="false"
-			android:label="@string/favorites"
-			android:parentActivityName=".activities.MainActivity"/>
-		<activity
 			android:name=".activities.NewRemoteActivity"
 			android:configChanges="orientation|screenSize"
 			android:exported="false"

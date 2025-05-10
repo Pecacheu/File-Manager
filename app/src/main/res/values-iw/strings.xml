@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_launcher_name">מנהל קבצים</string>
 	<string name="press_back_again">לחץ שוב אחורה כדי לצאת</string>
@@ -24,8 +23,6 @@
 	<string name="decompression_successful">שחרור הדחיסה הצליח</string>
 	<string name="compressing_failed">הדחיסה נכשלה</string>
 	<string name="decompressing_failed">פעולת שחרור הדחיסה נכשל</string>
-	<string name="manage_favorites">נהל מועדפים</string>
-	<string name="favorites_activity_placeholder">‪אתה יכול להוסיף תיקיות בשימוש תכוף למועדפים לגישה נוחה מכל מקום.</string>
 	<string name="file_editor">עורך הקבצים</string>
 	<string name="storage_analysis">ניתוח אחסון</string>
 	<string name="images">תמונות</string>
