@@ -9,6 +9,7 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.views.MyGridLayoutManager
+import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
@@ -17,10 +18,9 @@ import org.fossify.filemanager.dialogs.CreateNewItemDialog
 import org.fossify.filemanager.dialogs.StoragePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.isPathOnRoot
-import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.humanizePath
-import org.fossify.filemanager.helpers.RootHelpers
+import org.fossify.filemanager.helpers.REMOTE_URI
+import org.fossify.filemanager.models.DeviceType
 import org.fossify.filemanager.models.ListItem
 import org.fossify.filemanager.views.Breadcrumbs
 
@@ -78,8 +78,8 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
 	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 
-	fun openPath(path: String, forceRefresh: Boolean = false) {
-		Log.i("test", "openPath '$path' $forceRefresh")
+	fun openPath(path: String, forceRefresh: Boolean=false) {
+		Log.i("test", "openPath $path")
 		if((activity as? BaseSimpleActivity)?.isAskingPermissions == true) return
 		var realPath = path.trimEnd('/')
 		if(realPath.isEmpty()) realPath = "/"
@@ -115,7 +115,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		}
 	}
 
-	private fun addItems(items: ArrayList<ListItem>, forceRefresh: Boolean = false) {
+	private fun addItems(items: ArrayList<ListItem>, forceRefresh: Boolean=false) {
 		activity?.runOnUiThread {
 			binding.itemsSwipeRefresh.isRefreshing = false
 			binding.breadcrumbs.setBreadcrumb(currentPath)
@@ -147,57 +147,48 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private fun getRecyclerLayoutManager() = (binding.itemsList.layoutManager as MyGridLayoutManager)
 
 	private fun getItems(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
-		ensureBackgroundThread {
-			//TODO This can probably be consolidated more using listDir
-			if(activity?.isDestroyed == false && activity?.isFinishing == false) {
-				val conf = context.config
-				if(isRemotePath(path)) getRegularItemsOf(path, callback)
-				else if(context.isRestrictedSAFOnlyRoot(path)) {
-					activity?.runOnUiThread {hideProgressBar()}
-					activity?.handleAndroidSAFDialog(path, openInSystemAppAllowed = true) {
-						if(!it) {
-							activity?.toast(org.fossify.commons.R.string.no_storage_permissions)
-							return@handleAndroidSAFDialog
-						}
-						val getFileSize = conf.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
-						context.getAndroidSAFFileItems(path, showHidden, getFileSize) {
-							callback(path, ListItem.fromFdItems(activity!!, it))
-						}
-					}
-				} else if(context.isPathOnOTG(path) && conf.OTGTreeUri.isNotEmpty()) {
-					val getFileSize = conf.getFolderSorting(currentPath) and SORT_BY_SIZE != 0
-					context.getOTGItems(path, showHidden, getFileSize) {
-						callback(path, ListItem.fromFdItems(activity!!, it))
-					}
-				} else if(!conf.enableRootAccess || !context.isPathOnRoot(path)) {
-					getRegularItemsOf(path, callback)
-				} else {
-					RootHelpers(activity!!).getFiles(path, callback)
+		val dev = DeviceType.fromPath(context, path)
+		val isList = context.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
+
+		fun loadItems() {
+			try {
+				val items = ListItem.listDir(activity!!, path, false) {context == null}
+				if(items == null) {
+					callback(path, ArrayList<ListItem>(0))
+					return
 				}
+				if(dev.type == DeviceType.DEV) {
+					val lastMods = context.getFolderLastModifieds(path)
+					for(li in items) li.modified = lastMods.remove(li.path)?:0
+				}
+				//Send initial items asap, get proper child count asynchronously
+				callback(path, items)
+				if(isList && dev.type != DeviceType.SAF && dev.type != DeviceType.OTG) getChildCount(items)
+			} catch(e: Throwable) {
+				if(path == context?.config?.getHome(path)) {
+					activity?.error(e, context.getString(R.string.reset_home)) {
+						if(!it) return@error
+						val home = if(dev.type == DeviceType.REMOTE) "$REMOTE_URI${dev.id}:"
+							else context.config.internalStoragePath
+						context.config.setHome(home)
+						openPath(home)
+					}
+				} else activity?.error(e)
+				callback(path, ArrayList<ListItem>())
 			}
 		}
-	}
 
-	private fun getRegularItemsOf(path: String, callback: (originalPath: String, items: ArrayList<ListItem>)->Unit) {
-		try {
-			val items = ListItem.listDir(activity!!, path, false) {context == null}
-			if(items == null) {
-				callback(path, ArrayList<ListItem>(0))
-				return
+		ensureBackgroundThread {
+			if(activity?.isDestroyed == false && activity?.isFinishing == false) {
+				if(dev.type == DeviceType.SAF) {
+					activity?.handleAndroidSAFDialog(path, true) {
+						if(it) loadItems() else {
+							hideProgressBar()
+							activity?.toast(org.fossify.commons.R.string.no_storage_permissions)
+						}
+					}
+				} else loadItems()
 			}
-
-			val shouldGetCnt = context.config.getFolderViewType(currentPath) == VIEW_TYPE_LIST
-			if(!isRemotePath(path)) {
-				val lastMods = context.getFolderLastModifieds(path)
-				for(li in items) li.modified = lastMods.remove(li.path)?:0
-			}
-
-			//Send out initial item list asap, get proper child count asynchronously
-			callback(path, items)
-			if(shouldGetCnt) getChildCount(items)
-		} catch(e: Throwable) {
-			activity?.error(e)
-			callback(path, ArrayList<ListItem>())
 		}
 	}
 
@@ -234,30 +225,38 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 					hideProgressBar()
 				} else -> {
 					showProgressBar()
+					itemsPlaceholder2.beGone()
 					ensureBackgroundThread {
-						ListItem.sorting = context.config.getFolderSorting(currentPath)
-						val files = ListItem.listDir(activity!!, currentPath, true, text) {
-							context == null || lastSearchedText != text
-						}?:return@ensureBackgroundThread
-						files.sortBy {it.path.getParentPath()}
-						val items = ArrayList<ListItem>(files.size)
-						var prevParent = ""
-						for(li in files) {
-							val parent = li.path.getParentPath()
-							if(!li.isDir && parent != prevParent && context != null) {
-								items.add(ListItem.sectionTitle(parent, context.humanizePath(parent)))
-								prevParent = parent
+						var files: ArrayList<ListItem>?
+						try {
+							ListItem.sorting = context.config.getFolderSorting(currentPath)
+							files = ListItem.listDir(activity!!, currentPath, true, text) {
+								context == null || lastSearchedText != text
+							}?:return@ensureBackgroundThread
+							files.sortBy {it.path.getParentPath()}
+						} catch(e: Throwable) {
+							activity?.error(e)
+							files = null
+						}
+						val items = ArrayList<ListItem>(files?.size?:0)
+						if(files != null) {
+							var prevParent = ""
+							for(li in files) {
+								val parent = li.path.getParentPath()
+								if(!li.isDir && parent != prevParent && context != null) {
+									items.add(ListItem.sectionTitle(parent, context.humanizePath(parent)))
+									prevParent = parent
+								}
+								if(li.isDir) {
+									items.add(ListItem.sectionTitle(li.path, context.humanizePath(li.path)))
+									prevParent = parent
+								} else items.add(li)
 							}
-							if(li.isDir) {
-								items.add(ListItem.sectionTitle(li.path, context.humanizePath(li.path)))
-								prevParent = parent
-							} else items.add(li)
 						}
 						activity?.runOnUiThread {
 							getRecyclerAdapter()?.updateItems(items, text)
 							itemsFastscroller.beVisibleIf(items.isNotEmpty())
 							itemsPlaceholder.beVisibleIf(items.isEmpty())
-							itemsPlaceholder2.beGone()
 							hideProgressBar()
 						}
 					}
@@ -334,9 +333,5 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 				openPath(it)
 			}
 		} else openPath(binding.breadcrumbs.getItem(id).path)
-	}
-
-	override fun selectedPaths(paths: ArrayList<String>) {
-		(activity as MainActivity).pickedPaths(paths)
 	}
 }

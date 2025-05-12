@@ -3,11 +3,10 @@ package org.fossify.filemanager.helpers
 import android.content.Context
 import android.content.res.Configuration
 import android.util.Log
-import org.fossify.commons.extensions.getInternalStoragePath
 import org.fossify.commons.helpers.BaseConfig
-import java.io.File
 import java.util.Locale
 import androidx.core.content.edit
+import org.fossify.commons.extensions.toast
 import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.UUID
 import org.fossify.filemanager.extensions.formatErr
@@ -31,16 +30,27 @@ class Config(context: Context): BaseConfig(context) {
 		get() = prefs.getBoolean(PRESS_BACK_TWICE, true)
 		set(pressBackTwice) = prefs.edit {putBoolean(PRESS_BACK_TWICE, pressBackTwice)}
 
-	var homeFolder: String
-		get(): String {
-			var path = prefs.getString(HOME_FOLDER, "")!!
-			if(path.isEmpty() || (!isRemotePath(path) && !File(path).isDirectory)) { //TODO Handle remotes
-				path = context.getInternalStoragePath()
-				homeFolder = path
-			}
-			return path
+	fun getHome(path: String): String {
+		if(isRemotePath(path)) {
+			val r = getRemoteForPath(path)?:return getHome("")
+			return ("${r.basePath}/${r.home}").trimEnd('/')
 		}
-		set(homeFolder) = prefs.edit {putString(HOME_FOLDER, homeFolder)}
+		val home = prefs.getString(HOME_FOLDER, "")!!
+		return ("$internalStoragePath/$home").trimEnd('/')
+	}
+	fun setHome(home: String) {
+		var hp = home.trimEnd('/')
+		if(isRemotePath(hp)) {
+			val r = getRemoteForPath(hp)?:return
+			r.home = hp.substring(Remote.URI_BASE).trimStart('/')
+			setRemotes()
+		} else if(hp.startsWith(internalStoragePath)) {
+			hp = hp.substring(internalStoragePath.length).trimStart('/')
+			prefs.edit {putString(HOME_FOLDER, hp)}
+		} else {
+			context.toast(context.getString(R.string.bad_home))
+		}
+	}
 
 	fun addFavorite(path: String) {
 		synchronized(this) {
@@ -50,6 +60,7 @@ class Config(context: Context): BaseConfig(context) {
 		}
 	}
 	fun moveFavorite(oldPath: String, newPath: String) {
+		//TODO Detect fav inside of moved folder recursively
 		synchronized(this) {
 			if(!favorites.contains(oldPath)) return
 			val favs = HashSet<String>(favorites)
@@ -59,6 +70,7 @@ class Config(context: Context): BaseConfig(context) {
 		}
 	}
 	fun removeFavorite(path: String) {
+		//TODO Detect fav inside of deleted folder recursively
 		synchronized(this) {
 			if(!favorites.contains(path)) return
 			val favs = HashSet<String>(favorites)

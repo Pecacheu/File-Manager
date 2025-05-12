@@ -25,6 +25,7 @@ import org.fossify.commons.dialogs.RateStarsAlertDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FAQItem
+import org.fossify.filemanager.extensions.config
 
 class AboutActivityAlt: BaseComposeActivity() {
 	private val appName get() = intent.getStringExtra(APP_NAME)?:""
@@ -129,16 +130,16 @@ class AboutActivityAlt: BaseComposeActivity() {
 	}
 
 	private fun onRateUsClick(showConfirmationAdvancedDialog: ()->Unit, showRateStarsDialog: ()->Unit) {
-		if(baseConfig.wasBeforeRateShown) {
+		if(config.wasBeforeRateShown) {
 			launchRateUsPrompt(showRateStarsDialog)
 		} else {
-			baseConfig.wasBeforeRateShown = true
+			config.wasBeforeRateShown = true
 			showConfirmationAdvancedDialog()
 		}
 	}
 
 	private fun launchRateUsPrompt(showRateStarsDialog: ()->Unit) {
-		if(baseConfig.wasAppRated) redirectToRateUs()
+		if(config.wasAppRated) redirectToRateUs()
 		else showRateStarsDialog()
 	}
 
@@ -171,7 +172,7 @@ class AboutActivityAlt: BaseComposeActivity() {
 	private fun onTelegramClick() {launchViewIntent("https://t.me/Fossify")}
 
 	private fun onPrivacyPolicyClick() {
-		val appId = baseConfig.appId.removeSuffix(".debug").removeSuffix(".pro").removePrefix("org.fossify.")
+		val appId = config.appId.removeSuffix(".debug").removeSuffix(".pro").removePrefix("org.fossify.")
 		val url = "https://www.fossify.org/policy/$appId"
 		launchViewIntent(url)
 	}

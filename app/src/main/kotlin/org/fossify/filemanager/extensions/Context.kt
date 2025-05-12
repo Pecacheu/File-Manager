@@ -4,17 +4,14 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.os.storage.StorageManager
-import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
 import kotlinx.coroutines.runBlocking
 import org.fossify.commons.R
+import org.fossify.commons.extensions.DIRS_ACCESSIBLE_ONLY_WITH_SAF
 import org.fossify.commons.extensions.getAlertDialogBuilder
-import org.fossify.commons.extensions.internalStoragePath
-import org.fossify.commons.extensions.isPathOnOTG
-import org.fossify.commons.extensions.isPathOnSD
-import org.fossify.commons.extensions.otgPath
+import org.fossify.commons.helpers.isRPlus
 import org.fossify.filemanager.App
 import org.fossify.filemanager.helpers.Config
 import org.fossify.filemanager.helpers.PRIMARY_VOLUME_NAME
@@ -30,6 +27,13 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.random.Random
 
 val Context.config: Config get() = (this.applicationContext as App).conf
+fun Context.isPathOnSD(path: String) = config.sdCardPath.isNotEmpty() && path.startsWith(config.sdCardPath)
+fun Context.isPathOnOTG(path: String) = config.OTGPath.isNotEmpty() && path.startsWith(config.OTGPath)
+
+fun Context.getSAFOnlyDirs() = DIRS_ACCESSIBLE_ONLY_WITH_SAF.map {"${config.internalStoragePath}$it"} +
+	DIRS_ACCESSIBLE_ONLY_WITH_SAF.map {"${config.sdCardPath}$it"}
+fun Context.isSAFOnlyRoot(path: String) = getSAFOnlyDirs().any {"${path.trimEnd('/')}/".startsWith(it)}
+fun Context.isRestrictedSAFOnlyRoot(path: String) = isRPlus() && isSAFOnlyRoot(path)
 
 var IDCount: UByte = 0u
 
@@ -59,15 +63,15 @@ class UUID(val id: ByteArray) {
 	override operator fun equals(other: Any?) = id == (other as? UUID)?.id
 }
 
-fun Context.isPathOnRoot(path: String) = !(path.startsWith(config.internalStoragePath) || isPathOnOTG(path) || (isPathOnSD(path)))
+fun Context.isPathOnRoot(path: String) = !(path.startsWith(config.internalStoragePath) || isPathOnOTG(path) || isPathOnSD(path))
 fun isRemotePath(path: String) = path.startsWith(REMOTE_URI)
-fun idFromRemotePath(path: String) = path.substring(REMOTE_URI.length, path.indexOf(':'))
+fun idFromRemotePath(path: String) = path.substring(REMOTE_URI.length, REMOTE_URI.length+UUID.LENGTH)
 
 private fun humanBasePath(ctx: Context, path: String): String {
 	return when {
 		path == "/" -> ctx.getString(R.string.root)
-		path == ctx.internalStoragePath -> ctx.getString(R.string.internal)
-		path == ctx.otgPath -> ctx.getString(R.string.usb)
+		path == ctx.config.internalStoragePath -> ctx.getString(R.string.internal)
+		path == ctx.config.OTGPath -> ctx.getString(R.string.usb)
 		isRemotePath(path) -> ctx.config.getRemoteForPath(path)?.name?:ctx.getString(R.string.unknown)
 		else -> ctx.getString(R.string.sd_card)
 	}
@@ -107,12 +111,10 @@ fun Activity.error(e: Throwable, prompt: String?=null, title: String?=null, cb: 
 			NtStatus.STATUS_LOGON_FAILURE -> formatErr(org.fossify.filemanager.R.string.login_err, e)
 			NtStatus.STATUS_OBJECT_NAME_INVALID -> formatErr(R.string.invalid_name, e)
 			NtStatus.STATUS_OBJECT_NAME_NOT_FOUND, NtStatus.STATUS_OBJECT_PATH_NOT_FOUND ->
-				formatErr(org.fossify.filemanager.R.string.path_not_found, e)
+				formatErr(org.fossify.filemanager.R.string.not_found, e)
 			else -> e
 		} else -> e
 	}
-
-	Log.e("files", "Error", e2)
 	var es = if(e2::class == Error::class) e2.message?:getString(R.string.unknown_error_occurred) else e2.toString()
 	if(ps != null) es += "\n\n$ps"
 	alert(title?:getString(org.fossify.filemanager.R.string.err_title), es, fn)

@@ -8,6 +8,7 @@ import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.databinding.DialogSaveAsBinding
+import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.models.ListItem
 
 //TODO Test
@@ -15,29 +16,24 @@ class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 	private val hidePath: Boolean, val callback: (path: String, filename: String)->Unit) {
 
 	init {
-		if(path.isEmpty()) {
-			path = "${activity.internalStoragePath}/${activity.getCurrentFormattedDateTime()}.txt"
-		}
+		if(path.isEmpty()) path = "${activity.config.getHome("")}/${activity.getCurrentFormattedDateTime()}.txt"
 
-		var realPath = path.getParentPath()
+		var name = path.getFilenameFromPath()
+		var parPath = path.substring(0, path.length-name.length-1)
+		val extIdx = name.lastIndexOf('.')
+		val ext = if(extIdx != -1) name.substring(extIdx+1) else ""
+		if(extIdx != -1) name = name.substring(0, extIdx)
+
 		val binding = DialogSaveAsBinding.inflate(activity.layoutInflater).apply {
-			folderValue.setText(activity.humanizePath(realPath))
-
-			var name = path.getFilenameFromPath()
-			val dotAt = name.lastIndexOf('.')
-			if(dotAt > 0) {
-				extensionValue.setText(name.substring(dotAt+1))
-				name = name.substring(0, dotAt)
-			}
+			folderValue.setText(activity.humanizePath(parPath))
 			filenameValue.setText(name)
+			extensionValue.setText(ext)
 
-			if(hidePath) {
-				folderHint.beGone()
-			} else {
+			if(hidePath) folderHint.beGone() else {
 				folderValue.setOnClickListener {
-					FilePickerDialog(activity, realPath, false, false, true, true, showFavoritesButton = true) {
+					FilePickerDialog(activity, parPath, false, false, true, true, showFavoritesButton = true) {
 						folderValue.setText(activity.humanizePath(it))
-						realPath = it
+						parPath = it
 					}
 				}
 			}
@@ -58,7 +54,7 @@ class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 					}
 
 					if(ext.isNotEmpty()) filename += ".$ext"
-					val path = "$realPath/$filename"
+					val path = "$parPath/$filename"
 
 					if(!filename.isAValidFilename()) {
 						activity.toast(org.fossify.commons.R.string.filename_invalid_characters)

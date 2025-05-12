@@ -2,58 +2,76 @@ package org.fossify.filemanager.models
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
+import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.DocumentsContract.Document
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import com.bumptech.glide.signature.ObjectKey
+import org.fossify.commons.R
 import org.fossify.commons.activities.BaseSimpleActivity
-import org.fossify.commons.extensions.baseConfig
-import org.fossify.commons.extensions.createAndroidSAFFile
+import org.fossify.commons.dialogs.FileConflictDialog
+import org.fossify.commons.extensions.createAndroidSAFDocumentId
 import org.fossify.commons.extensions.createDirectorySync
 import org.fossify.commons.extensions.deleteFile
 import org.fossify.commons.extensions.formatDate
 import org.fossify.commons.extensions.formatSize
 import org.fossify.commons.extensions.getAndroidSAFDirectChildrenCount
-import org.fossify.commons.extensions.getAndroidSAFFileItems
 import org.fossify.commons.extensions.getAndroidSAFUri
+import org.fossify.commons.extensions.getAndroidTreeUri
+import org.fossify.commons.extensions.getBasePath
 import org.fossify.commons.extensions.getDirectChildrenCount
 import org.fossify.commons.extensions.getDocumentFile
 import org.fossify.commons.extensions.getDoesFilePathExist
 import org.fossify.commons.extensions.getFileInputStreamSync
 import org.fossify.commons.extensions.getFileOutputStreamSync
+import org.fossify.commons.extensions.getFileSize
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getIsPathDirectory
+import org.fossify.commons.extensions.getItemSize
+import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getMimeType
-import org.fossify.commons.extensions.getOTGItems
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getProperSize
-import org.fossify.commons.extensions.internalStoragePath
+import org.fossify.commons.extensions.getStorageRootIdForAndroidDir
+import org.fossify.commons.extensions.getStringValue
 import org.fossify.commons.extensions.isImageFast
-import org.fossify.commons.extensions.isPathOnOTG
-import org.fossify.commons.extensions.isRestrictedSAFOnlyRoot
 import org.fossify.commons.extensions.isVideoFast
-import org.fossify.commons.extensions.needsStupidWritePermissions
 import org.fossify.commons.extensions.normalizeString
-import org.fossify.commons.extensions.renameFile
-import org.fossify.commons.extensions.toast
+import org.fossify.commons.extensions.storeAndroidTreeUri
 import org.fossify.commons.helpers.AlphanumericComparator
+import org.fossify.commons.helpers.CONFLICT_KEEP_BOTH
+import org.fossify.commons.helpers.CONFLICT_MERGE
+import org.fossify.commons.helpers.CONFLICT_OVERWRITE
+import org.fossify.commons.helpers.CONFLICT_SKIP
+import org.fossify.commons.helpers.ExternalStorageProviderHack
 import org.fossify.commons.helpers.SORT_BY_DATE_MODIFIED
 import org.fossify.commons.helpers.SORT_BY_EXTENSION
 import org.fossify.commons.helpers.SORT_BY_NAME
 import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.commons.helpers.SORT_DESCENDING
 import org.fossify.commons.helpers.SORT_USE_NUMERIC_VALUE
-import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.models.FileDirItem
+import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.extensions.blockAsync
 import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.formatErr
+import org.fossify.filemanager.extensions.idFromRemotePath
+import org.fossify.filemanager.extensions.isPathOnOTG
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isRemotePath
+import org.fossify.filemanager.extensions.isRestrictedSAFOnlyRoot
+import org.fossify.filemanager.helpers.RemoteProvider
 import org.fossify.filemanager.helpers.RootHelpers
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.URLDecoder
 
+const val FILE_AUTH = "${BuildConfig.APPLICATION_ID}.provider"
+
+@Suppress("UNCHECKED_CAST", "LocalVariableName")
 data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: String, val isDir: Boolean, var children: Int,
 		var size: Long, var modified: Long, val isSectionTitle: Boolean=false, val isGridDivider: Boolean=false): Comparable<ListItem> {
 	val isRemote = isRemotePath(path) //TODO Might be better to only calc this when needed
@@ -76,35 +94,42 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 			return items
 		}
 
-		//TODO Make this async load search results
-		fun listDir(ctx: BaseSimpleActivity, path: String, recurse: Boolean, search: String?=null, cancel: ()->Boolean): ArrayList<ListItem>? {
+		//TODO Make this async load search results, maybe multithreaded?
+		fun listDir(ctx: BaseSimpleActivity, path: String, recurse: Boolean,
+				search: String?=null, _d: DeviceType?=null, cancel: ()->Boolean): ArrayList<ListItem>? {
 			if(cancel.invoke()) return null
 			val showHidden = ctx.config.shouldShowHidden()
-			val sortBySize = search == null && sorting and SORT_BY_SIZE != 0
-			val dirAll = when {
-				isRemotePath(path) -> {
-					ctx.config.getRemoteForPath(path,true)!!.listDir(path, ctx)
-				} ctx.isRestrictedSAFOnlyRoot(path) -> {
-					val fd = blockAsync {ctx.getAndroidSAFFileItems(path, showHidden, sortBySize, it)}
-					fromFdItems(ctx, fd)
-				} ctx.isPathOnOTG(path) -> {
-					val fd = blockAsync {ctx.getOTGItems(path, showHidden, sortBySize, it)}
-					fromFdItems(ctx, fd)
-				} ctx.isPathOnRoot(path) -> {
-					blockAsync {RootHelpers(ctx).getFiles(path) {path, li -> it.invoke(li)}}
-				} else -> {
+			val getSize = !recurse && sorting and SORT_BY_SIZE != 0
+			val d = DeviceType.fromPath(ctx, path)
+			//Ensure recursion doesn't cross devices
+			if(_d != null && d != _d) return ArrayList<ListItem>(0)
+
+			val dirAll = try {when(d.type) {
+				DeviceType.REMOTE -> ctx.config.getRemoteForPath(path,true)!!.listDir(path, ctx)
+				DeviceType.SAF -> getAndroidSAFFileItems(ctx, path, showHidden, getSize, search == null)
+				DeviceType.OTG -> getOTGItems(ctx, path, showHidden, getSize, search == null)
+				DeviceType.ROOT -> blockAsync {RootHelpers(ctx).getFiles(path) {_, li -> it.invoke(li)}}
+				else -> {
 					val files = File(path).listFiles()
-					if(files == null) throw ctx.formatErr(org.fossify.commons.R.string.unknown_error_occurred)
-					val items = ArrayList<ListItem>(files.size)
+					val items = ArrayList<ListItem>(files!!.size)
 					for(f in files) {
-						val li = fromFile(ctx, f, sortBySize, showHidden)
+						val li = fromFile(ctx, f, getSize, showHidden)
 						if(li != null) items.add(li)
 					}
 					items
 				}
+			}} catch(e: Throwable) {
+				var es = when {
+					e::class == Error::class -> e.message
+					e is NullPointerException -> ctx.getString(org.fossify.filemanager.R.string.not_found)
+					recurse -> e.toString()
+					else -> null
+				}
+				if(recurse) es += "\n$path"
+				throw if(es != null) Error(es, e) else e
 			}
-			val dir = if(search == null) dirAll else dirAll.filter {it.name.contains(search, true)} as ArrayList<ListItem>
-			if(recurse) for(li in dirAll) if(li.isDir) dir.addAll(listDir(ctx, li.path, true, search, cancel)?:return null)
+			val dir = (if(search == null) dirAll.clone() else dirAll.filter {it.name.contains(search, true)}) as ArrayList<ListItem>
+			if(recurse) for(li in dirAll) if(li.isDir) dir.addAll(listDir(ctx, li.path, true, search, d, cancel)?:return null)
 			return dir
 		}
 
@@ -115,7 +140,7 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 				} ctx.isPathOnRoot(path) -> {
 					blockAsync {RootHelpers(ctx).createFileFolder(path, false, it)}
 				} else -> {
-					if(pathExists(ctx,path)) false else ctx.createDirectorySync(path)
+					if(dirExists(ctx,path)) false else ctx.createDirectorySync(path) //TODO Error toasts instead of proper error thrown
 				}
 			}
 		}
@@ -134,7 +159,7 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 						if(activity.createAndroidSAFFile(path)) {
 							success(alertDialog)
 						} else {
-							val e = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), path)
+							val e = String.format(activity.getString(R.string.could_not_create_file), path)
 							activity.error(Error(e))
 							callback(false)
 						}
@@ -145,7 +170,7 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 						if(!it) return@handleSAFDialog
 						val documentFile = activity.getDocumentFile(path.getParentPath())
 						if(documentFile == null) {
-							val e = String.format(activity.getString(org.fossify.commons.R.string.could_not_create_file), path)
+							val e = String.format(activity.getString(R.string.could_not_create_file), path)
 							activity.error(Error(e))
 							callback(false)
 							return@handleSAFDialog
@@ -168,22 +193,27 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 
 		fun pathExists(ctx: BaseSimpleActivity, path: String): Boolean {
 			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path)?.exists(path, 0) == true
+			//TODO Root
 			return ctx.getDoesFilePathExist(path)
 		}
 		fun dirExists(ctx: BaseSimpleActivity, path: String): Boolean {
 			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path)?.exists(path, 1) == true
+			//TODO Root
 			return ctx.getIsPathDirectory(path)
 		}
 		fun fileExists(ctx: BaseSimpleActivity, path: String): Boolean {
 			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path)?.exists(path, 2) == true
+			//TODO Root
 			return ctx.getDoesFilePathExist(path) && !ctx.getIsPathDirectory(path)
 		}
 		fun getInputStream(ctx: BaseSimpleActivity, path: String): InputStream {
 			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, false).inputStream
+			//TODO Root
 			return ctx.getFileInputStreamSync(path)!!
 		}
 		fun getOutputStream(ctx: BaseSimpleActivity, path: String): OutputStream {
 			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, true).outputStream //TODO Test
+			//TODO Root
 			return ctx.getFileOutputStreamSync(path, path.getMimeType())!!
 		}
 	}
@@ -231,9 +261,8 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 
 	fun getChildCount(countHidden: Boolean): Int {
 		return when {
-			isRemotePath(path) -> ctx!!.config.getRemoteForPath(path)?.getChildCount(path, countHidden)?:0
-			ctx!!.isRestrictedSAFOnlyRoot(path) -> ctx.getAndroidSAFDirectChildrenCount(path, countHidden)
-			ctx.isPathOnOTG(path) -> ctx.getDocumentFile(path)?.listFiles()?.filter {
+			isRemote -> ctx!!.config.getRemoteForPath(path)?.getChildCount(path, countHidden)?:0
+			ctx!!.isPathOnOTG(path) -> ctx.getDocumentFile(path)?.listFiles()?.filter {
 				if(countHidden) true else !it.name!!.startsWith('.')
 			}?.size?:0
 			else -> File(path).getDirectChildrenCount(ctx, countHidden)
@@ -241,8 +270,8 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 	}
 
 	private fun otgPublicPath() =
-		"${ctx!!.baseConfig.OTGTreeUri}/document/${ctx.baseConfig.OTGPartition}"+
-		"%3A${path.substring(ctx.baseConfig.OTGPath.length).replace("/", "%2F")}"
+		"${ctx!!.config.OTGTreeUri}/document/${ctx.config.OTGPartition}"+
+		"%3A${path.substring(ctx.config.OTGPath.length).replace("/", "%2F")}"
 
 	fun previewPath(): Any {
 		if(ctx == null) return ""
@@ -257,46 +286,230 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 		} else if(path.isImageFast() || path.isVideoFast()) {
 			if(!isRemote) {
 				if(ctx.isRestrictedSAFOnlyRoot(path)) return ctx.getAndroidSAFUri(path)
-				if(ctx.isPathOnOTG(path) && ctx.baseConfig.OTGTreeUri.isNotEmpty() &&
-					ctx.baseConfig.OTGPartition.isNotEmpty()) return otgPublicPath()
+				if(ctx.isPathOnOTG(path) && ctx.config.OTGTreeUri.isNotEmpty() &&
+					ctx.config.OTGPartition.isNotEmpty()) return otgPublicPath()
 			}
 			return path
 		}
 		return ""
 	}
 
-	fun sharePath(): String {
-		if(isRemote) throw NotImplementedError("Remote share") //TODO Remote share
-		return path
-	}
+	fun getUri(): Uri = if(isRemote) RemoteProvider.getUri(path)
+		else FileProvider.getUriForFile(ctx!!, FILE_AUTH, File(path))
 
 	fun setHidden(hide: Boolean) {
 		if(hide == isHidden) return
 		val newName = if(hide) ".$name" else name.substring(1)
-		rename("${path.getParentPath()}/$newName")
+		copyMove("${path.getParentPath()}/$newName", false)
 	}
 
-	fun rename(toPath: String) {
+	fun copyMove(toPath: String, isCopy: Boolean) {
 		if(toPath == path) return
-		/*if(isRemote && isRemotePath(toPath) && ctx.config.getRemoteForPath(toPath) == ctx.config.getRemoteForPath(path)) {
-			//TODO Remote rename
-		}*/
-		if(isRemote || isRemotePath(toPath)) throw NotImplementedError("Remote rename")
-		//TODO Handle root rename, also count total success in ItemsAdapter
-		ctx!!.renameFile(path, toPath, false)
-		ctx.config.moveFavorite(path, toPath) //TODO Detect fav inside of moved folder recursively
-		//activity.checkConflicts
+		if(!dirExists(ctx!!, toPath.getParentPath())) throw ctx.formatErr(R.string.invalid_destination)
+		val e = blockAsync {runCopyMove(toPath, isCopy, it)}
+		if(e != null) throw e
+		ctx.config.moveFavorite(path, toPath)
+	}
+
+	private fun runCopyMove(dest: String, isCopy: Boolean, cb: (e: Throwable?)->Unit) {
+		val sDev = DeviceType.fromPath(ctx!!, path)
+		val dDev = DeviceType.fromPath(ctx, dest)
+		var doRun: ((Boolean)->Unit)? = null
+		var cr = 0
+
+		fun onConflict() {
+			if(cr == CONFLICT_SKIP) {cb(null); return}
+			if(cr != 0) {cb(ctx.formatErr(R.string.unknown_error_occurred)); return}
+			//TODO Allow apply-to-all dialog by getting total count from ItemsAdapter
+			//TODO If they hit cancel, callback propagation stops
+			ctx.runOnUiThread {FileConflictDialog(ctx, asFdItem(), false) {res, _ ->
+				cr = res
+				if(cr == CONFLICT_SKIP) cb(null) else doRun!!(true)
+			}}
+		}
+		fun run(hadConflict: Boolean) {
+			try {
+				if(cr == CONFLICT_MERGE) throw NotImplementedError() //TODO Handle dir merge
+				var dPath = dest.trimEnd('/')
+				if(sDev.type == DeviceType.REMOTE && sDev == dDev) { //Same remote
+					val r = ctx.config.getRemoteForPath(path, true)!!
+					if(hadConflict && cr == CONFLICT_KEEP_BOTH) dPath = getAltFilename(ctx, dPath)
+					if(!r.copyMove(path, dPath, isCopy, cr == CONFLICT_OVERWRITE)) {onConflict(); return}
+				} else {
+					if(hadConflict || pathExists(ctx, dPath)) { //Conflict
+						if(cr == CONFLICT_OVERWRITE) ListItem(ctx, dPath, "", false, 0, 0, 0).delete()
+						else if(cr == CONFLICT_KEEP_BOTH) dPath = getAltFilename(ctx, dPath)
+						else {onConflict(); return}
+					}
+					if((sDev.type == DeviceType.ROOT && dDev.type != DeviceType.REMOTE) ||
+						(dDev.type == DeviceType.ROOT && sDev.type != DeviceType.REMOTE)) { //Root required
+						val res = blockAsync {RootHelpers(ctx).copyMoveFiles(arrayListOf(this), dPath, isCopy, 0, it)}
+						if(res < 1) throw ctx.formatErr(R.string.copy_move_failed)
+					} else if(!isCopy && sDev.type == DeviceType.DEV && sDev == dDev) { //Both internal
+						if(!File(path).renameTo(File(dPath))) throw ctx.formatErr(R.string.copy_move_failed)
+					} else doCopyMove(this, dPath, isCopy) //The long method
+				}
+				cb(null)
+			} catch(e: Throwable) {cb(e)}
+		}
+
+		doRun = {run(it)}
+		if(dDev.type == DeviceType.REMOTE) run(false)
+		else ctx.handleSAFDialog(dest) {
+			if(!it) {
+				cb(ctx.formatErr(R.string.permission_required))
+				return@handleSAFDialog
+			}
+			ctx.handleSAFDialogSdk30(dest) {
+				if(!it) {
+					cb(ctx.formatErr(R.string.permission_required))
+					return@handleSAFDialogSdk30
+				}
+				run(false)
+			}
+		}
 	}
 
 	fun delete() {
-		//TODO Detect fav inside of deleted folder recursively
 		ctx!!.config.removeFavorite(path)
 		when {
 			isRemote -> ctx.config.getRemoteForPath(path,true)!!.delete(path)
 			ctx.isPathOnRoot(path) -> RootHelpers(ctx).deleteFiles(arrayListOf(this))
-			else -> ctx.deleteFile(asFdItem(), isDir) {
-				if(!it) ctx.runOnUiThread {ctx.toast(org.fossify.commons.R.string.unknown_error_occurred)}
+			//TODO Delete isRestrictedSAFOnlyRoot
+			else -> {
+				val res = blockAsync {ctx.deleteFile(asFdItem(), isDir, it)}
+				if(!res) throw ctx.formatErr(R.string.unknown_error_occurred)
 			}
 		}
 	}
+}
+
+data class DeviceType(val type: Int, val id: String?) {
+	companion object {
+		const val REMOTE = 1
+		const val SAF = 2
+		const val OTG = 3
+		const val ROOT = 4
+		const val DEV = 5
+
+		fun fromPath(ctx: Context, path: String): DeviceType {
+			var id: String? = null
+			val type = when {
+				isRemotePath(path) -> {
+					id = idFromRemotePath(path)
+					REMOTE
+				} ctx.isRestrictedSAFOnlyRoot(path) -> SAF
+				ctx.isPathOnOTG(path) -> OTG
+				ctx.isPathOnRoot(path) -> ROOT
+				else -> DEV
+			}
+			return DeviceType(type, id)
+		}
+	}
+}
+
+private fun getAndroidSAFFileItems(ctx: BaseSimpleActivity, path: String, showHidden: Boolean,
+		getSize: Boolean, getChildCnt: Boolean): ArrayList<ListItem> {
+	val rootDocId = ctx.getStorageRootIdForAndroidDir(path)
+	val treeUri = ctx.getAndroidTreeUri(path).toUri()
+	val newDocId = ctx.createAndroidSAFDocumentId(path)
+	val childrenUri = try {
+		DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, newDocId)
+	} catch(e: Throwable) {
+		ctx.storeAndroidTreeUri(path, "")
+		throw e
+	}
+	val proj = arrayOf(Document.COLUMN_DOCUMENT_ID, Document.COLUMN_DISPLAY_NAME, Document.COLUMN_MIME_TYPE, Document.COLUMN_LAST_MODIFIED)
+	val rawCursor = ctx.contentResolver.query(childrenUri, proj, null, null)!!
+	val cursor = ExternalStorageProviderHack.transformQueryResult(rootDocId, childrenUri, rawCursor)
+	val items = ArrayList<ListItem>()
+	cursor.use {
+		if(cursor.moveToFirst()) {
+			do {
+				val docId = cursor.getStringValue(Document.COLUMN_DOCUMENT_ID)
+				val name = cursor.getStringValue(Document.COLUMN_DISPLAY_NAME)
+				val mimeType = cursor.getStringValue(Document.COLUMN_MIME_TYPE)
+				val lastMod = cursor.getLongValue(Document.COLUMN_LAST_MODIFIED)
+				val isDir = mimeType == Document.MIME_TYPE_DIR
+				val filePath = docId.substring("${ctx.getStorageRootIdForAndroidDir(path)}:".length)
+				if(!showHidden && name.startsWith('.')) continue
+				val decodedPath = path.getBasePath(ctx)+"/"+URLDecoder.decode(filePath, "UTF-8")
+				val fileSize = when {
+					getSize -> ctx.getFileSize(treeUri, docId)
+					isDir -> 0L
+					else -> ctx.getFileSize(treeUri, docId)
+				}
+				val childCount = if(isDir && getChildCnt) ctx.getDirectChildrenCount(rootDocId, treeUri, docId, showHidden) else 0
+				items.add(ListItem(ctx, decodedPath, name, isDir, childCount, fileSize, lastMod))
+			} while(cursor.moveToNext())
+		}
+	}
+	return items
+}
+
+private fun getOTGItems(ctx: BaseSimpleActivity, path: String, showHidden: Boolean,
+		getSize: Boolean, getChildCnt: Boolean): ArrayList<ListItem> {
+	var rootUri = try {
+		DocumentFile.fromTreeUri(ctx.applicationContext, ctx.config.OTGTreeUri.toUri())
+	} catch (e: Throwable) {
+		ctx.config.OTGPath = ""
+		ctx.config.OTGTreeUri = ""
+		ctx.config.OTGPartition = ""
+		throw e
+	}
+	val parts = path.split('/').dropLastWhile {it.isEmpty()}
+	for(p in parts) {
+		if(path == ctx.config.OTGPath) break
+		if(p == "otg:" || p == "") continue
+		val file = rootUri!!.findFile(p)
+		if(file != null) rootUri = file
+	}
+	val files = rootUri!!.listFiles().filter {it.exists()}
+	val basePath = "${ctx.config.OTGTreeUri}/document/${ctx.config.OTGPartition}%3A"
+	val items = ArrayList<ListItem>()
+	for(f in files) {
+		val name = f.name?:continue
+		if(!showHidden && name.startsWith('.')) continue
+		val isDir = f.isDirectory
+		val filePath = f.uri.toString().substring(basePath.length)
+		val decodedPath = ctx.config.OTGPath+"/"+URLDecoder.decode(filePath, "UTF-8")
+		val fileSize = when {
+			getSize -> f.getItemSize(showHidden)
+			isDir -> 0L
+			else -> f.length()
+		}
+		val childCount = if(isDir && getChildCnt) f.listFiles().size else 0
+		items.add(ListItem(ctx, decodedPath, name, isDir, childCount, fileSize, f.lastModified()))
+	}
+	return items
+}
+
+private fun getAltFilename(ctx: BaseSimpleActivity, dest: String): String {
+	var name = dest.getFilenameFromPath()
+	val par = dest.substring(0, dest.length-name.length-1)
+	val extIdx = name.lastIndexOf('.')
+	val ext = if(extIdx != -1) name.substring(extIdx) else ""
+	if(extIdx != -1) name = name.substring(0, extIdx)
+	var newDest: String
+	var i = 1
+	do {
+		newDest = "$par/$name($i)$ext"
+		i++
+	} while(ListItem.pathExists(ctx, newDest))
+	return newDest
+}
+
+private fun doCopyMove(src: ListItem, dest: String, isCopy: Boolean) {
+	if(src.isDir) {
+		val items = ListItem.listDir(src.ctx!!, src.path, true) {false}!!
+		val pLen = src.path.trimEnd('/').length+1
+		for(li in items) if(!li.isDir) doCopyMove(li, "$dest/${li.path.substring(pLen)}", true)
+	} else {
+		ListItem.getInputStream(src.ctx!!, src.path).use {iStr ->
+			ListItem.getOutputStream(src.ctx, dest).use {oStr ->
+				iStr.copyTo(oStr, DEFAULT_BUFFER_SIZE)
+			}
+		}
+	}
+	if(!isCopy) src.delete()
 }

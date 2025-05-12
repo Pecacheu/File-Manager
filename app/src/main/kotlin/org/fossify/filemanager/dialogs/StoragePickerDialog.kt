@@ -23,15 +23,16 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 	private lateinit var radioGroup: RadioGroup
 	private var dialog: AlertDialog? = null
 	private val storages = LinkedHashMap<String, String>()
+	private val conf = activity.config
 	private var defaultId = 0
 
 	init {
-		storages.put(activity.getString(R.string.internal), activity.internalStoragePath)
-		if(activity.hasExternalSDCard()) storages.put(activity.getString(R.string.sd_card), activity.sdCardPath)
-		if(activity.hasOTGConnected()) storages.put(activity.getString(R.string.usb), activity.otgPath)
-		if(activity.config.enableRootAccess) storages.put(activity.getString(R.string.root), "/")
+		storages.put(activity.getString(R.string.internal), conf.internalStoragePath)
+		if(activity.hasExternalSDCard()) storages.put(activity.getString(R.string.sd_card), conf.sdCardPath)
+		if(activity.hasOTGConnected()) storages.put(activity.getString(R.string.usb), conf.OTGPath)
+		if(conf.enableRootAccess) storages.put(activity.getString(R.string.root), "/")
 
-		val rList = activity.config.getRemotes()
+		val rList = conf.getRemotes()
 		for(r in rList) storages.put(r.value.name, r.value.basePath)
 		initDialog()
 	}
@@ -52,7 +53,7 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 				isChecked = basePath == s.value
 				if(isChecked) defaultId = id
 				setOnClickListener {
-					if(s.value == activity.otgPath) onOTG(s.value)
+					if(s.value == conf.OTGPath) onOTG(s.value)
 					else onPick(s.value)
 				}
 			}
@@ -86,7 +87,7 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 			activity.toast(org.fossify.filemanager.R.string.remote_edit_err)
 			return
 		}
-		val r = activity.config.getRemoteForPath(path)
+		val r = conf.getRemoteForPath(path)
 		if(r != null) launchRemote(r)
 		else activity.toast(org.fossify.filemanager.R.string.no_remote_err)
 	}
@@ -100,8 +101,9 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 	}
 
 	private fun onPick(path: String) {
+		val home = if(path == conf.internalStoragePath || isRemotePath(path)) conf.getHome(path) else path
 		dialog?.dismiss()
-		callback(path)
+		callback(home)
 	}
 
 	private fun onOTG(path: String) {

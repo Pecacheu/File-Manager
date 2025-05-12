@@ -1,14 +1,20 @@
 package org.fossify.filemanager.activities
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.Intent
 import android.content.res.Configuration
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
+import android.util.AttributeSet
 import android.util.Log
+import android.util.Xml
 import android.view.KeyEvent
 import android.widget.TextView
 import com.stericson.RootTools.RootTools
@@ -35,8 +41,8 @@ import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
 import androidx.core.net.toUri
 import androidx.viewpager2.widget.ViewPager2
-import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.helpers.*
+import org.fossify.commons.views.MySearchMenu
 import org.fossify.filemanager.about.AboutActivityAlt
 import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.helpers.*
@@ -53,6 +59,8 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private val binding by viewBinding(ActivityMainBinding::inflate)
+	private lateinit var mainMenu: MySearchMenu
+	private lateinit var menuAttr: AttributeSet
 
 	private var wasBackJustPressed = false
 	private var mTabsToShow = ArrayList<Int>()
@@ -66,11 +74,13 @@ class MainActivity: SimpleActivity() {
 		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
 		appLaunched(BuildConfig.APPLICATION_ID)
+		mainMenu = binding.mainMenu
 		setupOptionsMenu()
 
-		if(config.lastVersion < 3) {
+		if(config.lastVersion < 4) {
 			if(config.showTabs and TAB_STORAGE_ANALYSIS == 0) config.showTabs += TAB_STORAGE_ANALYSIS
 			if(config.showTabs and TAB_FAVORITES == 0) config.showTabs += TAB_FAVORITES
+			config.setHome(config.internalStoragePath)
 		}
 
 		storeStateVariables()
@@ -80,12 +90,16 @@ class MainActivity: SimpleActivity() {
 		updateMaterialActivityViews(binding.mainCoordinator, null, useTransparentNavigation = false, useTopSearchMenu = true)
 
 		if(savedInstanceState == null) {
+			checkBackground()
 			initFragments()
 			tryInitFileManager()
 			checkWhatsNewDialog()
 			checkIfRootAvailable()
 			checkInvalidFavorites()
 		}
+
+		val parser = resources.getXml(R.xml.search_view)
+		menuAttr = Xml.asAttributeSet(parser)
 	}
 
 	override fun onResume() {
@@ -95,12 +109,12 @@ class MainActivity: SimpleActivity() {
 		updateFavsList(true)
 		setupTabColors()
 
-		getAllFragments().forEach {it?.onResume(getProperTextColor())}
+		for(f in getAllFragments()) f?.onResume(getProperTextColor())
 		if(mStoredFontSize != config.fontSize) {
-			getAllFragments().forEach {(it as? ItemOperationsListener)?.setupFontSize()}
+			for(f in getAllFragments()) (f as? ItemOperationsListener)?.setupFontSize()
 		}
 		if(mStoredDateFormat != config.dateFormat || mStoredTimeFormat != getTimeFormat()) {
-			getAllFragments().forEach {(it as? ItemOperationsListener)?.setupDateTimeFormat()}
+			for(f in getAllFragments()) (f as? ItemOperationsListener)?.setupDateTimeFormat()
 		}
 		if(binding.mainViewPager.adapter == null) initFragments()
 		else if(config.reloadPath) openPath(config.lastPath)
@@ -119,29 +133,31 @@ class MainActivity: SimpleActivity() {
 		config.temporarilyShowHidden = false
 	}
 
+	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
 	override fun onBackPressed() {
-		val currentFragment = getCurrentFragment()
-		if(binding.mainMenu.isSearchOpen) {
-			binding.mainMenu.closeSearch()
-		} else if(currentFragment !is ItemsFragment) {
+		val fragment = getCurrentFragment()
+		if(mainMenu.isSearchOpen) {
+			mainMenu.closeSearch()
+		} else if(fragment !is ItemsFragment) {
 			super.onBackPressed()
-		} else if(currentFragment.getBreadcrumbs().getItemCount() <= 1) {
+		} else if(fragment.getBreadcrumbs().getItemCount() <= 1) {
 			if(!wasBackJustPressed && config.pressBackTwice) {
 				wasBackJustPressed = true
 				toast(R.string.press_back_again)
-				Handler().postDelayed({wasBackJustPressed = false}, BACK_PRESS_TIMEOUT.toLong())
+				Handler(Looper.getMainLooper()).postDelayed({wasBackJustPressed = false},
+					BACK_PRESS_TIMEOUT.toLong())
 			} else {
 				appLockManager.lock()
 				finish()
 			}
 		} else {
-			currentFragment.getBreadcrumbs().removeBreadcrumb()
-			openPath(currentFragment.getBreadcrumbs().getLastItem().path)
+			fragment.getBreadcrumbs().removeBreadcrumb()
+			openPath(fragment.getBreadcrumbs().getLastItem().path)
 		}
 	}
 
 	override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-		if(!binding.mainMenu.isSearchOpen) {
+		if(!mainMenu.isSearchOpen) {
 			when(keyCode) {
 				KeyEvent.KEYCODE_DPAD_UP -> {
 					beginScroll(-50)
@@ -167,7 +183,7 @@ class MainActivity: SimpleActivity() {
 	}
 
 	override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-		if(!binding.mainMenu.isSearchOpen) {
+		if(!mainMenu.isSearchOpen) {
 			if(event?.isCtrlPressed == true) {
 				val adapter = getCurrentFragment()?.getRecyclerAdapter()
 				if(keyCode == KeyEvent.KEYCODE_A) {
@@ -212,48 +228,49 @@ class MainActivity: SimpleActivity() {
 	}
 
 	fun refreshMenuItems() {
-		val currentFragment = getCurrentFragment()?:return
-		val isCreateDocumentIntent = intent.action == Intent.ACTION_CREATE_DOCUMENT
-		val currentViewType = config.getFolderViewType(currentFragment.currentPath)
-		val favorites = config.favorites
+		val fragment = getCurrentFragment()?:return
+		val isCreateDocIntent = intent.action == Intent.ACTION_CREATE_DOCUMENT
+		val path = fragment.currentPath
+		val viewType = config.getFolderViewType(path)
+		val isFav = config.favorites.contains(path)
+		val home = config.getHome(path)
 
-		binding.mainMenu.getToolbar().menu.apply {
-			findItem(R.id.sort).isVisible = currentFragment is ItemsFragment
-			findItem(R.id.change_view_type).isVisible = currentFragment !is StorageFragment
+		mainMenu.getToolbar().menu.apply {
+			findItem(R.id.sort).isVisible = fragment is ItemsFragment
+			findItem(R.id.change_view_type).isVisible = fragment !is StorageFragment
 
-			findItem(R.id.add_favorite).isVisible = currentFragment is ItemsFragment && !favorites.contains(currentFragment.currentPath)
-			findItem(R.id.remove_favorite).isVisible = currentFragment is ItemsFragment && favorites.contains(currentFragment.currentPath)
+			findItem(R.id.add_favorite).isVisible = fragment is ItemsFragment && !isFav
+			findItem(R.id.remove_favorite).isVisible = fragment is ItemsFragment && isFav
 
-			findItem(R.id.toggle_filename).isVisible = currentViewType == VIEW_TYPE_GRID &&
-				currentFragment !is StorageFragment && currentFragment !is FavoritesFragment
+			findItem(R.id.toggle_filename).isVisible = viewType == VIEW_TYPE_GRID &&
+				fragment !is StorageFragment && fragment !is FavoritesFragment
 
-			findItem(R.id.go_home).isVisible = currentFragment is ItemsFragment && currentFragment.currentPath != config.homeFolder
-			findItem(R.id.set_as_home).isVisible = currentFragment is ItemsFragment && currentFragment.currentPath != config.homeFolder
+			findItem(R.id.go_home).isVisible = fragment is ItemsFragment && path != home
+			findItem(R.id.set_as_home).isVisible = fragment is ItemsFragment && path != home
 
-			findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden() && currentFragment !is StorageFragment
-			findItem(R.id.stop_showing_hidden).isVisible = config.temporarilyShowHidden && currentFragment !is StorageFragment
-			findItem(R.id.column_count).isVisible = currentViewType == VIEW_TYPE_GRID && currentFragment !is StorageFragment
+			findItem(R.id.temporarily_show_hidden).isVisible = !config.shouldShowHidden() && fragment !is StorageFragment
+			findItem(R.id.stop_showing_hidden).isVisible = config.temporarilyShowHidden && fragment !is StorageFragment
+			findItem(R.id.column_count).isVisible = viewType == VIEW_TYPE_GRID && fragment !is StorageFragment
 
-			findItem(R.id.settings).isVisible = !isCreateDocumentIntent
-			findItem(R.id.about).isVisible = !isCreateDocumentIntent
+			findItem(R.id.settings).isVisible = !isCreateDocIntent
+			findItem(R.id.about).isVisible = !isCreateDocIntent
 		}
 	}
 
 	private fun setupOptionsMenu() {
-		binding.mainMenu.apply {
+		mainMenu.apply {
 			getToolbar().inflateMenu(R.menu.menu)
 			toggleHideOnScroll(false)
 			setupMenu()
 
 			onSearchClosedListener = {
-				getAllFragments().forEach {it?.searchQueryChanged("")}
+				for(f in getAllFragments()) f?.searchQueryChanged("")
 			}
 			onSearchTextChangedListener = {text ->
 				getCurrentFragment()?.searchQueryChanged(text)
 			}
 
 			getToolbar().setOnMenuItemClickListener {menuItem ->
-				if(getCurrentFragment() == null) return@setOnMenuItemClickListener true
 				when(menuItem.itemId) {
 					R.id.go_home -> goHome()
 					R.id.sort -> showSortingDialog()
@@ -286,14 +303,27 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private fun restoreState(state: Bundle) {
-		openPath(config.lastPath.ifEmpty {config.homeFolder})
+		openPath(config.lastPath.ifEmpty {config.getHome("")})
 		val search = state.getString(LAST_SEARCH)?:""
-		if(search.isNotEmpty()) binding.mainMenu.binding.topToolbarSearch.setText(search)
+		if(search.isNotEmpty()) mainMenu.binding.topToolbarSearch.setText(search)
 	}
 
 	override fun onConfigurationChanged(newCon: Configuration) {
 		super.onConfigurationChanged(newCon)
 		updateFragmentColumnCounts()
+
+		//Reload Main Menu
+		val search = mainMenu.binding.topToolbarSearch.text
+		binding.mainCoordinator.removeView(mainMenu)
+		mainMenu = MySearchMenu(this, menuAttr)
+		binding.mainCoordinator.addView(mainMenu)
+		setupOptionsMenu()
+		refreshMenuItems()
+		mainMenu.updateColors()
+		if(search.isNotEmpty()) {
+			mainMenu.binding.topToolbarSearch.text = search
+			mainMenu.post {mainMenu.focusView()}
+		}
 	}
 
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -306,7 +336,7 @@ class MainActivity: SimpleActivity() {
 
 	private fun updateMenuColors() {
 		updateStatusbarColor(getProperBackgroundColor())
-		binding.mainMenu.updateColors()
+		mainMenu.updateColors()
 	}
 
 	private fun storeStateVariables() {
@@ -331,6 +361,7 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
+	@Suppress("DEPRECATION")
 	private fun handleStoragePermission(callback: (granted: Boolean)->Unit) {
 		actionOnPermission = null
 		if(hasStoragePermission()) callback(true)
@@ -355,11 +386,27 @@ class MainActivity: SimpleActivity() {
 		} else handlePermission(PERMISSION_WRITE_STORAGE, callback)
 	}
 
+	@SuppressLint("BatteryLife")
+	private fun checkBackground() {
+		val pm = getSystemService(POWER_SERVICE) as PowerManager
+		if(!pm.isIgnoringBatteryOptimizations(packageName)) {
+			//TODO Res Strings
+			val msg = "Background activity is restricted on this device.\n\n" +
+				"Please allow it in Apps -> ${getString(R.string.app_name)} -> Battery -> Unrestricted"
+			alert("Background Activity Restricted", msg) {
+				//TODO Use Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS if play store?
+				if(it) Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+					data = "package:$packageName".toUri()
+					startActivity(this)
+				}
+			}
+		}
+	}
+
 	private fun initFileManager(refreshRecents: Boolean) {
-		var path = config.lastPath.ifEmpty {config.homeFolder}
+		var path = config.lastPath.ifEmpty {config.getHome("")}
 		if(intent.action == Intent.ACTION_VIEW && intent.data != null) {
 			val data = intent.data!!
-			Log.i("test", "Intent data $data (${data.scheme}) -> '${data.path}'")
 			if(data.scheme == "file" && data.path != null) {
 				path = data.path!!
 				val pTrim = path.trimStart('/') //URI may have leading / for remote path
@@ -367,7 +414,7 @@ class MainActivity: SimpleActivity() {
 				ensureBackgroundThread {
 					val isFile = ListItem.fileExists(this, path)
 					runOnUiThread {
-						if(isFile) tryOpenPathIntent(path, false, finishActivity=true)
+						if(isFile) launchPath(path, false, finishActivity=true)
 						else openPath(path)
 					}
 				}
@@ -383,7 +430,7 @@ class MainActivity: SimpleActivity() {
 			registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
 				override fun onPageSelected(position: Int) {
 					binding.mainTabsHolder.getTabAt(position)?.select()
-					getAllFragments().forEach {(it as? ItemOperationsListener)?.finishActMode()}
+					for(f in getAllFragments()) (f as? ItemOperationsListener)?.finishActMode()
 					refreshMenuItems()
 				}
 			})
@@ -424,7 +471,7 @@ class MainActivity: SimpleActivity() {
 			onTabSelectionChanged(tabUnselectedAction = {
 				updateBottomTabItemColors(it.customView, false, getDeselectedTabDrawable(it.position))
 			}, tabSelectedAction = {
-				binding.mainMenu.closeSearch()
+				mainMenu.closeSearch()
 				binding.mainViewPager.currentItem = it.position
 				updateBottomTabItemColors(it.customView, true, getSelectedTabDrawable(it.position))
 			})
@@ -462,7 +509,7 @@ class MainActivity: SimpleActivity() {
 		ensureBackgroundThread {
 			if(!config.wasOTGHandled && hasPermission(PERMISSION_WRITE_STORAGE) && hasOTGConnected() && config.OTGPath.isEmpty()) {
 				getStorageDirectories().firstOrNull {
-					it.trimEnd('/') != internalStoragePath && it.trimEnd('/') != sdCardPath
+					it.trimEnd('/') != config.internalStoragePath && it.trimEnd('/') != config.sdCardPath
 				}?.apply {
 					config.wasOTGHandled = true
 					config.OTGPath = trimEnd('/')
@@ -472,15 +519,7 @@ class MainActivity: SimpleActivity() {
 	}
 
 	fun openPath(path: String, forceRefresh: Boolean=false) {
-		var newPath = path
-		if(isRemotePath(path)) {
-			if(config.getRemoteForPath(path) == null) newPath = config.homeFolder
-		} else if(config.OTGPath.isEmpty() || path.trimEnd('/') != config.OTGPath) {
-			val file = File(path)
-			if(file.exists() && !file.isDirectory) newPath = file.parent?.toString()?:return
-			else if(!file.exists() && !isPathOnOTG(newPath)) newPath = internalStoragePath
-		}
-		getItemsFragment()?.openPath(newPath, forceRefresh)
+		getItemsFragment()?.openPath(path, forceRefresh)
 	}
 
 	fun gotoFilesTab() {
@@ -488,9 +527,9 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private fun goHome() {
-		if(config.homeFolder != getCurrentFragment()!!.currentPath) {
-			openPath(config.homeFolder)
-		}
+		val path = getCurrentFragment()!!.currentPath
+		val home = config.getHome(path)
+		if(path != home) openPath(home)
 	}
 
 	private fun showSortingDialog() {
@@ -523,9 +562,7 @@ class MainActivity: SimpleActivity() {
 
 	private fun toggleFilenameVisibility() {
 		config.displayFilenames = !config.displayFilenames
-		getAllFragments().forEach {
-			(it as? ItemOperationsListener)?.toggleFilenameVisibility()
-		}
+		for(f in getAllFragments()) (f as? ItemOperationsListener)?.toggleFilenameVisibility()
 	}
 
 	private fun changeColumnCount() {
@@ -544,19 +581,18 @@ class MainActivity: SimpleActivity() {
 	}
 
 	fun updateFragmentColumnCounts() {
-		getAllFragments().forEach {(it as? ItemOperationsListener)?.columnCountChanged()}
+		for(f in getAllFragments()) (f as? ItemOperationsListener)?.columnCountChanged()
 	}
 
 	private fun setAsHome() {
-		config.homeFolder = getCurrentFragment()!!.currentPath
+		config.setHome(getCurrentFragment()!!.currentPath)
+		refreshMenuItems()
 		toast(R.string.home_folder_updated)
 	}
 
 	private fun changeViewType() {
 		ChangeViewTypeDialog(this, getCurrentFragment()!!.currentPath, getCurrentFragment() is ItemsFragment) {
-			getAllFragments().forEach {
-				it?.refreshFragment()
-			}
+			for(f in getAllFragments()) f?.refreshFragment()
 		}
 	}
 
@@ -572,9 +608,7 @@ class MainActivity: SimpleActivity() {
 
 	private fun toggleTemporarilyShowHidden(show: Boolean) {
 		config.temporarilyShowHidden = show
-		getAllFragments().forEach {
-			it?.refreshFragment()
-		}
+		for(f in getAllFragments()) f?.refreshFragment()
 	}
 
 	private fun launchSettings() {
@@ -602,7 +636,7 @@ class MainActivity: SimpleActivity() {
 			putExtra(APP_REPOSITORY_NAME, getRepositoryName())
 			putExtra(APP_LICENSES, licenses)
 			putExtra(APP_VERSION_NAME, BuildConfig.VERSION_NAME)
-			putExtra(APP_PACKAGE_NAME, baseConfig.appId)
+			putExtra(APP_PACKAGE_NAME, config.appId)
 			putExtra(APP_FAQ, faqItems)
 			startActivity(this)
 		}
@@ -625,9 +659,8 @@ class MainActivity: SimpleActivity() {
 			config.getRemotes(true)
 			config.favorites.forEach {
 				val isBad = if(isRemotePath(it)) config.getRemoteForPath(it) == null
-					else (!isPathOnOTG(it) && !isPathOnSD(it) && !ListItem.pathExists(this,it))
+					else (it.startsWith(config.internalStoragePath) && !ListItem.pathExists(this,it))
 				if(isBad) {
-					Log.i("test", "Removed invalid fav $it")
 					config.removeFavorite(it)
 					badFavs = true
 				}
@@ -636,21 +669,12 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	fun pickedPath(path: String) {
-		val resultIntent = Intent()
-		val uri = getFilePublicUri(File(path), BuildConfig.APPLICATION_ID)
-		val type = path.getMimeType()
-		resultIntent.setDataAndType(uri, type)
-		resultIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-		setResult(RESULT_OK, resultIntent)
-		finish()
-	}
-
+	//TODO Remote
 	//Used w/ apps that have no file access but need to work with files. Eg. Simple Calendar exporting events into a file
 	fun createDocumentConfirmed(path: String) {
 		val filename = intent.getStringExtra(Intent.EXTRA_TITLE)?:""
 		if(filename.isEmpty()) {
-			InsertFilenameDialog(this, internalStoragePath) {newFn ->
+			InsertFilenameDialog(this, config.getHome("")) {newFn ->
 				finishCreateDocumentIntent(path, newFn)
 			}
 		} else finishCreateDocumentIntent(path, filename)
@@ -661,41 +685,34 @@ class MainActivity: SimpleActivity() {
 		val uri = getFilePublicUri(File(path, filename), BuildConfig.APPLICATION_ID)
 		val type = path.getMimeType()
 		resultIntent.setDataAndType(uri, type)
-		resultIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+		resultIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+			Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
 		setResult(RESULT_OK, resultIntent)
 		finish()
 	}
 
-	fun pickedRingtone(path: String) {
-		val uri = getFilePublicUri(File(path), BuildConfig.APPLICATION_ID)
-		val type = path.getMimeType()
+	fun pickedRingtone(li: ListItem) {
+		val uri = li.getUri()
 		Intent().apply {
-			setDataAndType(uri, type)
+			setDataAndType(uri, li.path.getMimeType())
 			flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 			putExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, uri)
 			setResult(RESULT_OK, this)
+			finish()
 		}
-		finish()
 	}
 
-	fun pickedPaths(paths: ArrayList<String>) {
-		val newPaths = paths.map {getFilePublicUri(File(it), BuildConfig.APPLICATION_ID)} as ArrayList
-		val clipData = ClipData("Attachment", arrayOf(paths.getMimeType()), ClipData.Item(newPaths.removeAt(0)))
-
-		newPaths.forEach {
-			clipData.addItem(ClipData.Item(it))
-		}
-
+	fun pickedPath(li: ListItem) {
 		Intent().apply {
-			this.clipData = clipData
+			setDataAndType(li.getUri(), li.path.getMimeType())
 			flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 			setResult(RESULT_OK, this)
+			finish()
 		}
-		finish()
 	}
 
 	fun openedDirectory() {
-		if(binding.mainMenu.isSearchOpen) binding.mainMenu.closeSearch()
+		if(mainMenu.isSearchOpen) mainMenu.closeSearch()
 	}
 
 	private fun getInactiveTabIndexes(activeIndex: Int) = (0 until binding.mainTabsHolder.tabCount).filter {it != activeIndex}

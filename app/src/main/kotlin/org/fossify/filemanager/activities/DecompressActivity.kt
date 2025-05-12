@@ -2,7 +2,6 @@ package org.fossify.filemanager.activities
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.exception.ZipException.Type
 import net.lingala.zip4j.io.inputstream.ZipInputStream
@@ -91,6 +90,7 @@ class DecompressActivity: SimpleActivity() {
 		}
 	}
 
+	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
 	override fun onBackPressed() {
 		if(currentPath.isEmpty()) {
 			super.onBackPressed()
@@ -186,7 +186,7 @@ class DecompressActivity: SimpleActivity() {
 				} catch(e: ZipException) {
 					if(e.type == Type.WRONG_PASSWORD) {
 						if(password != null) {
-							toast(getString(org.fossify.commons.R.string.invalid_password))
+							toast(org.fossify.commons.R.string.invalid_password)
 							passwordDialog?.clearPassword()
 						} else {
 							runOnUiThread {askForPassword()}

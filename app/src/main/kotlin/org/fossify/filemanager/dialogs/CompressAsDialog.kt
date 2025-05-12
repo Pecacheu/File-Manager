@@ -16,18 +16,18 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 	private val binding = DialogCompressAsBinding.inflate(activity.layoutInflater)
 
 	init {
-		val filename = path.getFilenameFromPath()
-		val indexOfDot = if(filename.contains('.')) filename.lastIndexOf('.') else filename.length
-		val baseFilename = filename.substring(0, indexOfDot)
-		var realPath = path.getParentPath()
+		var name = path.getFilenameFromPath()
+		var parPath = path.substring(0, path.length-name.length-1)
+		val extIdx = name.lastIndexOf('.')
+		if(extIdx != -1) name = name.substring(0, extIdx)
 
 		binding.apply {
-			filenameValue.setText(baseFilename)
-			folder.setText(activity.humanizePath(realPath))
+			filenameValue.setText(name)
+			folder.setText(activity.humanizePath(parPath))
 			folder.setOnClickListener {
-				FilePickerDialog(activity, realPath, false, activity.config.shouldShowHidden(), true, true, showFavoritesButton = true) {
+				FilePickerDialog(activity, parPath, false, activity.config.shouldShowHidden(), true, true, showFavoritesButton = true) {
 					folder.setText(activity.humanizePath(it))
-					realPath = it
+					parPath = it
 				}
 			}
 			passwordProtect.setOnCheckedChangeListener {_, _ ->
@@ -53,7 +53,7 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 					when {
 						name.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
 						name.isAValidFilename() -> {
-							val path = "$realPath/$name.zip"
+							val path = "$parPath/$name.zip"
 							ensureBackgroundThread {
 								if(ListItem.pathExists(activity, path)) {
 									activity.toast(org.fossify.commons.R.string.name_taken)

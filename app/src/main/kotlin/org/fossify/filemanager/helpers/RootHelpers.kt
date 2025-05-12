@@ -4,11 +4,11 @@ import com.stericson.RootShell.execution.Command
 import com.stericson.RootTools.RootTools
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.areDigitsOnly
-import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.filemanager.R
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
+import org.fossify.filemanager.extensions.formatErr
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
@@ -30,6 +30,7 @@ class RootHelpers(val activity: BaseSimpleActivity) {
 	}
 
 	fun getFiles(path: String, callback: (originalPath: String, listItems: ArrayList<ListItem>)->Unit) {
+		if(!RootTools.isRootAvailable()) throw activity.formatErr(R.string.rooted_device_only)
 		getFullLines(path) {
 			val fullLines = it
 			val files = ArrayList<ListItem>()
@@ -132,10 +133,7 @@ class RootHelpers(val activity: BaseSimpleActivity) {
 	}
 
 	fun createFileFolder(path: String, isFile: Boolean, callback: (success: Boolean)->Unit) {
-		if(!RootTools.isRootAvailable()) {
-			activity.toast(R.string.rooted_device_only)
-			return
-		}
+		if(!RootTools.isRootAvailable()) throw activity.formatErr(R.string.rooted_device_only)
 		tryMountAsRW(path) {
 			val mountPoint = it
 			val targetPath = path.trim('/')
@@ -209,10 +207,7 @@ class RootHelpers(val activity: BaseSimpleActivity) {
 	}
 
 	fun deleteFiles(items: ArrayList<ListItem>) {
-		if(!RootTools.isRootAvailable()) {
-			activity.toast(R.string.rooted_device_only)
-			return
-		}
+		if(!RootTools.isRootAvailable()) throw activity.formatErr(R.string.rooted_device_only)
 		tryMountAsRW(items.first().path) {
 			items.forEach {
 				val targetPath = it.path.trim('/')
@@ -226,10 +221,7 @@ class RootHelpers(val activity: BaseSimpleActivity) {
 	}
 
 	fun copyMoveFiles(items: ArrayList<ListItem>, destination: String, isCopyOperation: Boolean, successes: Int = 0, callback: (Int)->Unit) {
-		if(!RootTools.isRootAvailable()) {
-			activity.toast(R.string.rooted_device_only)
-			return
-		}
+		if(!RootTools.isRootAvailable()) throw activity.formatErr(R.string.rooted_device_only)
 		val item = items.first()
 		val mainCommand = if(isCopyOperation) {
 			if(item.isDir) "cp -R" else "cp"

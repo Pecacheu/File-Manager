@@ -43,11 +43,14 @@
 	<string name="enable_root_access">Enable root access</string>
 	<string name="press_back_twice">Require pressing Back twice to leave the app</string>
 	<string name="kb_hints">Keyboard shortcuts</string>
+	<string name="reset_home">Reset home folder?</string>
+	<string name="bad_home">Can\'t set home folder here</string>
 	<!-- Remote -->
 	<string name="err_title">Error</string>
 	<string name="no_remote_err">Remote share no longer exists</string>
 	<string name="remote_edit_err">You can only edit remote shares</string>
 	<string name="remote_type_err">Please choose a remote type</string>
+	<string name="diff_remotes_err">Paths on different remotes</string>
 	<string name="login_err">Login failed. Are your credentials correct?</string>
 	<string name="host_err">Unknown host %s. Did you spell it right?</string>
 	<string name="no_key_err">No encryption key found</string>
@@ -63,7 +66,7 @@
 	<string name="domain">Domain (optional)</string>
 	<string name="not_opt">%s not optional</string>
 	<string name="unknown_type">Unknown type %s</string>
-	<string name="path_not_found">Path not found</string>
+	<string name="not_found">Path not found</string>
 	<!--
 		Haven't found some strings? There's more at
 		https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res

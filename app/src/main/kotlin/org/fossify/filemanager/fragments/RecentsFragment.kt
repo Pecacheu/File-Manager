@@ -149,7 +149,6 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 
 	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
-	override fun selectedPaths(paths: ArrayList<String>) {(activity as MainActivity).pickedPaths(paths)}
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text

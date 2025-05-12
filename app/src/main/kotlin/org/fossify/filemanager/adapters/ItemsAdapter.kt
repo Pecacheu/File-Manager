@@ -1,15 +1,17 @@
 package org.fossify.filemanager.adapters
 
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
-import android.util.Log
+import android.os.OperationCanceledException
 import android.util.TypedValue
 import android.view.ActionMode
 import android.view.LayoutInflater
@@ -21,7 +23,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.ActionBar
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewbinding.ViewBinding
@@ -35,48 +36,26 @@ import com.bumptech.glide.request.RequestOptions
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import com.stericson.RootTools.RootTools
 import org.fossify.filemanager.views.ItemsList
-import net.lingala.zip4j.exception.ZipException
-import net.lingala.zip4j.io.inputstream.ZipInputStream
 import net.lingala.zip4j.io.outputstream.ZipOutputStream
-import net.lingala.zip4j.model.LocalFileHeader
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.EncryptionMethod
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FilePickerDialog
-import org.fossify.commons.dialogs.PropertiesDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.dialogs.RenameDialog
 import org.fossify.commons.dialogs.RenameItemDialog
 import org.fossify.commons.dialogs.RenameItemsDialog
 import org.fossify.commons.extensions.applyColorFilter
-import org.fossify.commons.extensions.baseConfig
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.convertToBitmap
-import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.deleteFile
-import org.fossify.commons.extensions.deleteFileBg
-import org.fossify.commons.extensions.deleteFolderBg
 import org.fossify.commons.extensions.formatDate
 import org.fossify.commons.extensions.formatSize
-import org.fossify.commons.extensions.getAndroidSAFFileItems
-import org.fossify.commons.extensions.getAndroidSAFUri
 import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.getContrastColor
-import org.fossify.commons.extensions.getDefaultCopyDestinationPath
-import org.fossify.commons.extensions.getDocumentFile
-import org.fossify.commons.extensions.getDoesFilePathExist
-import org.fossify.commons.extensions.getFileCount
-import org.fossify.commons.extensions.getFileInputStreamSync
-import org.fossify.commons.extensions.getFileOutputStreamSync
-import org.fossify.commons.extensions.getFilenameFromPath
-import org.fossify.commons.extensions.getIsPathDirectory
-import org.fossify.commons.extensions.getMimeType
 import org.fossify.commons.extensions.getParentPath
-import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getProperSize
 import org.fossify.commons.extensions.getProperStatusBarColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.getTextSize
@@ -85,9 +64,7 @@ import org.fossify.commons.extensions.handleDeletePasswordProtection
 import org.fossify.commons.extensions.highlightTextPart
 import org.fossify.commons.extensions.isAudioFast
 import org.fossify.commons.extensions.isDynamicTheme
-import org.fossify.commons.extensions.isRestrictedSAFOnlyRoot
 import org.fossify.commons.extensions.onGlobalLayout
-import org.fossify.commons.extensions.relativizeWith
 import org.fossify.commons.extensions.setupViewBackground
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
@@ -107,14 +84,16 @@ import org.fossify.filemanager.databinding.ItemFileDirListBinding
 import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
+import org.fossify.filemanager.extensions.chooseUris
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
+import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.isZipFile
+import org.fossify.filemanager.extensions.launchItem
 import org.fossify.filemanager.extensions.setAs
-import org.fossify.filemanager.extensions.sharePaths
-import org.fossify.filemanager.extensions.tryOpenPathIntent
+import org.fossify.filemanager.extensions.shareUris
 import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.fragments.ItemsFragment
 import org.fossify.filemanager.fragments.MyViewPagerFragment
@@ -123,14 +102,9 @@ import org.fossify.filemanager.helpers.OPEN_AS_IMAGE
 import org.fossify.filemanager.helpers.OPEN_AS_OTHER
 import org.fossify.filemanager.helpers.OPEN_AS_TEXT
 import org.fossify.filemanager.helpers.OPEN_AS_VIDEO
-import org.fossify.filemanager.helpers.RootHelpers
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
-import java.io.BufferedInputStream
-import java.io.Closeable
 import java.io.File
-import java.io.OutputStream
-import java.util.LinkedList
 import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
@@ -180,12 +154,15 @@ class ItemsAdapter(
 		val isFav = listener is FavoritesFragment
 		menu.apply {
 			findItem(R.id.cab_compress).isVisible = !isFav
-			findItem(R.id.cab_decompress).isVisible = isOneFileSelected() && selected.first().name.isZipFile()
+			findItem(R.id.cab_decompress).isVisible = isOneFileSelected() && firstItem().name.isZipFile()
 			findItem(R.id.cab_confirm_selection).isVisible = isPickMultipleIntent
 			findItem(R.id.cab_copy_path).isVisible = isOneItemSelected()
 			findItem(R.id.cab_open_with).isVisible = isOneFileSelected()
 			findItem(R.id.cab_open_as).isVisible = isOneFileSelected()
 			findItem(R.id.cab_set_as).isVisible = isOneFileSelected()
+			findItem(R.id.cab_share).isVisible = !isFav
+			findItem(R.id.cab_copy_to).isVisible = !isFav
+			findItem(R.id.cab_move_to).isVisible = !isFav
 			findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
 			findItem(R.id.cab_delete).isVisible = !isFav
 			findItem(R.id.cab_rem_fav).isVisible = isFav
@@ -194,16 +171,16 @@ class ItemsAdapter(
 	}
 
 	private fun isOnRemote(): Boolean {
-		if(listener !is ItemsFragment || selected.isEmpty()) return false
-		return isRemotePath(selected.first().path)
+		if(listener !is ItemsFragment) return false
+		return selected.any {isRemotePath(it.path)}
 	}
 
 	private fun actionItemPressed(id: Int) {
 		if(selected.isEmpty()) return
 		when(id) {
-			R.id.cab_confirm_selection -> confirmSelection() //TODO Fix for remote
-			R.id.cab_rename -> displayRenameDialog() //TODO Fix for remote
-			R.id.cab_properties -> showProperties() //TODO Fix for remote
+			R.id.cab_confirm_selection -> confirmSelection()
+			R.id.cab_rename -> displayRenameDialog()
+			R.id.cab_properties -> showProperties()
 			R.id.cab_share -> shareFiles()
 			R.id.cab_hide -> setHidden(true)
 			R.id.cab_unhide -> setHidden(false)
@@ -214,8 +191,8 @@ class ItemsAdapter(
 			R.id.cab_open_as -> openAs()
 			R.id.cab_copy_to -> copyMoveTo(true)
 			R.id.cab_move_to -> copyMoveTo(false)
-			R.id.cab_compress -> compress() //TODO Fix for remote
-			R.id.cab_decompress -> decompress(selected.first())
+			R.id.cab_compress -> compress()
+			R.id.cab_decompress -> decompress(firstItem())
 			R.id.cab_select_all -> selectAll()
 			R.id.cab_delete -> askConfirmDelete()
 			R.id.cab_rem_fav -> removeFav()
@@ -272,9 +249,9 @@ class ItemsAdapter(
 
 	override fun getItemCount() = listItems.size
 	private fun getSelectableItemCount() = listItems.filter {!it.isSectionTitle && !it.isGridDivider}.size
-	private fun isOneFileSelected() = isOneItemSelected() && selected.first().isDir == false
+	private fun isOneFileSelected() = isOneItemSelected() && firstItem().isDir == false
 	private fun isOneItemSelected() = selected.size == 1
-	private fun firstSharePath() = selected.first().sharePath()
+	private fun firstItem() = selected.first()
 
 	private fun checkHideBtnVisibility(menu: Menu, noShow: Boolean) {
 		var hiddenCnt = 0
@@ -287,60 +264,40 @@ class ItemsAdapter(
 	}
 
 	private fun confirmSelection() {
-		val paths = selected.asSequence().filter {!it.isDir}.map {it.path}.toMutableList() as ArrayList<String>
-		if(paths.isEmpty()) finishActMode()
-		else listener.selectedPaths(paths)
+		if(selected.isEmpty()) finishActMode()
+		else ensureBackgroundThread {
+			try {activity.chooseUris(getFileUris())}
+			catch(e: Throwable) {activity.error(e)}
+		}
 	}
 
 	fun displayRenameDialog() {
-		val items = selected
+		activity.error(NotImplementedError())
+		//TODO Fix
+		/*val items = selected
 		val paths = items.asSequence().map {it.path}.toMutableList() as ArrayList<String>
 		when {
-			paths.size == 1 -> {
-				val oldPath = paths.first()
-				//TODO moveFavorite should be part of rename file func, and should account for remote dest
-				RenameItemDialog(activity, oldPath) {
-					config.moveFavorite(oldPath, it)
-					activity.runOnUiThread {
-						listener.refreshFragment()
-						(activity as? MainActivity)?.updateFavsList()
-						finishActMode()
-					}
-				}
-			}
-			items.any {it.isDir} -> RenameItemsDialog(activity, paths) {
-				activity.runOnUiThread {
-					listener.refreshFragment()
-					finishActMode()
-				}
-			} else -> RenameDialog(activity, paths, false) {
-				activity.runOnUiThread {
-					listener.refreshFragment()
-					finishActMode()
-				}
-			}
-		}
+			paths.size == 1 -> RenameItemDialog(activity, paths.first()) {dataChanged()}
+			items.any {it.isDir} -> RenameItemsDialog(activity, paths) {dataChanged()}
+			else -> RenameDialog(activity, paths, false) {dataChanged()}
+		}*/
 	}
 
-	//TODO Is share path needed?
 	fun showProperties() {
-		if(selected.size <= 1) {
-			PropertiesDialog(activity, firstSharePath(), config.shouldShowHidden())
+		activity.error(NotImplementedError())
+		//TODO Fix
+		/*if(selected.size <= 1) {
+			PropertiesDialog(activity, firstUri(), config.shouldShowHidden())
 		} else {
 			val paths = selected.map {it.path}
 			PropertiesDialog(activity, paths, config.shouldShowHidden())
-		}
+		}*/
 	}
 
 	fun shareFiles() {
 		ensureBackgroundThread {
-			try {
-				val paths = ArrayList<String>(selected.size)
-				for(f in selected) addFileUris(f, paths)
-				activity.sharePaths(paths)
-			} catch(e: Throwable) {
-				activity.error(e)
-			}
+			try {activity.shareUris(getFileUris())}
+			catch(e: Throwable) {activity.error(e)}
 		}
 	}
 
@@ -348,10 +305,7 @@ class ItemsAdapter(
 		ensureBackgroundThread {
 			try {
 				for(f in selected) f.setHidden(hide)
-				activity.runOnUiThread {
-					listener.refreshFragment()
-					finishActMode()
-				}
+				dataChanged()
 			} catch(e: Throwable) {
 				activity.error(e)
 			}
@@ -362,7 +316,7 @@ class ItemsAdapter(
 	private fun createShortcut() {
 		val manager = activity.getSystemService(ShortcutManager::class.java)
 		if(manager.isRequestPinShortcutSupported) {
-			val item = selected.first()
+			val item = firstItem()
 			val drawable = resources.getDrawable(R.drawable.shortcut_folder, null).mutate()
 			getShortcutImage(item, drawable) {
 				val i = Intent(activity, SplashActivity::class.java)
@@ -382,7 +336,7 @@ class ItemsAdapter(
 	}
 
 	private fun getShortcutImage(item: ListItem, drawable: Drawable, callback: ()->Unit) {
-		val appIconColor = activity.baseConfig.appIconColor
+		val appIconColor = activity.config.appIconColor
 		(drawable as LayerDrawable).findDrawableByLayerId(R.id.shortcut_folder_background).applyColorFilter(appIconColor)
 		if(item.isDir) callback()
 		else ensureBackgroundThread {
@@ -402,94 +356,59 @@ class ItemsAdapter(
 		}
 	}
 
-	private fun addFileUris(itm: ListItem, paths: ArrayList<String>) {
-		if(itm.isDir) {
-			val dir = ListItem.listDir(activity, itm.path, true) {recyclerView.context == null}
-			if(dir != null) for(li in dir) if(!li.isDir) paths.add(li.sharePath())
-		} else paths.add(itm.sharePath())
+	private fun getFileUris(): ArrayList<Uri> {
+		val uris = ArrayList<Uri>(selected.size)
+		for(f in selected) {
+			if(f.isDir) {
+				val dir = ListItem.listDir(activity, f.path, true) {recyclerView.context == null || !isActMode()}
+				if(dir != null) for(li in dir) if(!li.isDir) uris.add(li.getUri())
+			} else uris.add(f.getUri())
+		}
+		return uris
 	}
 
 	private fun copyPath() {
-		activity.copyToClipboard(firstSharePath())
+		val text = activity.humanizePath(firstItem().path)
+		val clip = ClipData.newPlainText(activity.getString(R.string.app_name), text)
+		(activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
 		finishActMode()
 	}
 
-	private fun setAs() = activity.setAs(firstSharePath())
-	private fun openWith() = activity.tryOpenPathIntent(firstSharePath(), true)
+	private fun setAs() = activity.setAs(firstItem())
+	private fun openWith() = activity.launchItem(firstItem(), true)
 
 	private fun openAs() {
 		val res = activity.resources
 		val items = arrayListOf(RadioItem(OPEN_AS_TEXT, res.getString(R.string.text_file)), RadioItem(OPEN_AS_IMAGE, res.getString(R.string.image_file)),
 			RadioItem(OPEN_AS_AUDIO, res.getString(R.string.audio_file)), RadioItem(OPEN_AS_VIDEO, res.getString(R.string.video_file)),
 			RadioItem(OPEN_AS_OTHER, res.getString(R.string.other_file)))
-		RadioGroupDialog(activity, items) {activity.tryOpenPathIntent(firstSharePath(), false, it as Int)}
+		RadioGroupDialog(activity, items) {activity.launchItem(firstItem(), false, it as Int)}
 	}
 
-	fun copyMoveTo(isCopy: Boolean, confirmed: Boolean = false) {
+	fun copyMoveTo(isCopy: Boolean, confirmed: Boolean=false) {
 		if(!isCopy && !confirmed) {
 			activity.handleDeletePasswordProtection {copyMoveTo(false,true)}
 			return
 		}
-		//TODO Fix FilePickerDialog
-		/*val files = selected
-		val firstFile = files[0]
-		val source = firstFile.path.getParentPath()
-		FilePickerDialog(activity = activity, currPath = activity.getDefaultCopyDestinationPath(config.shouldShowHidden(), source), pickFile = false,
-			showHidden = config.shouldShowHidden(), showFAB = true, canAddShowHiddenButton = true, showFavoritesButton = true) {
-			config.lastCopyPath = it
-			if(activity.isPathOnRoot(it) || activity.isPathOnRoot(firstFile.path)) {
-				copyMoveRootItems(files, it, isCopyOperation)
-			} else {
-				activity.copyMoveFilesTo(files, source, it, isCopyOperation, false, config.shouldShowHidden()) {
-					if(!isCopyOperation) {
-						files.forEach {sourceFileDir ->
-							val sourcePath = sourceFileDir.path
-							if(activity.isRestrictedSAFOnlyRoot(sourcePath) && activity.getDoesFilePathExist(sourcePath)) {
-								activity.deleteFile(sourceFileDir, true) {
-									listener.refreshFragment()
-									activity.runOnUiThread {finishActMode()}
-								}
-							} else {
-								val sourceFile = File(sourcePath)
-								if(activity.getDoesFilePathExist(source) && ListItem.dirExists(activity, source) && sourceFile.list()
-										?.isEmpty() == true && sourceFile.getProperSize(true) == 0L && sourceFile.getFileCount(true) == 0) {
-									val sourceFolder = sourceFile.toFileDirItem(activity)
-									activity.deleteFile(sourceFolder, true) {
-										listener.refreshFragment()
-										activity.runOnUiThread {finishActMode()}
-									}
-								} else {
-									listener.refreshFragment()
-									finishActMode()
-								}
-							}
-						}
-					} else {
-						listener.refreshFragment()
-						finishActMode()
-					}
+		val currPath = selected.last().path.getParentPath()
+		FilePickerDialog(activity, currPath, pickFile=false, showHidden=config.shouldShowHidden(), showFAB=true,
+				canAddShowHiddenButton=true, showFavoritesButton=true) {
+			ensureBackgroundThread {
+				try {
+					//TODO Turn this into background async task
+					activity.toast(if(isCopy) org.fossify.commons.R.string.copying
+						else org.fossify.commons.R.string.moving)
+					for(f in selected) f.copyMove("${it.trimEnd('/')}/${f.name}", isCopy)
+					activity.toast(if(isCopy) org.fossify.commons.R.string.copying_success
+						else org.fossify.commons.R.string.moving_success)
+				} catch(e: Throwable) {
+					activity.error(e)
+					//TODO Add cancel/continue prompt via error prompt option?
 				}
-			}
-		}*/
-	}
-
-	/*private fun copyMoveRootItems(files: ArrayList<FileDirItem>, destinationPath: String, isCopyOperation: Boolean) {
-		activity.toast(org.fossify.commons.R.string.copying)
-		ensureBackgroundThread {
-			val fileCnt = files.size
-			RootHelpers(activity).copyMoveFiles(files, destinationPath, isCopyOperation) {
-				when(it) {
-					fileCnt -> activity.toast(org.fossify.commons.R.string.copying_success)
-					0 -> activity.toast(org.fossify.commons.R.string.copy_failed)
-					else -> activity.toast(org.fossify.commons.R.string.copying_success_partial)
-				}
-				activity.runOnUiThread {
-					listener.refreshFragment()
-					finishActMode()
-				}
+				dataChanged()
 			}
 		}
-	}*/
+	}
 
 	private fun decompress(li: ListItem) {
 		val i = Intent(activity, DecompressActivity::class.java)
@@ -498,107 +417,60 @@ class ItemsAdapter(
 	}
 
 	private fun compress() {
-		val firstPath = selected.first().path
+		val firstPath = firstItem().path
 		handleSAF {
 			CompressAsDialog(activity, firstPath) {dest, pwd ->
 				activity.toast(R.string.compressing)
-				val paths = selected.map {it.path}
-				ensureBackgroundThread {
-					if(compressPaths(paths, dest, pwd)) {
-						activity.runOnUiThread {
-							activity.toast(R.string.compression_successful)
-							listener.refreshFragment()
-							finishActMode()
-						}
-					} else activity.toast(R.string.compressing_failed)
-				}
+				ensureBackgroundThread {doCompress(dest, pwd)}
 			}
 		}
 	}
 
-	private fun compressPaths(sourcePaths: List<String>, targetPath: String, password: String? = null): Boolean {
-		val queue = LinkedList<String>()
-		var res: Closeable? = null
-
+	private fun doCompress(dest: String, pwd: String?) {
 		fun zipEntry(name: String) = ZipParameters().also {
 			it.fileNameInZip = name
-			if(password != null) {
+			if(pwd != null) {
 				it.isEncryptFiles = true
 				it.encryptionMethod = EncryptionMethod.AES
 			}
 		}
-		try {
-			val fos = ListItem.getOutputStream(activity, targetPath)
-			res = fos
-			val zout = password?.let {ZipOutputStream(fos, password.toCharArray())}?:ZipOutputStream(fos)
+		fun putFile(zout: ZipOutputStream, f: ListItem, path: String?) {
+			val name = if(path != null) "$path/${f.name}" else f.name
+			zout.putNextEntry(zipEntry(name))
+			ListItem.getInputStream(activity, f.path).use {it.copyTo(zout)}
+			zout.closeEntry()
+		}
 
-			sourcePaths.forEach {currPath ->
-				var name: String
-				var mainPath = currPath
-				val base = "${mainPath.getParentPath()}/"
-				res = zout
-				queue.push(mainPath)
-				if(ListItem.dirExists(activity, mainPath)) {
-					name = "${mainPath.getFilenameFromPath()}/"
-					zout.putNextEntry(ZipParameters().also {
-						it.fileNameInZip = name
-					})
-				}
-				while(!queue.isEmpty()) {
-					mainPath = queue.pop()
-					if(ListItem.dirExists(activity, mainPath)) {
-						if(activity.isRestrictedSAFOnlyRoot(mainPath)) {
-							activity.getAndroidSAFFileItems(mainPath, true) {files ->
-								for(file in files) {
-									name = file.path.relativizeWith(base)
-									if(ListItem.dirExists(activity, file.path)) {
-										queue.push(file.path)
-										name = "${name.trimEnd('/')}/"
-										zout.putNextEntry(zipEntry(name))
-									} else {
-										zout.putNextEntry(zipEntry(name))
-										ListItem.getInputStream(activity, file.path).use {it.copyTo(zout)}
-										zout.closeEntry()
-									}
-								}
-							}
-						} else {
-							val mainFile = File(mainPath) //TODO USE listDir
-							for(file in mainFile.listFiles()!!) {
-								name = file.path.relativizeWith(base)
-								if(ListItem.dirExists(activity, file.absolutePath)) {
-									queue.push(file.absolutePath)
-									name = "${name.trimEnd('/')}/"
-									zout.putNextEntry(zipEntry(name))
-								} else {
-									zout.putNextEntry(zipEntry(name))
-									ListItem.getInputStream(activity, file.path).use {it.copyTo(zout)}
-									zout.closeEntry()
-								}
-							}
-						}
-					} else {
-						name = if(base == currPath) currPath.getFilenameFromPath() else mainPath.relativizeWith(base)
-						zout.putNextEntry(zipEntry(name))
-						ListItem.getInputStream(activity, mainPath).use {it.copyTo(zout)}
-						zout.closeEntry()
+		try {
+			ListItem.getOutputStream(activity, dest).use {fos ->
+				pwd?.let {ZipOutputStream(fos, it.toCharArray())}?:ZipOutputStream(fos).use {zout ->
+					for(f in selected) {
+						if(recyclerView.context == null || !isActMode()) throw OperationCanceledException() //Cancel
+						if(f.isDir) {
+							val pLen = f.path.length+1
+							val dir = ListItem.listDir(activity, f.path, true) {recyclerView.context == null || !isActMode()}
+							if(dir == null) continue
+							for(li in dir) if(!li.isDir) putFile(zout, li, f.path.substring(pLen))
+						} else putFile(zout, f, null)
 					}
 				}
 			}
+			activity.toast(R.string.compression_successful)
+			dataChanged()
 		} catch(e: Throwable) {
-			activity.error(e)
-			return false
-		} finally {
-			res?.close()
+			if(e is OperationCanceledException) activity.toast(R.string.compressing_failed)
+			else activity.error(e)
+			try {ListItem(activity, dest, "", false, 0, 0, 0).delete()}
+			catch(_: Throwable) {}
+
 		}
-		return true
 	}
 
 	private fun askConfirmDelete() {
 		if(config.skipDeleteConfirmation) deleteFiles()
 		else activity.handleDeletePasswordProtection {
 			val itemsCnt = selected.size
-			val str = if(itemsCnt == 1) "\"${selected.first().name}\""
+			val str = if(itemsCnt == 1) "\"${firstItem().name}\""
 				else resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
 			val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), str)
 			ConfirmationDialog(activity, question) {deleteFiles()}
@@ -610,10 +482,7 @@ class ItemsAdapter(
 			ensureBackgroundThread {
 				try {
 					for(f in selected) f.delete()
-					activity.runOnUiThread {
-						if(listener !is FavoritesFragment) listener.refreshFragment()
-						(activity as? MainActivity)?.updateFavsList()
-					}
+					dataChanged()
 				} catch(e: Throwable) {
 					activity.error(e)
 				}
@@ -622,12 +491,20 @@ class ItemsAdapter(
 	}
 
 	private fun handleSAF(cb: ()->Unit) {
-		val safPath = selected.first().path
+		val safPath = firstItem().path
 		if(!isRemotePath(safPath) && activity.isPathOnRoot(safPath) && !RootTools.isRootAvailable()) {
 			activity.toast(R.string.rooted_device_only)
 			return
 		}
 		activity.handleSAFDialog(safPath) {if(it) cb()}
+	}
+
+	private fun dataChanged() {
+		activity.runOnUiThread {
+			finishActMode()
+			if(listener !is FavoritesFragment) listener.refreshFragment()
+			(activity as? MainActivity)?.updateFavsList()
+		}
 	}
 
 	fun updateItems(newItems: ArrayList<ListItem>, highlightText: String = "") {
@@ -899,6 +776,7 @@ class ItemsAdapter(
 				return true
 			}
 
+			@SuppressLint("InflateParams")
 			override fun onCreateActionMode(actionMode: ActionMode, menu: Menu?): Boolean {
 				selected.clear()
 				isSelectable = true
@@ -938,6 +816,7 @@ class ItemsAdapter(
 				return true
 			}
 
+			@Suppress("UNCHECKED_CAST")
 			override fun onDestroyActionMode(actionMode: ActionMode) {
 				isSelectable = false
 				for(f in selected.clone() as ArrayList<ListItem>) {
@@ -1041,16 +920,15 @@ class ItemsAdapter(
 		holder.itemView.tag = holder
 	}
 
-	//TODO Fix for remote
 	private fun openItem(item: ListItem) {
 		val pager = listener as? MyViewPagerFragment<*>
 		if(pager?.isGetContentIntent == true || pager?.isCreateDocumentIntent == true) {
-			(activity as MainActivity).pickedPath(item.path)
+			(activity as MainActivity).pickedPath(item)
 		} else if(pager?.isGetRingtonePicker == true) {
-			if(item.name.isAudioFast()) (activity as MainActivity).pickedRingtone(item.path)
+			if(item.name.isAudioFast()) (activity as MainActivity).pickedRingtone(item)
 			else activity.toast(R.string.select_audio_file)
 		} else if(item.name.isZipFile()) decompress(item)
-		else activity.tryOpenPathIntent(item.path, false)
+		else activity.launchItem(item, false)
 	}
 
 	open inner class ViewHolder(view: View): RecyclerView.ViewHolder(view) {

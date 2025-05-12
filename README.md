@@ -6,7 +6,7 @@ There's a **BIG** difference between an app connecting to some Big Data cloud yo
 
 While I'm at it, I'm also making tweaks and improvements, and merging any other good forks I see to make this the comprehensive best version of the app. In the future, network file syncing is a possibility. There are other options for that, but having both a great file manager and sync client in one app would be convenient.
 
-# Fossify File Manager
+# Fossify File Manager (Chu Edition :3)
 
 <img alt="Logo" src="graphics/icon.webp" width="120"/>
 
@@ -16,8 +16,9 @@ Tired of file managers that slow you down and invade your privacy? Unlock a ligh
 
 **🚀 DOMINATE YOUR DIGITAL WORLD WITH BLAZING-FAST NAVIGATION:**
  - Swiftly manage your files with easy compression and transfer capabilities, keeping your digital life organized.
- - Quickly access your most-used folders with customizable home folder and favorite shortcuts.
+ - Quickly access your most-used folders with customizable per-device home/root folders and global favorites.
  - Find what you need in seconds with intuitive navigation, search, and sorting options.
+ - Select, share, move, and copy files across multiple directories and even separate network shares at once.
 
 **🔐 FORTIFY YOUR DATA WITH UNPARALLELED PRIVACY AND SECURITY:**
  - Secure sensitive files with password, pattern, or fingerprint locks for hidden items or the entire app.
@@ -27,6 +28,7 @@ Tired of file managers that slow you down and invade your privacy? Unlock a ligh
  - Clear space with easy file and folder compression to maximize your device's potential.
  - Identify and clean up space-hogging files with the built-in storage analysis tool.
  - Seamlessly navigate root files, SD cards, and USB devices for total organization.
+ - Add unlimited custom network shares using SMB. *(More share types coming soon!)*
 
 **📁 OPTIMIZE YOUR WORKFLOW WITH HANDY TOOLS:**
  - Create desktop shortcuts for instant access to your most-used files and folders.

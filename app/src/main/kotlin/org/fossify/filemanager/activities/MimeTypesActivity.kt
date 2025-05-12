@@ -29,7 +29,7 @@ import java.util.Locale
 
 class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	private val binding by viewBinding(ActivityMimetypesBinding::inflate)
-	private val layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
+	private lateinit var layoutManager: MyGridLayoutManager
 	private var isSearchOpen = false
 	private var currentMimeType = ""
 	private var lastSearchedText = ""
@@ -44,6 +44,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 		isMaterialActivity = true
 		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
+		layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
 		setupOptionsMenu()
 		binding.apply {
 			updateMaterialActivityViews(mimetypesCoordinator, mimetypesList, useTransparentNavigation = true, useTopSearchMenu = false)
@@ -90,7 +91,6 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	}
 
 	override fun refreshFragment() {reFetchItems()}
-	override fun selectedPaths(paths: ArrayList<String>) {}
 
 	fun searchQueryChanged(text: String) {
 		val searchText = text.trim()
@@ -152,14 +152,13 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 				}
 			})
 		}
-
-		MenuItemCompat.setOnActionExpandListener(searchMenuItem, object: MenuItemCompat.OnActionExpandListener {
-			override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+		searchMenuItem!!.setOnActionExpandListener(object: MenuItem.OnActionExpandListener {
+			override fun onMenuItemActionExpand(i: MenuItem): Boolean {
 				isSearchOpen = true
 				lastSearchedText = ""
 				return true
 			}
-			override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+			override fun onMenuItemActionCollapse(i: MenuItem): Boolean {
 				isSearchOpen = false
 				lastSearchedText = ""
 				searchQueryChanged("")

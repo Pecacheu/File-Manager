@@ -129,12 +129,12 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		context.updateTextColors(binding.root)
 
 		val properPrimaryColor = context.getProperPrimaryColor()
-		val redColor = context.resources.getColor(org.fossify.commons.R.color.md_red_700)
-		val greenColor = context.resources.getColor(org.fossify.commons.R.color.md_green_700)
-		val lightBlueColor = context.resources.getColor(org.fossify.commons.R.color.md_light_blue_700)
-		val yellowColor = context.resources.getColor(org.fossify.commons.R.color.md_yellow_700)
-		val tealColor = context.resources.getColor(org.fossify.commons.R.color.md_teal_700)
-		val pinkColor = context.resources.getColor(org.fossify.commons.R.color.md_pink_700)
+		val redColor = context.resources.getColor(org.fossify.commons.R.color.md_red_700, null)
+		val greenColor = context.resources.getColor(org.fossify.commons.R.color.md_green_700, null)
+		val lightBlueColor = context.resources.getColor(org.fossify.commons.R.color.md_light_blue_700, null)
+		val yellowColor = context.resources.getColor(org.fossify.commons.R.color.md_yellow_700, null)
+		val tealColor = context.resources.getColor(org.fossify.commons.R.color.md_teal_700, null)
+		val pinkColor = context.resources.getColor(org.fossify.commons.R.color.md_pink_700, null)
 
 		volumes.entries.forEach {(it, volumeBinding) ->
 			getSizes(it)
@@ -405,7 +405,6 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		setupLayoutManager(context!!.config.getFolderViewType(""))
 	}
 
-	override fun selectedPaths(paths: ArrayList<String>) {}
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
 	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
 	override fun toggleFilenameVisibility() {getRecyclerAdapter()?.updateDisplayFilenamesInGrid()}

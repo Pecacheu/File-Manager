@@ -22,7 +22,7 @@ import org.fossify.filemanager.R
 import org.fossify.filemanager.databinding.ActivityReadTextBinding
 import org.fossify.filemanager.dialogs.SaveAsDialog
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.openPath
+import org.fossify.filemanager.extensions.launchPath
 import java.io.File
 import java.io.OutputStream
 
@@ -92,6 +92,7 @@ class ReadTextActivity: SimpleActivity() {
 		}
 	}
 
+	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
 	override fun onBackPressed() {
 		val hasUnsavedChanges = originalText != binding.readTextView.text.toString()
 		when {
@@ -99,9 +100,8 @@ class ReadTextActivity: SimpleActivity() {
 			hasUnsavedChanges && System.currentTimeMillis() - lastSavePromptTS > SAVE_DISCARD_PROMPT_INTERVAL -> {
 				lastSavePromptTS = System.currentTimeMillis()
 				ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.save_before_closing,
-					org.fossify.commons.R.string.save, org.fossify.commons.R.string.discard) {
-					if(it) saveText()
-					else super.onBackPressed()
+						org.fossify.commons.R.string.save, org.fossify.commons.R.string.discard) {
+					if(it) saveText() else super.onBackPressed()
 				}
 			} else -> super.onBackPressed()
 		}
@@ -112,7 +112,7 @@ class ReadTextActivity: SimpleActivity() {
 			when(menuItem.itemId) {
 				R.id.menu_search -> openSearch()
 				R.id.menu_save -> saveText()
-				R.id.menu_open_with -> openPath(intent.dataString!!, true)
+				R.id.menu_open_with -> launchPath(intent.dataString!!, true)
 				R.id.menu_print -> printText()
 				else -> return@setOnMenuItemClickListener false
 			}
@@ -129,6 +129,7 @@ class ReadTextActivity: SimpleActivity() {
 		searchQueryET.postDelayed({searchQueryET.requestFocus()}, 250)
 	}
 
+	@Suppress("DEPRECATION")
 	private fun saveText() {
 		if(filePath.isEmpty()) filePath = getRealPathFromURI(intent.data!!)?:""
 		SaveAsDialog(this, filePath, true) {path, filename ->
