@@ -1,5 +1,6 @@
 package org.fossify.filemanager.activities
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -14,6 +15,7 @@ import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.NavigationIcon
+import org.fossify.commons.helpers.REAL_FILE_PATH
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.views.MyAppCompatSpinner
 import org.fossify.filemanager.databinding.ActivityNewRemoteBinding
@@ -120,6 +122,9 @@ class NewRemoteActivity(): SimpleActivity() {
 					if(rEdit != null) config.setRemotes()
 					else config.addRemote(r)
 					toast(org.fossify.filemanager.R.string.test_success)
+					val i = Intent()
+					i.putExtra(REAL_FILE_PATH, r.basePath)
+					setResult(1, i)
 					finish()
 				} catch(e: Throwable) {error(e)}
 			} else toast(org.fossify.filemanager.R.string.remote_type_err)

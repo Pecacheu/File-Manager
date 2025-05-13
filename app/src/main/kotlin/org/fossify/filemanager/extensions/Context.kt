@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.os.storage.StorageManager
+import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
@@ -17,6 +18,7 @@ import org.fossify.filemanager.helpers.Config
 import org.fossify.filemanager.helpers.PRIMARY_VOLUME_NAME
 import org.fossify.filemanager.helpers.REMOTE_URI
 import org.fossify.filemanager.helpers.Remote
+import java.io.FileNotFoundException
 import java.net.UnknownHostException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN
@@ -98,6 +100,13 @@ fun Context.getAllVolumeNames(): List<String> {
 
 fun Context.formatErr(sid: Int, cause: Throwable?=null, vararg args: Any?) = Error(getString(sid).format(*args), cause)
 
+fun isNotFoundErr(e: Throwable): Boolean {
+	var e2 = e
+	if(e::class == Error::class) e2 = e.cause?:e //Try to get real error
+	return e2 is FileNotFoundException ||
+		(e2 is SMBApiException && e2.status == NtStatus.STATUS_OBJECT_NAME_NOT_FOUND)
+}
+
 fun Activity.error(e: Throwable, prompt: String?=null, title: String?=null, cb: ((res: Boolean)->Unit)?=null) {
 	var ps = prompt
 	var fn = cb
@@ -117,6 +126,8 @@ fun Activity.error(e: Throwable, prompt: String?=null, title: String?=null, cb: 
 	}
 	var es = if(e2::class == Error::class) e2.message?:getString(R.string.unknown_error_occurred) else e2.toString()
 	if(ps != null) es += "\n\n$ps"
+
+	Log.e("files", "Error", e2)
 	alert(title?:getString(org.fossify.filemanager.R.string.err_title), es, fn)
 }
 fun Activity.alert(title: String, msg: String, cb: ((res: Boolean)->Unit)?=null) {

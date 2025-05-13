@@ -5,6 +5,7 @@ import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
+import org.fossify.commons.helpers.isOnMainThread
 
 const val MAX_COLUMN_COUNT = 15
 
@@ -63,3 +64,10 @@ val extraDocumentMimeTypes = arrayListOf("application/pdf", "application/msword"
 val archiveMimeTypes = arrayListOf("application/zip", "application/octet-stream", "application/json", "application/x-tar", "application/x-rar-compressed",
 	"application/x-zip-compressed", "application/x-7z-compressed", "application/x-compressed", "application/x-gzip", "application/java-archive",
 	"multipart/x-zip")
+
+fun awaitBackgroundThread(cb: ()->Unit) {
+	if(isOnMainThread()) {
+		val t = Thread {cb()}
+		t.start(); t.join()
+	} else cb()
+}

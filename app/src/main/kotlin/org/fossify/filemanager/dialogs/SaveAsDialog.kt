@@ -1,18 +1,17 @@
 package org.fossify.filemanager.dialogs
 
 import androidx.appcompat.app.AlertDialog
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.databinding.DialogSaveAsBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.models.ListItem
 
 //TODO Test
-class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
+class SaveAsDialog(val activity: SimpleActivity, var path: String,
 	private val hidePath: Boolean, val callback: (path: String, filename: String)->Unit) {
 
 	init {
@@ -31,7 +30,7 @@ class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 
 			if(hidePath) folderHint.beGone() else {
 				folderValue.setOnClickListener {
-					FilePickerDialog(activity, parPath, false, false, true, true, showFavoritesButton = true) {
+					FilePickerDialog(activity, parPath) {
 						folderValue.setText(activity.humanizePath(it))
 						parPath = it
 					}
@@ -46,14 +45,14 @@ class SaveAsDialog(val activity: BaseSimpleActivity, var path: String,
 				alertDialog.showKeyboard(binding.filenameValue)
 				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
 					var filename = binding.filenameValue.value
-					val ext = binding.extensionValue.value
+					val newExt = binding.extensionValue.value
 
 					if(filename.isEmpty()) {
 						activity.toast(org.fossify.commons.R.string.filename_cannot_be_empty)
 						return@setOnClickListener
 					}
 
-					if(ext.isNotEmpty()) filename += ".$ext"
+					if(newExt.isNotEmpty()) filename += ".$newExt"
 					val path = "$parPath/$filename"
 
 					if(!filename.isAValidFilename()) {

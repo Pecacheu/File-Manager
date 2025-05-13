@@ -13,6 +13,7 @@ import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databinding.DialogRadioGroupBinding
 import org.fossify.commons.databinding.RadioButtonBinding
 import org.fossify.commons.extensions.*
+import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.NewRemoteActivity
 import org.fossify.filemanager.extensions.getBasePath
 import org.fossify.filemanager.extensions.config
@@ -93,10 +94,11 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 	}
 	private fun onNew(v: View) = launchRemote(null)
 
+	@Suppress("DEPRECATION")
 	private fun launchRemote(r: Remote?) {
 		val i = Intent(activity.applicationContext, NewRemoteActivity::class.java)
 		i.putExtra(NewRemoteActivity.EDIT, r?.id?.id)
-		activity.startActivity(i)
+		activity.startActivityForResult(i, MainActivity.NEW_REMOTE_RC)
 		dialog?.dismiss()
 	}
 

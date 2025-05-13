@@ -2,17 +2,15 @@ package org.fossify.filemanager.dialogs
 
 import android.view.View
 import androidx.appcompat.app.AlertDialog
-import org.fossify.commons.activities.BaseSimpleActivity
-import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.DialogCompressAsBinding
-import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.models.ListItem
 
-class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val callback: (destination: String, password: String?)->Unit) {
+class CompressAsDialog(val activity: SimpleActivity, val path: String, val callback: (destination: String, password: String?)->Unit) {
 	private val binding = DialogCompressAsBinding.inflate(activity.layoutInflater)
 
 	init {
@@ -25,7 +23,7 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 			filenameValue.setText(name)
 			folder.setText(activity.humanizePath(parPath))
 			folder.setOnClickListener {
-				FilePickerDialog(activity, parPath, false, activity.config.shouldShowHidden(), true, true, showFavoritesButton = true) {
+				FilePickerDialog(activity, parPath) {
 					folder.setText(activity.humanizePath(it))
 					parPath = it
 				}
@@ -41,7 +39,7 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 			activity.setupDialogStuff(binding.root, this, R.string.compress_as) {alertDialog ->
 				alertDialog.showKeyboard(binding.filenameValue)
 				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
-					val name = binding.filenameValue.value
+					val newName = binding.filenameValue.value
 					var password: String? = null
 					if(binding.passwordProtect.isChecked) {
 						password = binding.password.value
@@ -51,9 +49,9 @@ class CompressAsDialog(val activity: BaseSimpleActivity, val path: String, val c
 						}
 					}
 					when {
-						name.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
-						name.isAValidFilename() -> {
-							val path = "$parPath/$name.zip"
+						newName.isEmpty() -> activity.toast(org.fossify.commons.R.string.empty_name)
+						newName.isAValidFilename() -> {
+							val path = "$parPath/$newName.zip"
 							ensureBackgroundThread {
 								if(ListItem.pathExists(activity, path)) {
 									activity.toast(org.fossify.commons.R.string.name_taken)

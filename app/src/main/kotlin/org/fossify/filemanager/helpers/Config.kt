@@ -156,7 +156,7 @@ class Config(context: Context): BaseConfig(context) {
 
 	fun getRemotes(removeBad: Boolean=false): HashMap<String, Remote> {
 		synchronized(this) {
-			if(remotes == null) {
+			if(removeBad || remotes == null) {
 				val rSet = prefs.getStringSet(REMOTES, HashSet())!! as HashSet<String>
 				var changed = false //Haha like the game
 				remotes = HashMap<String, Remote>(rSet.size)

@@ -2,6 +2,7 @@ package org.fossify.filemanager.fragments
 
 import android.content.Context
 import android.os.Parcelable
+import android.os.Process
 import android.util.AttributeSet
 import android.util.Log
 import androidx.recyclerview.widget.GridLayoutManager
@@ -19,6 +20,7 @@ import org.fossify.filemanager.dialogs.StoragePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.isNotFoundErr
 import org.fossify.filemanager.helpers.REMOTE_URI
 import org.fossify.filemanager.models.DeviceType
 import org.fossify.filemanager.models.ListItem
@@ -65,14 +67,14 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			progressBar.setIndicatorColor(properPrimaryColor)
 			progressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
 
-			if(currentPath != "") breadcrumbs.updateColor(textColor)
+			if(currentPath.isNotEmpty()) breadcrumbs.updateColor(textColor)
 			itemsSwipeRefresh.isEnabled = lastSearchedText.isEmpty() && activity?.config?.enablePullToRefresh != false
 		}
 	}
 
 	override fun setupFontSize() {
 		getRecyclerAdapter()?.updateFontSizes()
-		if(currentPath != "") binding.breadcrumbs.updateFontSize(context.getTextSize(), false)
+		if(currentPath.isNotEmpty()) binding.breadcrumbs.updateFontSize(context.getTextSize(), false)
 	}
 
 	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
@@ -152,7 +154,9 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 		fun loadItems() {
 			try {
-				val items = ListItem.listDir(activity!!, path, false) {context == null}
+				val items = ListItem.listDir(activity!!, path, false) {
+					context == null || currentPath != path
+				}
 				if(items == null) {
 					callback(path, ArrayList<ListItem>(0))
 					return
@@ -163,9 +167,9 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 				}
 				//Send initial items asap, get proper child count asynchronously
 				callback(path, items)
-				if(isList && dev.type != DeviceType.SAF && dev.type != DeviceType.OTG) getChildCount(items)
+				if(isList && dev.type != DeviceType.SAF && dev.type != DeviceType.OTG) getChildren(path, items)
 			} catch(e: Throwable) {
-				if(path == context?.config?.getHome(path)) {
+				if(isNotFoundErr(e) && path == context?.config?.getHome(path)) {
 					activity?.error(e, context.getString(R.string.reset_home)) {
 						if(!it) return@error
 						val home = if(dev.type == DeviceType.REMOTE) "$REMOTE_URI${dev.id}:"
@@ -174,7 +178,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 						openPath(home)
 					}
 				} else activity?.error(e)
-				callback(path, ArrayList<ListItem>())
+				callback(path, ArrayList<ListItem>(0))
 			}
 		}
 
@@ -192,12 +196,11 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		}
 	}
 
-	private fun getChildCount(items: ArrayList<ListItem>) {
-		items.filter {it.isDir}.forEach {
-			if(context != null) {
-				val cnt = it.getChildCount(showHidden)
-				if(cnt != 0) activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(it, cnt)}
-			}
+	private fun getChildren(path: String, items: ArrayList<ListItem>) {
+		for(li in items.filter {it.isDir}) {
+			if(context == null || currentPath != path) return
+			val cnt = li.getChildCount(showHidden)
+			if(cnt != 0) activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(li, cnt)}
 		}
 	}
 
@@ -227,6 +230,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 					showProgressBar()
 					itemsPlaceholder2.beGone()
 					ensureBackgroundThread {
+						Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
 						var files: ArrayList<ListItem>?
 						try {
 							ListItem.sorting = context.config.getFolderSorting(currentPath)
@@ -277,9 +281,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	private fun createNewItem() {
-		CreateNewItemDialog(activity as SimpleActivity, currentPath) {
-			if(it) refreshFragment()
-		}
+		CreateNewItemDialog(activity as SimpleActivity, currentPath) {refreshFragment()}
 	}
 
 	override fun getRecyclerAdapter() = binding.itemsList.adapter as? ItemsAdapter

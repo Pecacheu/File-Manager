@@ -7,7 +7,6 @@ import net.lingala.zip4j.exception.ZipException.Type
 import net.lingala.zip4j.io.inputstream.ZipInputStream
 import net.lingala.zip4j.model.LocalFileHeader
 import org.fossify.commons.dialogs.EnterPasswordDialog
-import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getRealPathFromURI
@@ -19,6 +18,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.R
 import org.fossify.filemanager.adapters.DecompressItemsAdapter
 import org.fossify.filemanager.databinding.ActivityDecompressBinding
+import org.fossify.filemanager.dialogs.FilePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.models.ListItem
@@ -119,8 +119,7 @@ class DecompressActivity: SimpleActivity() {
 	}
 
 	private fun decompressFiles() {
-		FilePickerDialog(activity = this, currPath = path, pickFile = false, showHidden = config.showHidden, showFAB = true,
-			canAddShowHiddenButton = true, showFavoritesButton = true) {dest ->
+		FilePickerDialog(this, path) {dest ->
 			handleSAFDialog(dest) {if(it) decompressTo(dest)}
 		}
 	}

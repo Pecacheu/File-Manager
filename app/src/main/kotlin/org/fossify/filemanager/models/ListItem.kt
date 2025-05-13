@@ -65,6 +65,7 @@ import org.fossify.filemanager.extensions.isRestrictedSAFOnlyRoot
 import org.fossify.filemanager.helpers.RemoteProvider
 import org.fossify.filemanager.helpers.RootHelpers
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.URLDecoder
@@ -111,7 +112,8 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 				DeviceType.ROOT -> blockAsync {RootHelpers(ctx).getFiles(path) {_, li -> it.invoke(li)}}
 				else -> {
 					val files = File(path).listFiles()
-					val items = ArrayList<ListItem>(files!!.size)
+					if(files == null) throw FileNotFoundException()
+					val items = ArrayList<ListItem>(files.size)
 					for(f in files) {
 						val li = fromFile(ctx, f, getSize, showHidden)
 						if(li != null) items.add(li)
@@ -121,7 +123,7 @@ data class ListItem(val ctx: BaseSimpleActivity?, val path: String, val name: St
 			}} catch(e: Throwable) {
 				var es = when {
 					e::class == Error::class -> e.message
-					e is NullPointerException -> ctx.getString(org.fossify.filemanager.R.string.not_found)
+					e is FileNotFoundException -> ctx.getString(org.fossify.filemanager.R.string.not_found)
 					recurse -> e.toString()
 					else -> null
 				}

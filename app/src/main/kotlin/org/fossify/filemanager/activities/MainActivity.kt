@@ -55,6 +55,7 @@ class MainActivity: SimpleActivity() {
 	companion object {
 		private const val BACK_PRESS_TIMEOUT = 5000
 		private const val MANAGE_STORAGE_RC = 201
+		const val NEW_REMOTE_RC = 202
 		private const val LAST_SEARCH = "last_search"
 	}
 
@@ -90,12 +91,11 @@ class MainActivity: SimpleActivity() {
 		updateMaterialActivityViews(binding.mainCoordinator, null, useTransparentNavigation = false, useTopSearchMenu = true)
 
 		if(savedInstanceState == null) {
-			checkBackground()
 			initFragments()
+			checkInvalidFavorites()
 			tryInitFileManager()
 			checkWhatsNewDialog()
 			checkIfRootAvailable()
-			checkInvalidFavorites()
 		}
 
 		val parser = resources.getXml(R.xml.search_view)
@@ -331,6 +331,9 @@ class MainActivity: SimpleActivity() {
 		isAskingPermissions = false
 		if(requestCode == MANAGE_STORAGE_RC && isRPlus()) {
 			actionOnPermission?.invoke(Environment.isExternalStorageManager())
+		} else if(requestCode == NEW_REMOTE_RC && resultCode == 1) {
+			config.getRemotes(true) //Force reload
+			resultData?.getStringExtra(REAL_FILE_PATH)?.let {openPath(it)}
 		}
 	}
 
@@ -391,8 +394,10 @@ class MainActivity: SimpleActivity() {
 		val pm = getSystemService(POWER_SERVICE) as PowerManager
 		if(!pm.isIgnoringBatteryOptimizations(packageName)) {
 			//TODO Res Strings
-			val msg = "Background activity is restricted on this device.\n\n" +
-				"Please allow it in Apps -> ${getString(R.string.app_name)} -> Battery -> Unrestricted"
+			val appName = getString(R.string.app_name)
+			val msg = "Background activity is restricted on this device. $appName needs this to stream large files " +
+				"(eg. videos) in the background. The app will never run unless you are actively using a file.\n\n" +
+				"Please allow in Apps -> $appName -> Battery -> Unrestricted"
 			alert("Background Activity Restricted", msg) {
 				//TODO Use Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS if play store?
 				if(it) Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -412,11 +417,13 @@ class MainActivity: SimpleActivity() {
 				val pTrim = path.trimStart('/') //URI may have leading / for remote path
 				if(isRemotePath(pTrim)) path = pTrim
 				ensureBackgroundThread {
-					val isFile = ListItem.fileExists(this, path)
-					runOnUiThread {
-						if(isFile) launchPath(path, false, finishActivity=true)
-						else openPath(path)
-					}
+					try {
+						val isFile = ListItem.fileExists(this, path)
+						runOnUiThread {
+							if(isFile) launchPath(path, false, finishActivity=true)
+							else openPath(path)
+						}
+					} catch(e: Throwable) {error(e)}
 				}
 			} else openPath(getRealPathFromURI(data)?:path)
 			binding.mainViewPager.currentItem = 0
@@ -654,9 +661,9 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private fun checkInvalidFavorites() {
+		val rList = config.getRemotes(true)
 		ensureBackgroundThread {
 			var badFavs = false
-			config.getRemotes(true)
 			config.favorites.forEach {
 				val isBad = if(isRemotePath(it)) config.getRemoteForPath(it) == null
 					else (it.startsWith(config.internalStoragePath) && !ListItem.pathExists(this,it))
@@ -666,6 +673,7 @@ class MainActivity: SimpleActivity() {
 				}
 			}
 			if(badFavs) updateFavsList()
+			if(rList.isNotEmpty()) checkBackground()
 		}
 	}
 

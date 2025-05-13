@@ -11,15 +11,18 @@ import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.humanizePath
 import org.fossify.filemanager.models.ListItem
 
-//TODO Test
-class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val callback: (success: Boolean)->Unit) {
+class CreateNewItemDialog(val activity: SimpleActivity, val path: String,
+		val mkdirOnly: Boolean=false, val callback: (newPath: String)->Unit) {
 	private val binding = DialogCreateNewBinding.inflate(activity.layoutInflater)
 
 	init {
 		activity.getAlertDialogBuilder().apply {
+			if(mkdirOnly) binding.dialogRadioGroup.beGone()
 			setPositiveButton(org.fossify.commons.R.string.ok, null)
 			setNegativeButton(org.fossify.commons.R.string.cancel, null)
-			activity.setupDialogStuff(binding.root, this, org.fossify.commons.R.string.create_new) {alertDialog ->
+			val title = if(mkdirOnly) org.fossify.commons.R.string.create_new_folder
+				else org.fossify.commons.R.string.create_new
+			activity.setupDialogStuff(binding.root, this, title) {alertDialog ->
 				alertDialog.showKeyboard(binding.itemTitle)
 				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
 					val name = binding.itemTitle.value
@@ -28,10 +31,11 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String, val ca
 					} else if(name.isAValidFilename()) {
 						ensureBackgroundThread {
 							val newPath = "$path/$name"
-							if(createPath(newPath, binding.dialogRadioGroup.checkedRadioButtonId == R.id.dialog_radio_directory)) {
+							if(createPath(newPath, mkdirOnly || binding.dialogRadioGroup
+									.checkedRadioButtonId == R.id.dialog_radio_directory)) {
 								activity.runOnUiThread {
 									alertDialog.dismiss()
-									callback(true)
+									callback(newPath)
 								}
 							}
 						}

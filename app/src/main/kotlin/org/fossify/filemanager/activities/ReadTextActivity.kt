@@ -64,7 +64,7 @@ class ReadTextActivity: SimpleActivity() {
 		if(checkAppSideloading()) return
 
 		val uri = if(intent.extras?.containsKey(REAL_FILE_PATH) == true)
-			Uri.fromFile(File(intent.extras?.get(REAL_FILE_PATH).toString()))
+			Uri.fromFile(File(intent.extras?.getString(REAL_FILE_PATH).toString()))
 		else intent.data
 
 		if(uri == null) {

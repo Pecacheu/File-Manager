@@ -40,7 +40,6 @@ import net.lingala.zip4j.io.outputstream.ZipOutputStream
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.EncryptionMethod
 import org.fossify.commons.dialogs.ConfirmationDialog
-import org.fossify.commons.dialogs.FilePickerDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.dialogs.RenameDialog
 import org.fossify.commons.dialogs.RenameItemDialog
@@ -84,6 +83,7 @@ import org.fossify.filemanager.databinding.ItemFileDirListBinding
 import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
+import org.fossify.filemanager.dialogs.FilePickerDialog
 import org.fossify.filemanager.extensions.chooseUris
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
@@ -391,8 +391,7 @@ class ItemsAdapter(
 			return
 		}
 		val currPath = selected.last().path.getParentPath()
-		FilePickerDialog(activity, currPath, pickFile=false, showHidden=config.shouldShowHidden(), showFAB=true,
-				canAddShowHiddenButton=true, showFavoritesButton=true) {
+		FilePickerDialog(activity, currPath) {
 			ensureBackgroundThread {
 				try {
 					//TODO Turn this into background async task
