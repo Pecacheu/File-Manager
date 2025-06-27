@@ -108,6 +108,7 @@ class MainActivity: SimpleActivity() {
 		}
 
 		if(savedInstanceState == null) {
+			config.temporarilyShowHidden = false
 			initFragments()
 			checkInvalidFavorites()
 			tryInitFileManager()
@@ -143,11 +144,6 @@ class MainActivity: SimpleActivity() {
 		storeStateVariables()
 		config.lastUsedViewPagerPage = tabIdxToId(binding.mainViewPager.currentItem)
 		config.lastPath = getItemsFragment()?.currentPath?:""
-	}
-
-	override fun onDestroy() {
-		super.onDestroy()
-		config.temporarilyShowHidden = false
 	}
 
 	override fun onConfigurationChanged(newCon: Configuration) {

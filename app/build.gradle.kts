@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
 import java.io.FileInputStream
 
@@ -11,31 +13,48 @@ plugins {
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
-if (keystorePropertiesFile.exists()) {
+if(keystorePropertiesFile.exists()) {
 	keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+fun hasSigningVars(): Boolean {
+	return providers.environmentVariable("SIGNING_KEY_ALIAS").orNull != null
+		&& providers.environmentVariable("SIGNING_KEY_PASSWORD").orNull != null
+		&& providers.environmentVariable("SIGNING_STORE_FILE").orNull != null
+		&& providers.environmentVariable("SIGNING_STORE_PASSWORD").orNull != null
 }
 
 android {
 	compileSdk = project.libs.versions.app.build.compileSDKVersion.get().toInt()
 
 	defaultConfig {
-		applicationId = libs.versions.app.version.appId.get()
+		applicationId = project.property("APP_ID").toString()
 		minSdk = project.libs.versions.app.build.minimumSDK.get().toInt()
 		targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
-		versionName = project.libs.versions.app.version.versionName.get()
-		versionCode = project.libs.versions.app.version.versionCode.get().toInt()
+		versionName = project.property("VERSION_NAME").toString()
+		versionCode = project.property("VERSION_CODE").toString().toInt()
 		multiDexEnabled = true
 		vectorDrawables.useSupportLibrary = true
+		setProperty("archivesBaseName", "file-manager-$versionCode")
 	}
 
 	signingConfigs {
-		if (keystorePropertiesFile.exists()) {
+		if(keystorePropertiesFile.exists()) {
 			register("release") {
 				keyAlias = keystoreProperties.getProperty("keyAlias")
 				keyPassword = keystoreProperties.getProperty("keyPassword")
 				storeFile = file(keystoreProperties.getProperty("storeFile"))
 				storePassword = keystoreProperties.getProperty("storePassword")
 			}
+		} else if(hasSigningVars()) {
+			register("release") {
+				keyAlias = providers.environmentVariable("SIGNING_KEY_ALIAS").get()
+				keyPassword = providers.environmentVariable("SIGNING_KEY_PASSWORD").get()
+				storeFile = file(providers.environmentVariable("SIGNING_STORE_FILE").get())
+				storePassword = providers.environmentVariable("SIGNING_STORE_PASSWORD").get()
+			}
+		} else {
+			logger.warn("Warning: No signing config found. Build will be unsigned.")
 		}
 	}
 
@@ -55,7 +74,7 @@ android {
 				getDefaultProguardFile("proguard-android-optimize.txt"),
 				"proguard-rules.pro"
 			)
-			if (keystorePropertiesFile.exists()) {
+			if(keystorePropertiesFile.exists() || hasSigningVars()) {
 				signingConfig = signingConfigs.getByName("release")
 			}
 		}
@@ -65,7 +84,7 @@ android {
 	productFlavors {
 		register("core")
 		register("foss")
-		register("prepaid")
+		register("gplay")
 	}
 
 	sourceSets {
@@ -77,22 +96,28 @@ android {
 		sourceCompatibility = java
 		targetCompatibility = java
 	}
-	kotlin {
-		jvmToolchain {
-			languageVersion = JavaLanguageVersion.of(java.majorVersion)
-		}
-	}
 
 	dependenciesInfo {
 		includeInApk = false
 	}
 
-	namespace = libs.versions.app.version.appId.get()
+	androidResources {
+		@Suppress("UnstableApiUsage")
+		generateLocaleConfig = true
+	}
+
+	tasks.withType<KotlinCompile> {
+		compilerOptions.jvmTarget.set(JvmTarget.fromTarget(java.majorVersion))
+	}
+
+	namespace = project.property("APP_ID").toString()
 
 	lint {
 		checkReleaseBuilds = false
 		abortOnError = true
+		warningsAsErrors = false
 		baseline = file("lint-baseline.xml")
+		lintConfig = rootProject.file("lint.xml")
 	}
 
 	bundle {

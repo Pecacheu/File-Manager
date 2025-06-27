@@ -21,6 +21,7 @@ import org.fossify.filemanager.databinding.ActivityDecompressBinding
 import org.fossify.filemanager.dialogs.FilePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
+import org.fossify.filemanager.extensions.setLastModified
 import org.fossify.filemanager.models.ListItem
 import java.io.BufferedInputStream
 import java.io.File
@@ -139,7 +140,8 @@ class DecompressActivity: SimpleActivity() {
 				ListItem.mkDir(this, parent, true)
 				if(entry.isDirectory) continue
 				//Check if vulnerable for ZIP path traversal
-				if(!File(newPath).canonicalPath.startsWith(parent)) continue //TODO Test if works with remote
+				val outFile = File(newPath)
+				if(!outFile.canonicalPath.startsWith(parent)) continue //TODO Test if works with remote
 
 				ListItem.getOutputStream(this, newPath).use {
 					var count: Int
@@ -149,6 +151,7 @@ class DecompressActivity: SimpleActivity() {
 						it.write(buffer, 0, count)
 					}
 				}
+				outFile.setLastModified(entry) //TODO Won't work with remote, needs fix
 			}
 			toast(R.string.decompression_successful)
 			finish()

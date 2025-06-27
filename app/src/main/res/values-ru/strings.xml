@@ -8,7 +8,7 @@
 	<string name="select_audio_file">Пожалуйста, выберите звуковой файл</string>
 	<string name="rooted_device_only">Это работает только на устройствах с root-доступом</string>
 	<string name="recents">Недавнее</string>
-	<string name="open_as">Открыть как…</string>
+	<string name="open_as">Открыть как</string>
 	<string name="text_file">Текст</string>
 	<string name="image_file">Изображение</string>
 	<string name="audio_file">Звуковой файл</string>
@@ -16,7 +16,7 @@
 	<string name="other_file">Другое</string>
 	<string name="compress">Сжать</string>
 	<string name="decompress">Извлечь</string>
-	<string name="compress_as">Сжать как…</string>
+	<string name="compress_as">Сжать как</string>
 	<string name="compressing">Сжатие…</string>
 	<string name="decompressing">Извлечение…</string>
 	<string name="compression_successful">Сжатие успешно</string>

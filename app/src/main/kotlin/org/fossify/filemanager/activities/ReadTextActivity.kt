@@ -32,6 +32,7 @@ class ReadTextActivity: SimpleActivity() {
 	companion object {
 		private const val SELECT_SAVE_FILE_INTENT = 1
 		private const val SELECT_SAVE_FILE_AND_EXIT_INTENT = 2
+		private const val KEY_UNSAVED_TEXT = "KEY_UNSAVED_TEXT"
 	}
 
 	private val binding by viewBinding(ActivityReadTextBinding::inflate)
@@ -48,9 +49,9 @@ class ReadTextActivity: SimpleActivity() {
 	private lateinit var searchNextBtn: ImageView
 	private lateinit var searchClearBtn: ImageView
 
-	override fun onCreate(savedInstanceState: Bundle?) {
+	override fun onCreate(state: Bundle?) {
 		isMaterialActivity = true
-		super.onCreate(savedInstanceState)
+		super.onCreate(state)
 		setContentView(binding.root)
 		setupOptionsMenu()
 		binding.apply {setupViews(readTextCoordinator, readTextView, readTextToolbar, readTextHolder)}
@@ -71,13 +72,24 @@ class ReadTextActivity: SimpleActivity() {
 
 		val filename = getFilenameFromUri(uri)
 		if(filename.isNotEmpty()) binding.readTextToolbar.title = Uri.decode(filename)
-		binding.readTextView.onGlobalLayout {ensureBackgroundThread {checkIntent(uri)}}
+
+		binding.readTextView.onGlobalLayout {
+			ensureBackgroundThread {checkIntent(uri, state)}
+		}
+
 		setupSearchButtons()
 	}
 
 	override fun onResume() {
 		super.onResume()
 		setupToolbar(binding.readTextToolbar, NavigationIcon.Arrow)
+	}
+
+	override fun onSaveInstanceState(outState: Bundle) {
+		super.onSaveInstanceState(outState)
+		if(originalText != binding.readTextView.text.toString()) {
+			outState.putString(KEY_UNSAVED_TEXT, binding.readTextView.text.toString())
+		}
 	}
 
 	@Deprecated("")
@@ -176,7 +188,7 @@ class ReadTextActivity: SimpleActivity() {
 		}
 	}
 
-	private fun checkIntent(uri: Uri) {
+	private fun checkIntent(uri: Uri, state: Bundle?) {
 		originalText = if(uri.scheme == "file") {
 			filePath = uri.path!!
 			val file = File(filePath)
@@ -195,8 +207,11 @@ class ReadTextActivity: SimpleActivity() {
 			}
 		}
 		runOnUiThread {
-			binding.readTextView.setText(originalText)
-			showKeyboard(binding.readTextView)
+			val text = if(state == null) originalText
+				else state.getString(KEY_UNSAVED_TEXT, originalText)
+			binding.readTextView.setText(text)
+			if(originalText.isNotEmpty()) hideKeyboard()
+			else showKeyboard(binding.readTextView)
 		}
 	}
 

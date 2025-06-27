@@ -204,7 +204,7 @@ class ItemsAdapter(
 	}
 
 	private fun onActionModeDestroyed() {
-		swipeRefreshLayout?.isEnabled = true
+		swipeRefreshLayout?.isEnabled = config.enablePullToRefresh
 		(recyclerView as? ItemsList)?.zoomEnabled = true
 	}
 
