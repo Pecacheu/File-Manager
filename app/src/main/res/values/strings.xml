@@ -69,6 +69,11 @@
 	<string name="not_opt">%s not optional</string>
 	<string name="unknown_type">Unknown type %s</string>
 	<string name="not_found">Path not found</string>
+	<string name="not_a_dir">Path %s is not a directory</string>
+	<!-- Background -->
+	<string name="stream_in_bg">Running in the background to stream a file</string>
+	<string name="notif_required">Notifications permission required</string>
+	<string name="notif_rationale">Notifications are required to reliably stream files and media from a network share in the background.</string>
 	<!--
 		Haven't found some strings? There's more at
 		https://github.com/FossifyOrg/Commons/tree/master/commons/src/main/res

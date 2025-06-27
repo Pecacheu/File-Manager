@@ -1,6 +1,5 @@
 package org.fossify.filemanager.dialogs
 
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.helpers.TAB_FAVORITES
@@ -9,10 +8,11 @@ import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
 import org.fossify.commons.views.MyAppCompatCheckbox
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.DialogManageVisibleTabsBinding
 import org.fossify.filemanager.extensions.config
 
-class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
+class ManageVisibleTabsDialog(val activity: SimpleActivity) {
 	private val binding = DialogManageVisibleTabsBinding.inflate(activity.layoutInflater)
 	private val tabs = LinkedHashMap<Int, Int>()
 

@@ -1,22 +1,20 @@
 package org.fossify.filemanager.activities
 
 import android.annotation.SuppressLint
-import android.content.ClipData
 import android.content.Intent
 import android.content.res.Configuration
 import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.os.PowerManager
 import android.provider.Settings
 import android.util.AttributeSet
-import android.util.Log
 import android.util.Xml
 import android.view.KeyEvent
+import android.view.ViewGroup.MarginLayoutParams
 import android.widget.TextView
+import androidx.appcompat.widget.ActionBarContextView
 import com.stericson.RootTools.RootTools
 import me.grantland.widget.AutofitHelper
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
@@ -70,25 +68,44 @@ class MainActivity: SimpleActivity() {
 	private var mStoredTimeFormat = ""
 	private var scrollTmr: Timer? = null
 
+	@SuppressLint("RestrictedApi")
 	override fun onCreate(savedInstanceState: Bundle?) {
 		isMaterialActivity = true
 		super.onCreate(savedInstanceState)
-		setContentView(binding.root)
-		appLaunched(BuildConfig.APPLICATION_ID)
-		mainMenu = binding.mainMenu
-		setupOptionsMenu()
-
 		if(config.lastVersion < 4) {
 			if(config.showTabs and TAB_STORAGE_ANALYSIS == 0) config.showTabs += TAB_STORAGE_ANALYSIS
 			if(config.showTabs and TAB_FAVORITES == 0) config.showTabs += TAB_FAVORITES
 			config.setHome(config.internalStoragePath)
 		}
 
+		setContentView(binding.root)
+		appLaunched(BuildConfig.APPLICATION_ID)
+		mainMenu = binding.mainMenu
+		setupOptionsMenu()
 		storeStateVariables()
 		setupTabs(getTabsToShow())
 		refreshMenuItems()
 
-		updateMaterialActivityViews(binding.mainCoordinator, null, useTransparentNavigation = false, useTopSearchMenu = true)
+		setupViews(binding.mainCoordinator, null, null, null) {iAll, iNav ->
+			val mc = binding.mainCoordinator.layoutParams as MarginLayoutParams
+			mc.setMargins(0, iAll.top, 0, 0)
+
+			val mm = mainMenu.layoutParams as MarginLayoutParams
+			mm.setMargins(iAll.left, 0, iAll.right, 0)
+
+			for(frag in getAllFragments()) frag?.getRecyclerAdapter()?.actMode?.let {
+				val tb = it.customView.parent as ActionBarContextView
+				tb.setPadding(iAll.left, iAll.top, iAll.right, 0)
+				tb.contentHeight = iAll.top + mainMenu.measuredHeight
+				(tb.layoutParams as MarginLayoutParams).setMargins(iNav.left, 0, iNav.right, 0)
+			}
+
+			binding.mainViewPager.setPadding(iAll.left, 0, iAll.right, 0)
+
+			binding.mainTabsHolder.setPadding(0, 0, 0, iAll.bottom)
+			val mt = binding.mainTabsHolder.layoutParams as MarginLayoutParams
+			mt.setMargins(iNav.left, 0, iNav.right, 0)
+		}
 
 		if(savedInstanceState == null) {
 			initFragments()
@@ -131,6 +148,24 @@ class MainActivity: SimpleActivity() {
 	override fun onDestroy() {
 		super.onDestroy()
 		config.temporarilyShowHidden = false
+	}
+
+	override fun onConfigurationChanged(newCon: Configuration) {
+		super.onConfigurationChanged(newCon)
+		updateFragmentColumnCounts()
+
+		//Reload Main Menu
+		val search = mainMenu.binding.topToolbarSearch.text
+		binding.mainCoordinator.removeView(mainMenu)
+		mainMenu = MySearchMenu(this, menuAttr)
+		binding.mainCoordinator.addView(mainMenu)
+		setupOptionsMenu()
+		refreshMenuItems()
+		mainMenu.updateColors()
+		if(search.isNotEmpty()) {
+			mainMenu.binding.topToolbarSearch.text = search
+			mainMenu.post {mainMenu.focusView()}
+		}
 	}
 
 	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
@@ -308,24 +343,7 @@ class MainActivity: SimpleActivity() {
 		if(search.isNotEmpty()) mainMenu.binding.topToolbarSearch.setText(search)
 	}
 
-	override fun onConfigurationChanged(newCon: Configuration) {
-		super.onConfigurationChanged(newCon)
-		updateFragmentColumnCounts()
-
-		//Reload Main Menu
-		val search = mainMenu.binding.topToolbarSearch.text
-		binding.mainCoordinator.removeView(mainMenu)
-		mainMenu = MySearchMenu(this, menuAttr)
-		binding.mainCoordinator.addView(mainMenu)
-		setupOptionsMenu()
-		refreshMenuItems()
-		mainMenu.updateColors()
-		if(search.isNotEmpty()) {
-			mainMenu.binding.topToolbarSearch.text = search
-			mainMenu.post {mainMenu.focusView()}
-		}
-	}
-
+	@Deprecated("")
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
 		super.onActivityResult(requestCode, resultCode, resultData)
 		isAskingPermissions = false
@@ -369,8 +387,8 @@ class MainActivity: SimpleActivity() {
 		actionOnPermission = null
 		if(hasStoragePermission()) callback(true)
 		else if(isRPlus()) {
-			ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt, org.fossify.commons.R.string.ok, 0, false) {success ->
-				if(success) {
+			ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt, org.fossify.commons.R.string.ok, 0, false) {
+				if(it) {
 					isAskingPermissions = true
 					actionOnPermission = callback
 					try {
@@ -387,25 +405,6 @@ class MainActivity: SimpleActivity() {
 				} else finish()
 			}
 		} else handlePermission(PERMISSION_WRITE_STORAGE, callback)
-	}
-
-	@SuppressLint("BatteryLife")
-	private fun checkBackground() {
-		val pm = getSystemService(POWER_SERVICE) as PowerManager
-		if(!pm.isIgnoringBatteryOptimizations(packageName)) {
-			//TODO Res Strings
-			val appName = getString(R.string.app_name)
-			val msg = "Background activity is restricted on this device. $appName needs this to stream large files " +
-				"(eg. videos) in the background. The app will never run unless you are actively using a file.\n\n" +
-				"Please allow in Apps -> $appName -> Battery -> Unrestricted"
-			alert("Background Activity Restricted", msg) {
-				//TODO Use Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS if play store?
-				if(it) Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-					data = "package:$packageName".toUri()
-					startActivity(this)
-				}
-			}
-		}
 	}
 
 	private fun initFileManager(refreshRecents: Boolean) {
@@ -442,7 +441,7 @@ class MainActivity: SimpleActivity() {
 				}
 			})
 			currentItem = tabIdToIdx(config.lastUsedViewPagerPage)
-			onGlobalLayout {refreshMenuItems()}
+			onGlobalLayout(::refreshMenuItems)
 		}
 	}
 
@@ -661,7 +660,7 @@ class MainActivity: SimpleActivity() {
 	}
 
 	private fun checkInvalidFavorites() {
-		val rList = config.getRemotes(true)
+		config.getRemotes(true)
 		ensureBackgroundThread {
 			var badFavs = false
 			config.favorites.forEach {
@@ -673,7 +672,6 @@ class MainActivity: SimpleActivity() {
 				}
 			}
 			if(badFavs) updateFavsList()
-			if(rList.isNotEmpty()) checkBackground()
 		}
 	}
 
@@ -697,26 +695,6 @@ class MainActivity: SimpleActivity() {
 			Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
 		setResult(RESULT_OK, resultIntent)
 		finish()
-	}
-
-	fun pickedRingtone(li: ListItem) {
-		val uri = li.getUri()
-		Intent().apply {
-			setDataAndType(uri, li.path.getMimeType())
-			flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-			putExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, uri)
-			setResult(RESULT_OK, this)
-			finish()
-		}
-	}
-
-	fun pickedPath(li: ListItem) {
-		Intent().apply {
-			setDataAndType(li.getUri(), li.path.getMimeType())
-			flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-			setResult(RESULT_OK, this)
-			finish()
-		}
 	}
 
 	fun openedDirectory() {

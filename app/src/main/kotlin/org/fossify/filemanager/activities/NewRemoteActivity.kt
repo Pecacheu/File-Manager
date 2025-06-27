@@ -21,6 +21,7 @@ import org.fossify.commons.views.MyAppCompatSpinner
 import org.fossify.filemanager.databinding.ActivityNewRemoteBinding
 import org.fossify.filemanager.extensions.UUID
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.helpers.Remote
 import kotlin.getValue
 
@@ -35,11 +36,8 @@ class NewRemoteActivity(): SimpleActivity() {
 	override fun onCreate(state: Bundle?) {
 		isMaterialActivity = true
 		super.onCreate(state)
-		binding.apply {
-			setContentView(root)
-			updateMaterialActivityViews(root, holder, true, false)
-			setupMaterialScrollListener(scroller, toolbar)
-		}
+		setContentView(binding.root)
+		binding.apply {setupViews(root, holder, toolbar, scroller)}
 		try {
 			doInit()
 		} catch(e: Throwable) {

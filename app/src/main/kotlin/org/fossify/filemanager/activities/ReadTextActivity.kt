@@ -53,10 +53,7 @@ class ReadTextActivity: SimpleActivity() {
 		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
 		setupOptionsMenu()
-		binding.apply {
-			updateMaterialActivityViews(readTextCoordinator, readTextView, useTransparentNavigation = true, useTopSearchMenu = false)
-			setupMaterialScrollListener(readTextHolder, readTextToolbar)
-		}
+		binding.apply {setupViews(readTextCoordinator, readTextView, readTextToolbar, readTextHolder)}
 		searchQueryET = findViewById(org.fossify.commons.R.id.search_query)
 		searchPrevBtn = findViewById(org.fossify.commons.R.id.search_previous)
 		searchNextBtn = findViewById(org.fossify.commons.R.id.search_next)
@@ -83,6 +80,7 @@ class ReadTextActivity: SimpleActivity() {
 		setupToolbar(binding.readTextToolbar, NavigationIcon.Arrow)
 	}
 
+	@Deprecated("")
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
 		super.onActivityResult(requestCode, resultCode, resultData)
 		if(requestCode == SELECT_SAVE_FILE_INTENT && resultCode == RESULT_OK && resultData != null && resultData.data != null) {

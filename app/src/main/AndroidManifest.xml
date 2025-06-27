@@ -6,7 +6,8 @@
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 	<uses-permission android:name="android.permission.INTERNET"/>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-	<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+	<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
 	<uses-feature android:name="android.hardware.faketouch" android:required="false"/>
 	<queries>
 		<package android:name="org.fossify.filemanager.debug"/>
@@ -18,7 +19,6 @@
 		android:appCategory="productivity"
 		android:icon="@mipmap/ic_launcher"
 		android:label="@string/app_launcher_name"
-		android:localeConfig="@xml/locale_config"
 		android:requestLegacyExternalStorage="true"
 		android:roundIcon="@mipmap/ic_launcher"
 		android:theme="@style/AppTheme">
@@ -60,7 +60,7 @@
 		</activity>
 		<activity
 			android:name=".activities.MimeTypesActivity"
-			android:configChanges="orientation|screenSize"
+			android:configChanges="orientation"
 			android:exported="false"
 			android:parentActivityName=".activities.MainActivity"/>
 		<activity
@@ -145,6 +145,8 @@
 				android:name="android.support.FILE_PROVIDER_PATHS"
 				android:resource="@xml/provider_paths"/>
 		</provider>
+		<service android:name=".helpers.RemoteService"
+			android:foregroundServiceType="mediaPlayback"/>
 		<activity-alias
 			android:name=".activities.SplashActivity.Red"
 			android:enabled="false"

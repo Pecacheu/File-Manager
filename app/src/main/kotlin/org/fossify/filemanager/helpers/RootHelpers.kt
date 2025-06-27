@@ -2,17 +2,17 @@ package org.fossify.filemanager.helpers
 
 import com.stericson.RootShell.execution.Command
 import com.stericson.RootTools.RootTools
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.areDigitsOnly
 import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.formatErr
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
-class RootHelpers(val activity: BaseSimpleActivity) {
+class RootHelpers(val activity: SimpleActivity) {
 	fun askRootIfNeeded(callback: (success: Boolean)->Unit) {
 		val cmd = "ls -lA"
 		val command = object: Command(0, cmd) {
@@ -132,13 +132,14 @@ class RootHelpers(val activity: BaseSimpleActivity) {
 		catch(e: Throwable) {activity.error(e)}
 	}
 
-	fun createFileFolder(path: String, isFile: Boolean, callback: (success: Boolean)->Unit) {
+	fun createFileFolder(path: String, isFile: Boolean, mkAll: Boolean, callback: (success: Boolean)->Unit) {
 		if(!RootTools.isRootAvailable()) throw activity.formatErr(R.string.rooted_device_only)
 		tryMountAsRW(path) {
 			val mountPoint = it
 			val targetPath = path.trim('/')
 			val mainCommand = if(isFile) "touch" else "mkdir"
-			val cmd = "$mainCommand \"/$targetPath\""
+			var cmd = "$mainCommand \"/$targetPath\""
+			if(mkAll) cmd += " -p"
 			val command = object: Command(0, cmd) {
 				override fun commandCompleted(id: Int, exitcode: Int) {
 					callback(exitcode == 0)

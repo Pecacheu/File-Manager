@@ -3,7 +3,6 @@ package org.fossify.filemanager.adapters
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
@@ -41,9 +40,6 @@ import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.EncryptionMethod
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
-import org.fossify.commons.dialogs.RenameDialog
-import org.fossify.commons.dialogs.RenameItemDialog
-import org.fossify.commons.dialogs.RenameItemsDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -55,7 +51,6 @@ import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getProperStatusBarColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.getTimeFormat
@@ -84,7 +79,7 @@ import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
 import org.fossify.filemanager.dialogs.FilePickerDialog
-import org.fossify.filemanager.extensions.chooseUris
+import org.fossify.filemanager.extensions.pickedUris
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.humanizePath
@@ -92,6 +87,7 @@ import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.isZipFile
 import org.fossify.filemanager.extensions.launchItem
+import org.fossify.filemanager.extensions.pickedRingtone
 import org.fossify.filemanager.extensions.setAs
 import org.fossify.filemanager.extensions.shareUris
 import org.fossify.filemanager.fragments.FavoritesFragment
@@ -120,7 +116,6 @@ class ItemsAdapter(
 	isMainActMode: Boolean = false,
 	val itemClick: ((ListItem)->Boolean)? = null
 ): RecyclerView.Adapter<ItemsAdapter.ViewHolder>(), RecyclerViewFastScroller.OnPopupTextUpdate {
-	private val isPickMultipleIntent = (listener as? MyViewPagerFragment<*>)?.isPickMultipleIntent == true
 	private val selected = ArrayList<ListItem>()
 	private lateinit var fileDrawable: Drawable
 	private lateinit var folderDrawable: Drawable
@@ -151,11 +146,14 @@ class ItemsAdapter(
 	}
 
 	private fun prepareActionMode(menu: Menu) {
+		val pager = listener as? MyViewPagerFragment<*>
+		val pickContent = pager?.isGetContentIntent == true || pager?.isCreateDocumentIntent == true
+		val pickMulti = pager?.isPickMultipleIntent == true
 		val isFav = listener is FavoritesFragment
 		menu.apply {
 			findItem(R.id.cab_compress).isVisible = !isFav
 			findItem(R.id.cab_decompress).isVisible = isOneFileSelected() && firstItem().name.isZipFile()
-			findItem(R.id.cab_confirm_selection).isVisible = isPickMultipleIntent
+			findItem(R.id.cab_confirm_selection).isVisible = pickMulti
 			findItem(R.id.cab_copy_path).isVisible = isOneItemSelected()
 			findItem(R.id.cab_open_with).isVisible = isOneFileSelected()
 			findItem(R.id.cab_open_as).isVisible = isOneFileSelected()
@@ -164,7 +162,7 @@ class ItemsAdapter(
 			findItem(R.id.cab_copy_to).isVisible = !isFav
 			findItem(R.id.cab_move_to).isVisible = !isFav
 			findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
-			findItem(R.id.cab_delete).isVisible = !isFav
+			findItem(R.id.cab_delete).isVisible = !isFav && !pickContent && !pickMulti
 			findItem(R.id.cab_rem_fav).isVisible = isFav
 			checkHideBtnVisibility(this, isFav || isOnRemote())
 		}
@@ -266,7 +264,7 @@ class ItemsAdapter(
 	private fun confirmSelection() {
 		if(selected.isEmpty()) finishActMode()
 		else ensureBackgroundThread {
-			try {activity.chooseUris(getFileUris())}
+			try {activity.pickedUris(getFileUris())}
 			catch(e: Throwable) {activity.error(e)}
 		}
 	}
@@ -277,9 +275,9 @@ class ItemsAdapter(
 		/*val items = selected
 		val paths = items.asSequence().map {it.path}.toMutableList() as ArrayList<String>
 		when {
-			paths.size == 1 -> RenameItemDialog(activity, paths.first()) {dataChanged()}
-			items.any {it.isDir} -> RenameItemsDialog(activity, paths) {dataChanged()}
-			else -> RenameDialog(activity, paths, false) {dataChanged()}
+			paths.size == 1 -> RenameItemDialog(activity, paths.first(), ::dataChanged)
+			items.any {it.isDir} -> RenameItemsDialog(activity, paths, ::dataChanged)
+			else -> RenameDialog(activity, paths, false, ::dataChanged)
 		}*/
 	}
 
@@ -370,7 +368,7 @@ class ItemsAdapter(
 	private fun copyPath() {
 		val text = activity.humanizePath(firstItem().path)
 		val clip = ClipData.newPlainText(activity.getString(R.string.app_name), text)
-		(activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(clip)
+		activity.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
 		finishActMode()
 	}
 
@@ -397,13 +395,14 @@ class ItemsAdapter(
 					//TODO Turn this into background async task
 					activity.toast(if(isCopy) org.fossify.commons.R.string.copying
 						else org.fossify.commons.R.string.moving)
-					for(f in selected) f.copyMove("${it.trimEnd('/')}/${f.name}", isCopy)
+					for(f in selected) f.copyMove("${it.trimEnd('/')}/${f.name}", isCopy, true)
 					activity.toast(if(isCopy) org.fossify.commons.R.string.copying_success
 						else org.fossify.commons.R.string.moving_success)
 				} catch(e: Throwable) {
 					activity.error(e)
 					//TODO Add cancel/continue prompt via error prompt option?
 				}
+				activity.onConflict = 0
 				dataChanged()
 			}
 		}
@@ -461,7 +460,6 @@ class ItemsAdapter(
 			else activity.error(e)
 			try {ListItem(activity, dest, "", false, 0, 0, 0).delete()}
 			catch(_: Throwable) {}
-
 		}
 	}
 
@@ -763,13 +761,13 @@ class ItemsAdapter(
 	private var contrastColor = properPrimaryColor.getContrastColor()
 	private var actModeCallback: MyActionModeCallback
 	private var positionOffset = 0
-	private var actMode: ActionMode? = null
+	var actMode: ActionMode? = null
 	private var actBarTextView: TextView? = null
 	private var lastLongPressedItem = -1
 
 	init {
+		var statusBarColor = 0
 		actModeCallback = object: MyActionModeCallback() {
-			private var savedStatusBarColor = activity.getProperStatusBarColor()
 			override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
 				actionItemPressed(item.itemId)
 				return true
@@ -780,38 +778,35 @@ class ItemsAdapter(
 				selected.clear()
 				isSelectable = true
 				actMode = actionMode
-				//if(isMainActMode) {
-					actBarTextView = layoutInflater.inflate(org.fossify.commons.R.layout.actionbar_title, null) as TextView
-					actBarTextView!!.layoutParams = ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
-					actMode!!.customView = actBarTextView
-					actBarTextView!!.setOnClickListener {
-						if(getSelectableItemCount() == selected.size) finishActMode()
-						else selectAll()
+				actBarTextView = layoutInflater.inflate(org.fossify.commons.R.layout.actionbar_title, null) as TextView
+				actBarTextView!!.layoutParams = ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
+				actMode!!.customView = actBarTextView
+				actBarTextView!!.setOnClickListener {
+					if(getSelectableItemCount() == selected.size) finishActMode()
+					else selectAll()
+				}
+
+				activity.menuInflater.inflate(R.menu.cab, menu)
+
+				var actColor = getStatusBarActColor()
+				statusBarColor = activity.window.statusBarColor
+				activity.animateStatusBarColor(actColor, statusBarColor, 300L)
+
+				actBarTextView!!.setTextColor(actColor.getContrastColor())
+				activity.updateMenuItemColors(menu, baseColor = actColor)
+
+				if(activity.isDynamicTheme()) {
+					actBarTextView?.onGlobalLayout {
+						val backArrow = activity.findViewById<ImageView>(androidx.appcompat.R.id.action_mode_close_button)
+						backArrow?.applyColorFilter(actColor.getContrastColor())
 					}
-
-					activity.menuInflater.inflate(R.menu.cab, menu)
-					val bgColor = if(activity.isDynamicTheme()) resources.getColor(org.fossify.commons.R.color.you_contextual_status_bar_color, activity.theme)
-					else resources.getColor(org.fossify.commons.R.color.dark_grey, activity.theme)
-
-					savedStatusBarColor = activity.window.statusBarColor
-					activity.animateStatusBarColor(bgColor, savedStatusBarColor, 300L)
-
-					actBarTextView!!.setTextColor(bgColor.getContrastColor())
-					activity.updateMenuItemColors(menu, baseColor = bgColor)
-
-					if(activity.isDynamicTheme()) {
-						actBarTextView?.onGlobalLayout {
-							val backArrow = activity.findViewById<ImageView>(androidx.appcompat.R.id.action_mode_close_button)
-							backArrow?.applyColorFilter(bgColor.getContrastColor())
-						}
-					}
-				//}
+				}
 				onActionModeCreated()
 				return true
 			}
 
 			override fun onPrepareActionMode(actionMode: ActionMode, menu: Menu): Boolean {
-				/*if(isMainActMode)*/ prepareActionMode(menu)
+				prepareActionMode(menu)
 				return true
 			}
 
@@ -822,12 +817,10 @@ class ItemsAdapter(
 					val pos = listItems.indexOf(f)
 					if(pos != -1) setSelected(false, pos, false)
 				}
-				//if(isMainActMode) {
-					activity.animateStatusBarColor(savedStatusBarColor, activity.window.statusBarColor, 400L)
-					updateTitle()
-					actBarTextView?.text = ""
-					actMode = null
-				//}
+				activity.animateStatusBarColor(statusBarColor, activity.window.statusBarColor, 400L)
+				updateTitle()
+				actBarTextView?.text = ""
+				actMode = null
 				lastLongPressedItem = -1
 				selected.clear()
 				onActionModeDestroyed()
@@ -901,8 +894,14 @@ class ItemsAdapter(
 
 	fun finishActMode() = actMode?.finish()
 
+	private fun getStatusBarActColor() = when {
+		activity.isDynamicTheme() -> resources.getColor(org.fossify.commons.R.color.you_contextual_status_bar_color, activity.theme)
+		else -> resources.getColor(org.fossify.commons.R.color.dark_grey, activity.theme)
+	}
+
 	fun updateTextColor(textColor: Int) {
 		this.textColor = textColor
+		if(isActMode()) activity.updateStatusbarColor(getStatusBarActColor())
 		notifyDataSetChanged()
 	}
 
@@ -922,9 +921,9 @@ class ItemsAdapter(
 	private fun openItem(item: ListItem) {
 		val pager = listener as? MyViewPagerFragment<*>
 		if(pager?.isGetContentIntent == true || pager?.isCreateDocumentIntent == true) {
-			(activity as MainActivity).pickedPath(item)
+			activity.pickedUris(arrayListOf(item.getUri()))
 		} else if(pager?.isGetRingtonePicker == true) {
-			if(item.name.isAudioFast()) (activity as MainActivity).pickedRingtone(item)
+			if(item.name.isAudioFast()) activity.pickedRingtone(item)
 			else activity.toast(R.string.select_audio_file)
 		} else if(item.name.isZipFile()) decompress(item)
 		else activity.launchItem(item, false)

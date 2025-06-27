@@ -1,20 +1,31 @@
 package org.fossify.filemanager.helpers
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.ComponentName
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.os.Process
 import android.os.ProxyFileDescriptorCallback
 import android.os.storage.StorageManager
 import android.provider.OpenableColumns
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.Priority
 import com.bumptech.glide.Registry
@@ -40,11 +51,12 @@ import com.hierynomus.smbj.auth.AuthenticationContext
 import com.hierynomus.smbj.connection.Connection
 import com.hierynomus.smbj.share.DiskShare
 import com.hierynomus.smbj.share.File
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getMimeType
+import org.fossify.commons.extensions.getParentPath
 import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.models.ListItem
 import org.json.JSONObject
@@ -149,7 +161,7 @@ class Remote(val ctx: Context, data: JSONObject) {
 	private fun getKey(newIfNone: Boolean): Key {
 		val ks = KeyStore.getInstance(KEYSTORE)
 		ks.load(null)
-		var key = ks.getEntry(KEY_NAME, null) as? KeyStore.SecretKeyEntry
+		val key = ks.getEntry(KEY_NAME, null) as? KeyStore.SecretKeyEntry
 		if(key == null) {
 			if(!newIfNone) throw FileNotFoundException(ctx.getString(R.string.no_key_err))
 			val kg = KeyGenerator.getInstance(KEY_TYPE, ks.provider)
@@ -225,7 +237,7 @@ class Remote(val ctx: Context, data: JSONObject) {
 		}
 	}
 
-	fun listDir(path: String, act: BaseSimpleActivity): ArrayList<ListItem> {
+	fun listDir(path: String, act: SimpleActivity): ArrayList<ListItem> {
 		if(!mntValid) connect()
 		val hidden = act.config.shouldShowHidden()
 		val files = ArrayList<ListItem>()
@@ -253,8 +265,13 @@ class Remote(val ctx: Context, data: JSONObject) {
 		return cnt
 	}
 
-	fun mkDir(path: String): Boolean {
+	fun mkDir(path: String, mkAll: Boolean): Boolean {
 		if(!mntValid) connect()
+		if(mkAll) {
+			val pi = pathIs(path, 1)
+			if(pi == -2) mkDir(path.getParentPath(), true)
+			else if(pi != 1) throw ctx.formatErr(R.string.not_a_dir, null, path)
+		}
 		val p = path.substring(URI_BASE)
 		try {
 			mount!!.openDirectory(p, setOf(AccessMask.FILE_LIST_DIRECTORY, AccessMask.FILE_ADD_SUBDIRECTORY),
@@ -269,7 +286,7 @@ class Remote(val ctx: Context, data: JSONObject) {
 		}
 	}
 
-	fun exists(path: String, dirMode: Int): Boolean {
+	fun pathIs(path: String, dirMode: Int): Int {
 		if(!mntValid) connect()
 		val p = path.substring(URI_BASE)
 		val cOpt = mutableSetOf<SMB2CreateOptions>()
@@ -278,38 +295,54 @@ class Remote(val ctx: Context, data: JSONObject) {
 		try {
 			mount!!.open(p, setOf(AccessMask.FILE_READ_ATTRIBUTES), null, SMB2ShareAccess.ALL,
 				SMB2CreateDisposition.FILE_OPEN, cOpt).close()
-			return true
+			return 1
 		} catch(e: SMBApiException) {
-			when(e.status) {
-				NtStatus.STATUS_OBJECT_NAME_NOT_FOUND, NtStatus.STATUS_OBJECT_PATH_NOT_FOUND,
-				NtStatus.STATUS_FILE_IS_A_DIRECTORY, NtStatus.STATUS_NOT_A_DIRECTORY,
-				NtStatus.STATUS_DELETE_PENDING -> return false
+			return when(e.status) {
+				NtStatus.STATUS_DELETE_PENDING -> -1
+				NtStatus.STATUS_OBJECT_NAME_NOT_FOUND, NtStatus.STATUS_OBJECT_PATH_NOT_FOUND -> -2
+				NtStatus.STATUS_FILE_IS_A_DIRECTORY, NtStatus.STATUS_NOT_A_DIRECTORY -> -3
 				else -> throw e
 			}
 		}
 	}
 
-	//TODO Test
-	fun copyMove(src: String, dest: String, isCopy: Boolean, replace: Boolean): Boolean {
+	fun exists(path: String, dirMode: Int) = pathIs(path, dirMode) == 1
+
+	fun copyFile(src: String, dest: String, replace: Boolean): Boolean {
 		if(!mntValid) connect()
-		if(idFromRemotePath(src) != idFromRemotePath(dest)) throw Error(ctx.getString(R.string.diff_remotes_err))
+		if(idFromRemotePath(src) != idFromRemotePath(dest)) throw ctx.formatErr(R.string.diff_remotes_err)
 		val sp = src.substring(URI_BASE)
 		val dp = dest.substring(URI_BASE)
+		Log.i("test", "Remote copy $sp -> $dp")
 		try {
-			if(isCopy) {
-				mount!!.openFile(dp, setOf(AccessMask.FILE_WRITE_DATA), null, SMB2ShareAccess.ALL,
-						SMB2CreateDisposition.FILE_OPEN, null).use {dFile ->
-					mount!!.openFile(sp, setOf(AccessMask.FILE_READ_DATA), null, SMB2ShareAccess.ALL,
-						SMB2CreateDisposition.FILE_OPEN, null).use {it.remoteCopyTo(dFile)}
-				}
-			} else {
-				mount!!.open(sp, setOf(AccessMask.FILE_WRITE_DATA), null, SMB2ShareAccess.ALL,
-					SMB2CreateDisposition.FILE_OPEN, null).use {it.rename(dp, replace)}
+			val cMode = if(replace) SMB2CreateDisposition.FILE_OVERWRITE_IF else SMB2CreateDisposition.FILE_CREATE
+			mount!!.openFile(dp, setOf(AccessMask.FILE_WRITE_DATA), null, SMB2ShareAccess.ALL, cMode, null).use {dFile ->
+				mount!!.openFile(sp, setOf(AccessMask.FILE_READ_DATA), null, SMB2ShareAccess.ALL,
+					SMB2CreateDisposition.FILE_OPEN, null).use {it.remoteCopyTo(dFile)}
 			}
 			return true
 		} catch(e: SMBApiException) {
 			when(e.status) {
 				NtStatus.STATUS_OBJECT_NAME_COLLISION -> return false
+				else -> throw e
+			}
+		}
+	}
+
+	//TODO Not working?
+	fun rename(path: String, dest: String, replace: Boolean): Boolean {
+		if(!mntValid) connect()
+		val p = path.substring(URI_BASE)
+		val fn = dest.getFilenameFromPath()
+		Log.i("test", "Remote rename $p to $fn")
+		if(path.getParentPath() != dest.substring(0, dest.length-fn.length-1)) throw Error("Invalid path for remote rename") //TODO Res strings
+		try {
+			mount!!.open(p, setOf(AccessMask.FILE_WRITE_DATA), null, SMB2ShareAccess.ALL,
+				SMB2CreateDisposition.FILE_OPEN, null).use {it.rename(fn, replace)}
+			return true
+		} catch(e: SMBApiException) {
+			when(e.status) {
+				NtStatus.STATUS_ACCESS_DENIED -> return false
 				else -> throw e
 			}
 		}
@@ -331,45 +364,97 @@ class Remote(val ctx: Context, data: JSONObject) {
 		}
 	}
 
-	fun openFile(path: String, write: Boolean): File {
+	fun openFile(path: String, write: Boolean, new: Boolean=false): File {
 		if(!mntValid) connect()
 		val p = path.substring(URI_BASE)
 		val mask = mutableSetOf(AccessMask.FILE_READ_DATA)
 		if(write) mask.add(AccessMask.FILE_WRITE_DATA)
 		val acc = mutableSetOf(SMB2ShareAccess.FILE_SHARE_READ)
 		if(write) acc.add(SMB2ShareAccess.FILE_SHARE_WRITE)
-		val mode = SMB2CreateDisposition.FILE_OPEN
+		val mode = if(new) SMB2CreateDisposition.FILE_CREATE else SMB2CreateDisposition.FILE_OPEN
 		val cOpt = setOf(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE, SMB2CreateOptions.FILE_RANDOM_ACCESS)
 		val file = mount!!.openFile(p, mask, null, acc, mode, cOpt)
 		return file
 	}
 }
 
-// ---- ProxyFileDescriptor ----
+// ---- Service & Proxy ----
 
-class RemoteProxy(ctx: Context, val path: String, val write: Boolean, val persistent: Boolean): ProxyFileDescriptorCallback() {
-	private val remote: Remote
-	private lateinit var ht: HandlerThread
+class RemoteService: Service() {
+	val bind = Bind()
+	val clients = HashMap<Intent, Boolean>()
+	inner class Bind: Binder()
+
+	override fun onCreate() {
+		Log.i("test", "-- RemoteService started!")
+		startForeground(1, getNotif())
+	}
+	override fun onDestroy() {
+		Log.i("test", "-- RemoteService stopped!")
+	}
+	override fun onTimeout(startId: Int, fgsType: Int) {
+		stopSelf()
+	}
+
+	override fun onBind(i: Intent): IBinder {
+		clients[i] = true
+		return bind
+	}
+	override fun onUnbind(i: Intent): Boolean {
+		clients.remove(i)
+		if(clients.isEmpty()) stopSelf()
+		return true
+	}
+
+	private fun createNotifCh() {
+		val nMan = getSystemService(NotificationManager::class.java)
+		val ch = NotificationChannel(BuildConfig.APPLICATION_ID,
+			getString(org.fossify.commons.R.string.notifications),
+			NotificationManager.IMPORTANCE_HIGH)
+		nMan.createNotificationChannel(ch)
+	}
+
+	private fun getNotif(): Notification {
+		createNotifCh()
+		return NotificationCompat.Builder(this, BuildConfig.APPLICATION_ID)
+			.setSmallIcon(org.fossify.commons.R.drawable.ic_folder_vector)
+			.setContentText(getString(R.string.stream_in_bg))
+			.setSilent(true)
+			.setOngoing(true)
+			.build()
+	}
+}
+
+class RemoteProxy(val ctx: Context, val path: String, val write: Boolean, val background: Boolean): ProxyFileDescriptorCallback() {
+	private var remote = ctx.config.getRemoteForPath(path)?:throw FileNotFoundException("No remote")
+	private var conn: Conn? = null
 	private lateinit var file: File
 	private var len = 0L
 
-	init {
-		val conf = if(persistent) Config(ctx) else ctx.config
-		remote = conf.getRemoteForPath(path)?:throw FileNotFoundException("No remote")
+	inner class Conn: ServiceConnection {
+		override fun onServiceConnected(cn: ComponentName, bind: IBinder) {}
+		override fun onServiceDisconnected(cn: ComponentName) {}
 	}
 
 	private fun open() {
+		if(conn == null && background) {
+			conn = Conn()
+			val flags = Context.BIND_ABOVE_CLIENT or Context.BIND_AUTO_CREATE
+			ctx.bindService(Intent(ctx, RemoteService::class.java), conn!!, flags)
+		}
 		file = remote.openFile(path, write)
 		len = file.fileInformation.standardInformation.endOfFile
 		Log.i("test", "Open file $path with size $len")
 	}
 
 	fun getFd(): ParcelFileDescriptor {
-		ht = HandlerThread("HT")
-		ht.priority = Thread.MAX_PRIORITY
+		val ht = HandlerThread("HT")
 		ht.start()
 		val h = Handler(ht.looper)
-		if(persistent) h.post {open()} else open()
+		if(background) {
+			Process.setThreadPriority(ht.threadId, Process.THREAD_PRIORITY_FOREGROUND)
+			h.post(::open)
+		} else open()
 		val sMan = remote.ctx.getSystemService(Context.STORAGE_SERVICE) as StorageManager
 		val mode = if(write) ParcelFileDescriptor.MODE_READ_WRITE else ParcelFileDescriptor.MODE_READ_ONLY
 		return sMan.openProxyFileDescriptor(mode, this, h)
@@ -384,10 +469,11 @@ class RemoteProxy(ctx: Context, val path: String, val write: Boolean, val persis
 		if(!remote.mntValid) open()
 		return file.write(data, ofs, 0, size).toInt()
 	}
-	override fun onFsync() {try {file.flush()} catch(_: Throwable) {}}
+	override fun onFsync() = file.flush()
 	override fun onRelease() {
-		Log.i("test", "Close file ${file.path}")
+		Log.i("test", "Close file $path")
 		try {file.close()} catch(_: Throwable) {}
+		if(conn != null) {ctx.unbindService(conn!!); conn = null}
 	}
 }
 
@@ -399,12 +485,7 @@ class RemoteProvider: ContentProvider() {
 		fun getUri(path: String): Uri = Uri.Builder().scheme("content").authority(AUTH).path(path).build()
 	}
 
-	private lateinit var config: Config
-
-	override fun onCreate(): Boolean {
-		config = Config(context!!)
-		return true
-	}
+	override fun onCreate() = true
 
 	override fun query(uri: Uri, proj: Array<String>?, sel: String?, args: Array<String>?, sort: String?): Cursor {
 		val doc = MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), 1)

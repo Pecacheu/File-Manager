@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
 import java.io.FileInputStream
 
@@ -8,6 +6,7 @@ plugins {
 	alias(libs.plugins.kotlinAndroid)
 	alias(libs.plugins.detekt)
 	alias(libs.plugins.ksp)
+	alias(libs.plugins.compose.compiler)
 }
 
 val keystorePropertiesFile: File = rootProject.file("keystore.properties")
@@ -25,7 +24,6 @@ android {
 		targetSdk = project.libs.versions.app.build.targetSDK.get().toInt()
 		versionName = project.libs.versions.app.version.versionName.get()
 		versionCode = project.libs.versions.app.version.versionCode.get().toInt()
-		archivesName.set("file-manager-$versionCode")
 		multiDexEnabled = true
 		vectorDrawables.useSupportLibrary = true
 	}
@@ -45,10 +43,6 @@ android {
 		viewBinding = true
 		buildConfig = true
 		compose = true
-	}
-
-	composeOptions {
-		kotlinCompilerExtensionVersion = "1.5.15"
 	}
 
 	buildTypes {
@@ -78,18 +72,19 @@ android {
 		getByName("main").java.srcDirs("src/main/kotlin")
 	}
 
+	val java = JavaVersion.valueOf(libs.versions.app.build.javaVersion.get())
 	compileOptions {
-		val currentJavaVersionFromLibs = JavaVersion.valueOf(libs.versions.app.build.javaVersion.get())
-		sourceCompatibility = currentJavaVersionFromLibs
-		targetCompatibility = currentJavaVersionFromLibs
+		sourceCompatibility = java
+		targetCompatibility = java
+	}
+	kotlin {
+		jvmToolchain {
+			languageVersion = JavaLanguageVersion.of(java.majorVersion)
+		}
 	}
 
 	dependenciesInfo {
 		includeInApk = false
-	}
-
-	tasks.withType<KotlinCompile> {
-		kotlinOptions.jvmTarget = project.libs.versions.app.build.kotlinJVMTarget.get()
 	}
 
 	namespace = libs.versions.app.version.appId.get()

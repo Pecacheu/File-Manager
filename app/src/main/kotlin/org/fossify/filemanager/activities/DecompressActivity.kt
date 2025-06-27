@@ -46,10 +46,7 @@ class DecompressActivity: SimpleActivity() {
 		super.onCreate(state)
 		setContentView(binding.root)
 		setupOptionsMenu()
-		binding.apply {
-			updateMaterialActivityViews(decompressCoordinator, decompressList, useTransparentNavigation = true, useTopSearchMenu = false)
-			setupMaterialScrollListener(decompressList, decompressToolbar)
-		}
+		binding.apply {setupViews(decompressCoordinator, decompressList, decompressToolbar, decompressList)}
 
 		uri = intent.data
 		if(uri == null) {
@@ -139,7 +136,7 @@ class DecompressActivity: SimpleActivity() {
 				val parent = "$dest/${filename.substringBeforeLast('.')}"
 				val newPath = "$parent/${entry.fileName.trimEnd('/')}"
 
-				ListItem.mkDir(this, parent)
+				ListItem.mkDir(this, parent, true)
 				if(entry.isDirectory) continue
 				//Check if vulnerable for ZIP path traversal
 				if(!File(newPath).canonicalPath.startsWith(parent)) continue //TODO Test if works with remote
@@ -188,7 +185,7 @@ class DecompressActivity: SimpleActivity() {
 							toast(org.fossify.commons.R.string.invalid_password)
 							passwordDialog?.clearPassword()
 						} else {
-							runOnUiThread {askForPassword()}
+							runOnUiThread(::askForPassword)
 						}
 						return@ensureBackgroundThread
 					} else break

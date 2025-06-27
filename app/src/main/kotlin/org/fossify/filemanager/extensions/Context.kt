@@ -8,7 +8,6 @@ import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
-import kotlinx.coroutines.runBlocking
 import org.fossify.commons.R
 import org.fossify.commons.extensions.DIRS_ACCESSIBLE_ONLY_WITH_SAF
 import org.fossify.commons.extensions.getAlertDialogBuilder
@@ -24,8 +23,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN
 import java.time.Instant
 import java.util.Locale
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import java.util.concurrent.TimeoutException
 import kotlin.random.Random
 
 val Context.config: Config get() = (this.applicationContext as App).conf
@@ -39,7 +37,7 @@ fun Context.isRestrictedSAFOnlyRoot(path: String) = isRPlus() && isSAFOnlyRoot(p
 
 var IDCount: UByte = 0u
 
-//From Snap UUID Generator v1.1 by Pecacheu
+//Compat w/ Chu ID v1.3 by Pecacheu
 class UUID(val id: ByteArray) {
 	companion object {
 		const val LENGTH = 11
@@ -147,7 +145,21 @@ fun Activity.alert(title: String, msg: String, cb: ((res: Boolean)->Unit)?=null)
 	}
 }
 
-//TODO Timeout
-fun <T> blockAsync(fn: (ex: (r: T)->Unit)->Any): T {
-	return runBlocking {suspendCoroutine {cont -> fn.invoke {cont.resume(it)}}}
+private data class AsyncRes<T> (val res: T)
+
+fun <T> blockAsync(timeout: Long=240, fn: (ex: (r: T)->Unit)->Any): T {
+	val lock = Object()
+	var res: AsyncRes<T>? = null
+	var err: Throwable? = null
+	val t = Thread {
+		try {fn.invoke {synchronized(lock) {res = AsyncRes(it); lock.notifyAll()}}}
+		catch(e: Throwable) {synchronized(lock) {err = e; lock.notifyAll()}}
+	}
+	t.start()
+	synchronized(lock) {
+		lock.wait(timeout*1000)
+		err?.let {throw it}
+		res?.let {return it.res}
+		throw TimeoutException()
+	}
 }

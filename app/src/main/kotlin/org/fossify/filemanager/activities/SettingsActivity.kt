@@ -1,6 +1,12 @@
 package org.fossify.filemanager.activities
 
+import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
+import android.view.Window
+import android.view.WindowManager
+import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.children
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
@@ -22,10 +28,7 @@ class SettingsActivity: SimpleActivity() {
 		isMaterialActivity = true
 		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
-		binding.apply {
-			updateMaterialActivityViews(settingsCoordinator, settingsHolder, useTransparentNavigation = true, useTopSearchMenu = false)
-			setupMaterialScrollListener(settingsNestedScrollview, settingsToolbar)
-		}
+		binding.apply {setupViews(settingsCoordinator, settingsHolder, settingsToolbar, settingsNestedScrollview)}
 	}
 
 	override fun onResume() {
@@ -113,7 +116,7 @@ class SettingsActivity: SimpleActivity() {
 		binding.settingsShowHidden.isChecked = config.showHidden
 		binding.settingsShowHiddenHolder.setOnClickListener {
 			if(config.showHidden) toggleShowHidden()
-			else handleHiddenFolderPasswordProtection {toggleShowHidden()}
+			else handleHiddenFolderPasswordProtection(::toggleShowHidden)
 		}
 	}
 

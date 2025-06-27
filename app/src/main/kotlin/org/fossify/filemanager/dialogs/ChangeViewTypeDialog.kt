@@ -1,15 +1,15 @@
 package org.fossify.filemanager.dialogs
 
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.DialogChangeViewTypeBinding
 import org.fossify.filemanager.extensions.config
 
-class ChangeViewTypeDialog(val activity: BaseSimpleActivity, val path: String = "", showFolderCheck: Boolean = true, val callback: ()->Unit) {
+class ChangeViewTypeDialog(val activity: SimpleActivity, val path: String = "", showFolderCheck: Boolean = true, val callback: ()->Unit) {
 	private var binding: DialogChangeViewTypeBinding
 	private var config = activity.config
 

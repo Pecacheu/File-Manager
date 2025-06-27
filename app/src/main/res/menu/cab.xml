@@ -27,15 +27,15 @@
 		android:title="@string/properties"
 		app:showAsAction="always"/>
 	<item
-		android:id="@+id/cab_rename"
-		android:icon="@drawable/ic_rename_vector"
-		android:showAsAction="always"
-		android:title="@string/rename"
-		app:showAsAction="always"/>
-	<item
 		android:id="@+id/cab_share"
 		android:icon="@drawable/ic_share_vector"
+		android:showAsAction="always"
 		android:title="@string/share"
+		app:showAsAction="always"/>
+	<item
+		android:id="@+id/cab_rename"
+		android:icon="@drawable/ic_rename_vector"
+		android:title="@string/rename"
 		app:showAsAction="ifRoom"/>
 	<item
 		android:id="@+id/cab_hide"

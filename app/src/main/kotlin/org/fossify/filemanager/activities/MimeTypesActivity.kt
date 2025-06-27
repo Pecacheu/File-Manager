@@ -46,10 +46,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 		setContentView(binding.root)
 		layoutManager = binding.mimetypesList.layoutManager as MyGridLayoutManager
 		setupOptionsMenu()
-		binding.apply {
-			updateMaterialActivityViews(mimetypesCoordinator, mimetypesList, useTransparentNavigation = true, useTopSearchMenu = false)
-			setupMaterialScrollListener(mimetypesList, mimetypesToolbar)
-		}
+		binding.apply {setupViews(mimetypesCoordinator, mimetypesList, mimetypesToolbar, mimetypesList)}
 		currentMimeType = intent.getStringExtra(SHOW_MIMETYPE)?:return
 		currentVolume = intent.getStringExtra(VOLUME_NAME)?:currentVolume
 		binding.mimetypesToolbar.title = getString(when(currentMimeType) {
@@ -65,7 +62,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 				return
 			}
 		})
-		ensureBackgroundThread {reFetchItems()}
+		ensureBackgroundThread(::reFetchItems)
 		binding.apply {
 			mimetypesFastscroller.updateColors(getProperPrimaryColor())
 			mimetypesPlaceholder.setTextColor(getProperTextColor())
@@ -90,7 +87,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 		}
 	}
 
-	override fun refreshFragment() {reFetchItems()}
+	override fun refreshFragment() = reFetchItems()
 
 	fun searchQueryChanged(text: String) {
 		val searchText = text.trim()
@@ -218,7 +215,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	private fun getRecyclerAdapter() = binding.mimetypesList.adapter as? ItemsAdapter
 
 	private fun showSortingDialog() {
-		ChangeSortingDialog(this, currentMimeType) {recreateList()}
+		ChangeSortingDialog(this, currentMimeType, ::recreateList)
 	}
 
 	private fun changeViewType() {

@@ -16,12 +16,8 @@ import org.fossify.commons.activities.ContributorsActivity
 import org.fossify.commons.activities.DonationActivity
 import org.fossify.commons.activities.FAQActivity
 import org.fossify.commons.activities.LicenseActivity
-import org.fossify.commons.compose.alert_dialog.rememberAlertDialogState
 import org.fossify.commons.compose.extensions.enableEdgeToEdgeSimple
-import org.fossify.commons.compose.extensions.rateStarsRedirectAndThankYou
 import org.fossify.commons.compose.theme.AppThemeSurface
-import org.fossify.commons.dialogs.ConfirmationAdvancedAlertDialog
-import org.fossify.commons.dialogs.RateStarsAlertDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FAQItem
@@ -46,14 +42,10 @@ class AboutActivityAlt: BaseComposeActivity() {
 				val showGoogleRelations = remember {!resources.getBoolean(R.bool.hide_google_relations)}
 				val showGithubRelations = showGithubRelations()
 				val showDonationLinks = remember {resources.getBoolean(R.bool.show_donate_in_about)}
-				val rateStarsAlertDialogState = getRateStarsAlertDialogState()
-				val onRateUsClickAlertDialogState = getOnRateUsClickAlertDialogState(rateStarsAlertDialogState::show)
 				AboutScreen(goBack = ::finish, helpUsSection = {
-					HelpUsSection(onRateUsClick = {
-						onRateUsClick(showConfirmationAdvancedDialog = onRateUsClickAlertDialogState::show,
-							showRateStarsDialog = rateStarsAlertDialogState::show)
-					}, onInviteClick = ::onInviteClick, onContributorsClick = ::onContributorsClick, showDonate = showDonationLinks,
-						onDonateClick = ::onDonateClick, showInvite = showGoogleRelations || showGithubRelations, showRateUs = showGoogleRelations)
+					HelpUsSection(onRateUsClick = ::onInviteClick, onInviteClick = ::onInviteClick, onContributorsClick = ::onContributorsClick,
+						showDonate = showDonationLinks, onDonateClick = ::onDonateClick, showInvite = showGoogleRelations || showGithubRelations,
+						showRateUs = false)
 				}, aboutSection = {
 					val setupFAQ = showFAQ()
 					if(setupFAQ || showGithubRelations) {
@@ -92,25 +84,6 @@ class AboutActivityAlt: BaseComposeActivity() {
 		return Pair(fullVersion, packageName)
 	}
 
-	@Composable
-	private fun getRateStarsAlertDialogState() = rememberAlertDialogState().apply {
-		DialogMember {
-			RateStarsAlertDialog(alertDialogState = this, onRating = ::rateStarsRedirectAndThankYou)
-		}
-	}
-
-	@Composable
-	private fun getOnRateUsClickAlertDialogState(showRateStarsDialog: ()->Unit) = rememberAlertDialogState().apply {
-		DialogMember {
-			ConfirmationAdvancedAlertDialog(alertDialogState = this,
-				message = "${getString(R.string.before_asking_question_read_faq)}\n\n${getString(R.string.make_sure_latest)}", messageId = null,
-				positive = R.string.read_faq, negative = R.string.skip) {success ->
-				if(success) launchFAQActivity()
-				else launchRateUsPrompt(showRateStarsDialog)
-			}
-		}
-	}
-
 	private fun launchFAQActivity() {
 		val faqItems = intent.getSerializableExtra(APP_FAQ) as ArrayList<FAQItem>
 		Intent(applicationContext, FAQActivity::class.java).apply {
@@ -127,20 +100,6 @@ class AboutActivityAlt: BaseComposeActivity() {
 
 	private fun showKbHints() {
 		startActivity(Intent(applicationContext, KbHints::class.java))
-	}
-
-	private fun onRateUsClick(showConfirmationAdvancedDialog: ()->Unit, showRateStarsDialog: ()->Unit) {
-		if(config.wasBeforeRateShown) {
-			launchRateUsPrompt(showRateStarsDialog)
-		} else {
-			config.wasBeforeRateShown = true
-			showConfirmationAdvancedDialog()
-		}
-	}
-
-	private fun launchRateUsPrompt(showRateStarsDialog: ()->Unit) {
-		if(config.wasAppRated) redirectToRateUs()
-		else showRateStarsDialog()
 	}
 
 	private fun onInviteClick() {

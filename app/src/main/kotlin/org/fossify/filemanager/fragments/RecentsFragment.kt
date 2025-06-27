@@ -39,7 +39,7 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	override fun setupFragment(activity: SimpleActivity) {
 		if(this.activity == null) {
 			this.activity = activity
-			binding.recentsSwipeRefresh.setOnRefreshListener {refreshFragment()}
+			binding.recentsSwipeRefresh.setOnRefreshListener(::refreshFragment)
 		}
 		refreshFragment()
 	}

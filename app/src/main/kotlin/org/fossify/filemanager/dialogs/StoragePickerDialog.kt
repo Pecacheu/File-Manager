@@ -9,18 +9,18 @@ import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.button.MaterialButton
 import org.fossify.commons.R
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.databinding.DialogRadioGroupBinding
 import org.fossify.commons.databinding.RadioButtonBinding
 import org.fossify.commons.extensions.*
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.NewRemoteActivity
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.extensions.getBasePath
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.helpers.Remote
 
-class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, val callback: (pickedPath: String)->Unit) {
+class StoragePickerDialog(val activity: SimpleActivity, val path: String, val callback: (pickedPath: String)->Unit) {
 	private lateinit var radioGroup: RadioGroup
 	private var dialog: AlertDialog? = null
 	private val storages = LinkedHashMap<String, String>()
@@ -83,6 +83,7 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 			R.string.select_storage) {dialog = it}
 	}
 
+	@Suppress("unused")
 	private fun onEdit(v: View) {
 		if(!isRemotePath(path)) {
 			activity.toast(org.fossify.filemanager.R.string.remote_edit_err)
@@ -92,6 +93,7 @@ class StoragePickerDialog(val activity: BaseSimpleActivity, val path: String, va
 		if(r != null) launchRemote(r)
 		else activity.toast(org.fossify.filemanager.R.string.no_remote_err)
 	}
+	@Suppress("unused")
 	private fun onNew(v: View) = launchRemote(null)
 
 	@Suppress("DEPRECATION")

@@ -36,7 +36,7 @@ internal fun HelpUsSection(onRateUsClick: ()->Unit, onInviteClick: ()->Unit, onC
 	SettingsGroup(title = {
 		SettingsTitleTextComponent(text = stringResource(id = R.string.help_us), modifier = titleStartPadding)
 	}) {
-		if(showRateUs) TwoLinerTextItem(text = stringResource(id = R.string.rate_us), icon = R.drawable.ic_star_outline_vector, click = onRateUsClick)
+		if(showRateUs) TwoLinerTextItem(text = stringResource(id = R.string.rate_this_app), icon = R.drawable.ic_star_outline_vector, click = onRateUsClick)
 		if(showInvite) TwoLinerTextItem(text = stringResource(id = R.string.invite_friends), icon = R.drawable.ic_share_outline_vector, click = onInviteClick)
 		TwoLinerTextItem(click = onContributorsClick, text = stringResource(id = R.string.contributors), icon = R.drawable.ic_groups_outline_vector)
 		if(showDonate) TwoLinerTextItem(click = onDonateClick, text = stringResource(id = R.string.donate_to_fossify),
@@ -58,7 +58,7 @@ internal fun OtherSection(
 	SettingsGroup(title = {
 		SettingsTitleTextComponent(text = stringResource(id = R.string.other), modifier = titleStartPadding)
 	}) {
-		if(showMoreApps) TwoLinerTextItem(click = onMoreAppsClick, text = stringResource(id = R.string.more_apps_from_us), icon = R.drawable.ic_apps_vector)
+		if(showMoreApps) TwoLinerTextItem(click = onMoreAppsClick, text = stringResource(id = R.string.more_fossify_apps), icon = R.drawable.ic_apps_vector)
 		TwoLinerTextItem(click = onPrivacyPolicyClick, text = stringResource(id = R.string.privacy_policy), icon = R.drawable.ic_policy_outline_vector)
 		TwoLinerTextItem(click = onLicenseClick, text = stringResource(id = R.string.third_party_licences), icon = R.drawable.ic_article_outline_vector)
 		SettingsListItem(tint = MaterialTheme.colorScheme.onSurface, click = onVersionClick, text = versionName, description = packageName,

@@ -6,7 +6,6 @@ import android.os.Process
 import android.util.AttributeSet
 import android.util.Log
 import androidx.recyclerview.widget.GridLayoutManager
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.views.MyGridLayoutManager
@@ -33,6 +32,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private var storedItems = ArrayList<ListItem>()
 	private var itemsIgnoringSearch = ArrayList<ListItem>()
 	private lateinit var binding: ItemsFragmentBinding
+	private var hasProgress = false
 
 	override fun onFinishInflate() {
 		super.onFinishInflate()
@@ -45,7 +45,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			this.activity = activity
 			binding.apply {
 				breadcrumbs.listener = this@ItemsFragment
-				itemsSwipeRefresh.setOnRefreshListener {refreshFragment()}
+				itemsSwipeRefresh.setOnRefreshListener(::refreshFragment)
 				itemsFab.setOnClickListener {
 					if(isCreateDocumentIntent) (activity as MainActivity).createDocumentConfirmed(currentPath)
 					else createNewItem()
@@ -82,7 +82,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	fun openPath(path: String, forceRefresh: Boolean=false) {
 		Log.i("test", "openPath $path")
-		if((activity as? BaseSimpleActivity)?.isAskingPermissions == true) return
+		if(activity?.isAskingPermissions == true) return
 		var realPath = path.trimEnd('/')
 		if(realPath.isEmpty()) realPath = "/"
 
@@ -200,7 +200,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 		for(li in items.filter {it.isDir}) {
 			if(context == null || currentPath != path) return
 			val cnt = li.getChildCount(showHidden)
-			if(cnt != 0) activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(li, cnt)}
+			activity?.runOnUiThread {getRecyclerAdapter()?.updateChildCount(li, cnt)}
 		}
 	}
 
@@ -210,6 +210,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	}
 
 	override fun searchQueryChanged(text: String) {
+		Log.i("test", "searchQueryChanged '$text'")
 		lastSearchedText = text
 		if(context == null) return
 		binding.apply {
@@ -321,8 +322,13 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 	private fun showProgressBar() {
 		binding.progressBar.beVisible()
 		binding.progressBar.show()
+		hasProgress = true
 	}
-	private fun hideProgressBar() {binding.progressBar.hide()}
+	private fun hideProgressBar(force: Boolean=true) {
+		if(force) hasProgress = false else if(hasProgress) return
+		binding.progressBar.hide()
+		if(binding.progressBar.isAnimating) postDelayed({hideProgressBar(false)}, 50)
+	}
 
 	fun getBreadcrumbs() = binding.breadcrumbs
 	override fun toggleFilenameVisibility() {getRecyclerAdapter()?.updateDisplayFilenamesInGrid()}

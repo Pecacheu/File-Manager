@@ -1,15 +1,15 @@
 package org.fossify.filemanager.dialogs
 
-import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.helpers.*
 import org.fossify.filemanager.R
+import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.DialogChangeSortingBinding
 import org.fossify.filemanager.extensions.config
 
-class ChangeSortingDialog(val activity: BaseSimpleActivity, val path: String = "", val callback: ()->Unit) {
+class ChangeSortingDialog(val activity: SimpleActivity, val path: String = "", val callback: ()->Unit) {
 	private var currSorting = 0
 	private var config = activity.config
 	private val binding: DialogChangeSortingBinding

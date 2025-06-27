@@ -49,7 +49,10 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String,
 		var err: Throwable? = null
 		try {
 			if(dir) {if(ListItem.mkDir(activity, path)) return true}
-			else if(ListItem.mkFile(activity, path)) return true
+			else {
+				ListItem.getOutputStream(activity, path).close()
+				return true
+			}
 		} catch(e: Throwable) {err = e}
 
 		if(err == null) {

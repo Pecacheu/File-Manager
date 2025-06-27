@@ -122,7 +122,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			binding.storageVolumesHolder.addView(volumeBinding.root)
 		}
 		ensureBackgroundThread {getVolumeStorageStats(context)}
-		Handler(Looper.getMainLooper()).postDelayed({refreshFragment()}, 2000)
+		Handler(Looper.getMainLooper()).postDelayed(::refreshFragment, 2000)
 	}
 
 	override fun onResume(textColor: Int) {

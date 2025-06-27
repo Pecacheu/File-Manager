@@ -2,28 +2,22 @@ package org.fossify.filemanager.dialogs
 
 import android.os.Parcelable
 import android.util.Log
-import android.util.Xml
 import android.view.KeyEvent
-import android.widget.RelativeLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.fossify.commons.R
-import org.fossify.commons.adapters.FilepickerFavoritesAdapter
 import org.fossify.commons.adapters.FilepickerItemsAdapter
-import org.fossify.commons.databinding.DialogFilepickerBinding
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.FileDirItem
 import org.fossify.filemanager.activities.SimpleActivity
+import org.fossify.filemanager.databinding.DialogFilepickerBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.humanizePath
-import org.fossify.filemanager.helpers.awaitBackgroundThread
 import org.fossify.filemanager.models.DeviceType
 import org.fossify.filemanager.models.ListItem
-
-//import org.fossify.commons.views.Breadcrumbs
 import org.fossify.filemanager.views.Breadcrumbs
 
 /**
@@ -43,7 +37,6 @@ class FilePickerDialog(
 	private val callback: (pickedPath: String)->Unit
 ): Breadcrumbs.BreadcrumbsListener {
 	private val binding = DialogFilepickerBinding.inflate(activity.layoutInflater)
-	private val breadcrumbs: Breadcrumbs
 	private var mFirstUpdate = true
 	private var mPrevPath = ""
 	private var mScrollStates = HashMap<String, Parcelable>()
@@ -51,37 +44,22 @@ class FilePickerDialog(
 	private var showHidden = activity.config.shouldShowHidden()
 
 	init {
-		awaitBackgroundThread {
+		ensureBackgroundThread {
 			if(!ListItem.dirExists(activity, currPath)) currPath = activity.config.getHome(currPath)
 			if(currPath.startsWith(activity.filesDir.absolutePath)) currPath = activity.config.internalStoragePath
+			activity.runOnUiThread(::initDialog)
 		}
+	}
 
-		//TODO Fix this because it looks ugly
-		//Replace Breadcrumbs
-		binding.apply {
-			val parser = activity.resources.getXml(org.fossify.filemanager.R.xml.search_view)
-			val attr = Xml.asAttributeSet(parser)
-
-			//filepickerBreadcrumbs.layoutParams
-			var ob = filepickerBreadcrumbs
-			val lp = ob.layoutParams
-			//RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
-			breadcrumbs = Breadcrumbs(activity, attr)
-			Log.i("test", "idx: ${ob.paddingStart}, ${ob.paddingTop}, ${ob.paddingEnd}")
-			//breadcrumbs.setPadding(ob.paddingStart, ob.paddingTop, ob.paddingEnd, ob.paddingBottom)
-			breadcrumbs.setPadding(30, 30, 30, 30)
-			filepickerFilesHolder.removeView(ob)
-			filepickerFilesHolder.addView(breadcrumbs, 0, lp)
-		}
-
-		breadcrumbs.apply {
+	fun initDialog() {
+		binding.filepickerBreadcrumbs.apply {
 			listener = this@FilePickerDialog
 			updateFontSize(activity.getTextSize(), false)
 		}
 
 		val builder = activity.getAlertDialogBuilder().setNegativeButton(R.string.cancel, null).setOnKeyListener {_, i, keyEv ->
 			if(keyEv.action == KeyEvent.ACTION_UP && i == KeyEvent.KEYCODE_BACK) {
-				val crumbs = breadcrumbs
+				val crumbs = binding.filepickerBreadcrumbs
 				if(crumbs.getItemCount() > 1) {
 					crumbs.removeBreadcrumb()
 					currPath = crumbs.getLastItem().path.trimEnd('/')
@@ -118,7 +96,6 @@ class FilePickerDialog(
 			}
 		}
 
-		binding.filepickerFavoritesLabel.text = activity.getString(R.string.favorites)
 		binding.filepickerFabShowFavorites.apply {
 			beVisibleIf(context.config.favorites.isNotEmpty())
 			setOnClickListener {
@@ -136,8 +113,8 @@ class FilePickerDialog(
 	private fun getTitle() = if(pickFile) R.string.select_file else R.string.select_folder
 	private fun createNewFolder() {
 		CreateNewItemDialog(activity, currPath, true) {
-			callback(it)
-			mDialog?.dismiss()
+			currPath = it
+			tryUpdateItems()
 		}
 	}
 
@@ -171,7 +148,7 @@ class FilePickerDialog(
 
 		binding.apply {
 			filepickerList.adapter = adapter
-			breadcrumbs.setBreadcrumb(currPath)
+			binding.filepickerBreadcrumbs.setBreadcrumb(currPath)
 			if(root.context.areSystemAnimationsEnabled) filepickerList.scheduleLayoutAnimation()
 			layoutManager.onRestoreInstanceState(mScrollStates[currPath.trimEnd('/')])
 		}
@@ -184,8 +161,8 @@ class FilePickerDialog(
 		if(currPath != "/") currPath = currPath.trimEnd('/')
 		val ok = if(pickFile) fd?.isDirectory == false else fd?.isDirectory != false
 		if(ok) {
-			callback(currPath)
 			mDialog?.dismiss()
+			callback(currPath)
 		} else {
 			activity.toast(if(pickFile) org.fossify.filemanager.R.string.select_file
 				else org.fossify.filemanager.R.string.select_folder)
@@ -226,7 +203,7 @@ class FilePickerDialog(
 		for(fd in items.filter {it.isDirectory}) {
 			if(currPath != path || mDialog?.isShowing != true) return
 			val cnt = ListItem(activity, fd.path, fd.name, true, 0, 0, 0).getChildCount(showHidden)
-			if(cnt != 0) updateChildCount(fd, cnt)
+			updateChildCount(fd, cnt)
 		}
 	}
 	private fun updateChildCount(item: FileDirItem, count: Int) = activity.runOnUiThread {
@@ -239,17 +216,20 @@ class FilePickerDialog(
 	}
 
 	private fun setupFavorites() {
-		val favs = activity.config.favorites.map {activity.humanizePath(it)}
-		FilepickerFavoritesAdapter(activity, favs, binding.filepickerFavoritesList) {
-			currPath = it as String
-			verifySel()
+		val favs = activity.config.favorites.map {FileDirItem(it, activity.humanizePath(it), true)}
+		FilepickerItemsAdapter(activity, favs, binding.filepickerFavoritesList) {
+			currPath = (it as FileDirItem).path
+			tryUpdateItems()
+			hideFavorites()
 		}.apply {
 			binding.filepickerFavoritesList.adapter = this
 		}
 	}
 
 	private fun showFavorites() {
+		mDialog?.setTitle(R.string.favorites)
 		binding.apply {
+			filepickerFabShowHidden.beGone()
 			filepickerFavoritesHolder.beVisible()
 			filepickerFilesHolder.beGone()
 			val drawable = activity.resources.getColoredDrawableWithColor(R.drawable.ic_folder_vector,
@@ -259,7 +239,9 @@ class FilePickerDialog(
 	}
 
 	private fun hideFavorites() {
+		mDialog?.setTitle(getTitle())
 		binding.apply {
+			filepickerFabShowHidden.beVisibleIf(!showHidden)
 			filepickerFavoritesHolder.beGone()
 			filepickerFilesHolder.beVisible()
 			val drawable = activity.resources.getColoredDrawableWithColor(R.drawable.ic_star_vector,
@@ -275,7 +257,7 @@ class FilePickerDialog(
 				tryUpdateItems()
 			}
 		} else {
-			val item = breadcrumbs.getItem(id)
+			val item = binding.filepickerBreadcrumbs.getItem(id)
 			if(currPath != item.path.trimEnd('/')) {
 				currPath = item.path
 				tryUpdateItems()

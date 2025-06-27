@@ -64,10 +64,3 @@ val extraDocumentMimeTypes = arrayListOf("application/pdf", "application/msword"
 val archiveMimeTypes = arrayListOf("application/zip", "application/octet-stream", "application/json", "application/x-tar", "application/x-rar-compressed",
 	"application/x-zip-compressed", "application/x-7z-compressed", "application/x-compressed", "application/x-gzip", "application/java-archive",
 	"multipart/x-zip")
-
-fun awaitBackgroundThread(cb: ()->Unit) {
-	if(isOnMainThread()) {
-		val t = Thread {cb()}
-		t.start(); t.join()
-	} else cb()
-}
