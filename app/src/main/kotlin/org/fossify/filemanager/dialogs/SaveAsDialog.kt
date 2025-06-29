@@ -64,12 +64,12 @@ class SaveAsDialog(val activity: SimpleActivity, var path: String,
 						if(!hidePath && ListItem.pathExists(activity, path)) activity.runOnUiThread {
 							val title = String.format(activity.getString(org.fossify.commons.R.string.file_already_exists_overwrite), filename)
 							ConfirmationDialog(activity, title) {
-								callback(path, filename)
 								alertDialog.dismiss()
+								callback(path, filename)
 							}
 						} else activity.runOnUiThread {
-							callback(path, filename)
 							alertDialog.dismiss()
+							callback(path, filename)
 						}
 					}
 				}

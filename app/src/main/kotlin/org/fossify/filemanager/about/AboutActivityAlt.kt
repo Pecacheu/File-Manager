@@ -64,9 +64,8 @@ class AboutActivityAlt: BaseComposeActivity() {
 		}
 	}
 
-	private fun getGithubUrl(): String {
-		return "https://github.com/Pecacheu/${intent.getStringExtra(APP_REPOSITORY_NAME)}"
-	}
+	private fun getGithubUrl() =
+		"https://github.com/Pecacheu/${intent.getStringExtra(APP_REPOSITORY_NAME)}"
 
 	@Composable
 	private fun showFAQ() = remember {!(intent.getSerializableExtra(APP_FAQ) as? ArrayList<FAQItem>).isNullOrEmpty()}
@@ -126,9 +125,9 @@ class AboutActivityAlt: BaseComposeActivity() {
 		startActivity(Intent(applicationContext, DonationActivity::class.java))
 	}
 
-	private fun onGithubClick() {launchViewIntent("https://github.com/Pecacheu")}
-	private fun onRedditClick() {launchViewIntent("https://www.reddit.com/r/Fossify")}
-	private fun onTelegramClick() {launchViewIntent("https://t.me/Fossify")}
+	private fun onGithubClick() = launchViewIntent("https://github.com/Pecacheu")
+	private fun onRedditClick() = launchViewIntent("https://www.reddit.com/r/Fossify")
+	private fun onTelegramClick() = launchViewIntent("https://t.me/Fossify")
 
 	private fun onPrivacyPolicyClick() {
 		val appId = config.appId.removeSuffix(".debug").removeSuffix(".pro").removePrefix("org.fossify.")

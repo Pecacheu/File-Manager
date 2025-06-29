@@ -62,8 +62,7 @@ class CompressAsDialog(val activity: SimpleActivity, val path: String, val callb
 									callback(path, password)
 								}
 							}
-						}
-						else -> activity.toast(org.fossify.commons.R.string.invalid_name)
+						} else -> activity.toast(org.fossify.commons.R.string.invalid_name)
 					}
 				})
 			}

@@ -3,6 +3,7 @@ package org.fossify.filemanager.models
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.OperationCanceledException
 import android.os.Process
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
@@ -10,6 +11,9 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.bumptech.glide.signature.ObjectKey
+import net.lingala.zip4j.io.outputstream.ZipOutputStream
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.EncryptionMethod
 import org.fossify.commons.R
 import org.fossify.commons.dialogs.FileConflictDialog
 import org.fossify.commons.extensions.createAndroidSAFDirectory
@@ -40,6 +44,7 @@ import org.fossify.commons.extensions.isImageFast
 import org.fossify.commons.extensions.isVideoFast
 import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.storeAndroidTreeUri
+import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.AlphanumericComparator
 import org.fossify.commons.helpers.CONFLICT_KEEP_BOTH
 import org.fossify.commons.helpers.CONFLICT_MERGE
@@ -58,6 +63,7 @@ import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.extensions.blockAsync
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.formatErr
 import org.fossify.filemanager.extensions.idFromRemotePath
 import org.fossify.filemanager.extensions.isPathOnOTG
@@ -93,21 +99,15 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			val size = if(isDir) {if(sortBySize) file.getProperSize(showHidden) else 0L} else file.length()
 			return ListItem(ctx, file.absolutePath, name, isDir, -1, size, lastMod?:file.lastModified())
 		}
-		fun fromFdItems(ctx: SimpleActivity, fdItems: ArrayList<FileDirItem>): ArrayList<ListItem> {
-			val items = ArrayList<ListItem>()
-			for(fd in fdItems) items.add(ListItem(ctx, fd.path, fd.name, fd.isDirectory, fd.children, fd.size, fd.modified))
-			return items
-		}
 
 		//TODO Make this async load search results, maybe multithreaded?
-		fun listDir(ctx: SimpleActivity, path: String, recurse: Boolean,
-				search: String?=null, _d: DeviceType?=null, cancel: ()->Boolean): ArrayList<ListItem>? {
-			if(cancel.invoke()) return null
+		fun listDir(ctx: SimpleActivity, path: String, recurse: Boolean, search: String?=null,
+				_d: DeviceType?=null, cancel: (res: ArrayList<ListItem>?)->Boolean): ArrayList<ListItem>? {
 			val showHidden = ctx.config.shouldShowHidden()
 			val getSize = !recurse && sorting and SORT_BY_SIZE != 0
 			val d = DeviceType.fromPath(ctx, path)
 			//Ensure recursion doesn't cross devices
-			if(_d != null && d != _d) return ArrayList<ListItem>(0)
+			if(_d != null && d != _d) return ArrayList(0)
 
 			val dirAll = try {when(d.type) {
 				DeviceType.REMOTE -> ctx.config.getRemoteForPath(path,true)!!.listDir(path, ctx)
@@ -135,8 +135,40 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 				throw if(es != null) Error(es, e) else e
 			}
 			val dir = (if(search == null) dirAll.clone() else dirAll.filter {it.name.contains(search, true)}) as ArrayList<ListItem>
+			if(cancel(dir)) return dir
 			if(recurse) for(li in dirAll) if(li.isDir) dir.addAll(listDir(ctx, li.path, true, search, d, cancel)?:return null)
 			return dir
+		}
+
+		fun compress(items: ArrayList<ListItem>, dest: String, pwd: String?, cancel: ()->Boolean) {
+			val ctx = items[0].ctx!!
+			fun zipEntry(name: String) = ZipParameters().also {
+				it.fileNameInZip = name
+				if(pwd != null) {
+					it.isEncryptFiles = true
+					it.encryptionMethod = EncryptionMethod.AES
+				}
+			}
+			fun putFile(zout: ZipOutputStream, f: ListItem, path: String?) {
+				val name = if(path != null) "$path/${f.name}" else f.name
+				zout.putNextEntry(zipEntry(name))
+				getInputStream(ctx, f.path).use {it.copyTo(zout)}
+				zout.closeEntry()
+			}
+
+			getOutputStream(ctx, dest).use {fos ->
+				pwd?.let {ZipOutputStream(fos, it.toCharArray())}?:ZipOutputStream(fos).use {zout ->
+					for(f in items) {
+						if(cancel()) throw OperationCanceledException()
+						if(f.isDir) {
+							val pLen = f.path.length+1
+							val dir = listDir(ctx, f.path, true) {cancel()}
+							if(dir == null) continue
+							for(li in dir) if(!li.isDir) putFile(zout, li, f.path.substring(pLen))
+						} else putFile(zout, f, null)
+					}
+				}
+			}
 		}
 
 		fun mkDir(ctx: SimpleActivity, path: String, mkAll: Boolean=false): Boolean {
@@ -165,12 +197,12 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			return ctx.getDoesFilePathExist(path) && !ctx.getIsPathDirectory(path)
 		}
 		fun getInputStream(ctx: SimpleActivity, path: String): InputStream {
-			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, false).inputStream
+			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, false).readStream
 			//TODO Root
 			return ctx.getFileInputStreamSync(path)!!
 		}
 		fun getOutputStream(ctx: SimpleActivity, path: String): OutputStream {
-			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, true, true).outputStream
+			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, true, true).writeStream
 			//TODO Root
 			return getFileOutputStream(ctx, path, true)
 		}
@@ -508,7 +540,7 @@ private fun getAltFilename(ctx: SimpleActivity, dest: String): String {
 
 private fun doCopyMove(src: ListItem, dest: String, isCopy: Boolean, remote: Remote?, _dirs: ArrayList<String>?=null) {
 	if(src.isDir) {
-		var dirs = _dirs?:ArrayList()
+		val dirs = _dirs?:ArrayList()
 		val items = ListItem.listDir(src.ctx!!, src.path, true) {false}!!
 		val pLen = src.path.trimEnd('/').length+1
 		for(li in items) {

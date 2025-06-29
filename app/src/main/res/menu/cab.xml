@@ -16,7 +16,7 @@
 		app:showAsAction="always"/>
 	<item
 		android:id="@+id/cab_rem_fav"
-		android:icon="@drawable/ic_star_outline_vector"
+		android:icon="@drawable/ic_star_vector"
 		android:showAsAction="always"
 		android:title="@string/remove_from_favorites"
 		app:showAsAction="always"/>

@@ -35,7 +35,6 @@ import org.fossify.filemanager.fragments.MyViewPagerFragment
 import org.fossify.filemanager.fragments.RecentsFragment
 import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.fragments.StorageFragment
-import org.fossify.filemanager.interfaces.ItemOperationsListener
 import java.io.File
 import androidx.core.net.toUri
 import androidx.viewpager2.widget.ViewPager2
@@ -84,7 +83,6 @@ class MainActivity: SimpleActivity() {
 		setupOptionsMenu()
 		storeStateVariables()
 		setupTabs(getTabsToShow())
-		refreshMenuItems()
 
 		setupViews(binding.mainCoordinator, null, null, null) {iAll, iNav ->
 			val mc = binding.mainCoordinator.layoutParams as MarginLayoutParams
@@ -93,7 +91,7 @@ class MainActivity: SimpleActivity() {
 			val mm = mainMenu.layoutParams as MarginLayoutParams
 			mm.setMargins(iAll.left, 0, iAll.right, 0)
 
-			for(frag in getAllFragments()) frag?.getRecyclerAdapter()?.actMode?.let {
+			for(frag in getAllFragments()) frag?.recyclerAdapter?.actMode?.let {
 				val tb = it.customView.parent as ActionBarContextView
 				tb.setPadding(iAll.left, iAll.top, iAll.right, 0)
 				tb.contentHeight = iAll.top + mainMenu.measuredHeight
@@ -129,10 +127,10 @@ class MainActivity: SimpleActivity() {
 
 		for(f in getAllFragments()) f?.onResume(getProperTextColor())
 		if(mStoredFontSize != config.fontSize) {
-			for(f in getAllFragments()) (f as? ItemOperationsListener)?.setupFontSize()
+			for(f in getAllFragments()) f?.setupFontSize()
 		}
 		if(mStoredDateFormat != config.dateFormat || mStoredTimeFormat != getTimeFormat()) {
-			for(f in getAllFragments()) (f as? ItemOperationsListener)?.setupDateTimeFormat()
+			for(f in getAllFragments()) f?.setupDateTimeFormat()
 		}
 		if(binding.mainViewPager.adapter == null) initFragments()
 		else if(config.reloadPath) openPath(config.lastPath)
@@ -146,8 +144,8 @@ class MainActivity: SimpleActivity() {
 		config.lastPath = getItemsFragment()?.currentPath?:""
 	}
 
-	override fun onConfigurationChanged(newCon: Configuration) {
-		super.onConfigurationChanged(newCon)
+	override fun onConfigurationChanged(newConfig: Configuration) {
+		super.onConfigurationChanged(newConfig)
 		updateFragmentColumnCounts()
 
 		//Reload Main Menu
@@ -205,7 +203,7 @@ class MainActivity: SimpleActivity() {
 	private fun beginScroll(by: Int) {
 		endScroll()
 		scrollTmr = fixedRateTimer(startAt = Date(), period = 30) {
-			runOnUiThread {getCurrentFragment()?.getRecyclerAdapter()?.recyclerView?.scrollBy(0, by)}
+			runOnUiThread {getCurrentFragment()?.getRecyclerView()?.scrollBy(0, by)}
 		}
 	}
 	private fun endScroll() {
@@ -216,14 +214,14 @@ class MainActivity: SimpleActivity() {
 	override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
 		if(!mainMenu.isSearchOpen) {
 			if(event?.isCtrlPressed == true) {
-				val adapter = getCurrentFragment()?.getRecyclerAdapter()
+				val adapter = getCurrentFragment()?.recyclerAdapter
 				if(keyCode == KeyEvent.KEYCODE_A) {
 					adapter?.selectAll()
 					return true
 				}
 				if(adapter?.isActMode() == true) when(keyCode) { //Action mode
 					KeyEvent.KEYCODE_D -> {
-						(getCurrentFragment() as? ItemOperationsListener)?.finishActMode()
+						getCurrentFragment()?.finishActMode()
 						return true
 					} KeyEvent.KEYCODE_S -> {
 						adapter.shareFiles()
@@ -432,7 +430,7 @@ class MainActivity: SimpleActivity() {
 			registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
 				override fun onPageSelected(position: Int) {
 					binding.mainTabsHolder.getTabAt(position)?.select()
-					for(f in getAllFragments()) (f as? ItemOperationsListener)?.finishActMode()
+					for(f in getAllFragments()) f?.finishActMode()
 					refreshMenuItems()
 				}
 			})
@@ -564,7 +562,7 @@ class MainActivity: SimpleActivity() {
 
 	private fun toggleFilenameVisibility() {
 		config.displayFilenames = !config.displayFilenames
-		for(f in getAllFragments()) (f as? ItemOperationsListener)?.toggleFilenameVisibility()
+		for(f in getAllFragments()) f?.toggleFilenameVisibility()
 	}
 
 	private fun changeColumnCount() {
@@ -578,12 +576,13 @@ class MainActivity: SimpleActivity() {
 			if(colCount != newColCount) {
 				config.fileColumnCnt = newColCount
 				updateFragmentColumnCounts()
+				refreshMenuItems()
 			}
 		}
 	}
 
 	fun updateFragmentColumnCounts() {
-		for(f in getAllFragments()) (f as? ItemOperationsListener)?.columnCountChanged()
+		for(f in getAllFragments()) f?.columnCountChanged()
 	}
 
 	private fun setAsHome() {

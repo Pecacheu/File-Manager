@@ -54,27 +54,29 @@ class Config(context: Context): BaseConfig(context) {
 
 	fun addFavorite(path: String) {
 		synchronized(this) {
-			val favs = HashSet<String>(favorites)
-			favs.add(path)
+			val favs = favorites
+			favorites.add(path)
 			favorites = favs
 		}
 	}
 	fun moveFavorite(oldPath: String, newPath: String) {
-		//TODO Detect fav inside of moved folder recursively
 		synchronized(this) {
-			if(!favorites.contains(oldPath)) return
-			val favs = HashSet<String>(favorites)
-			favs.remove(oldPath)
-			favs.add(newPath)
+			val ps = oldPath.trimEnd('/')
+			val favs = favorites
+			for(f in favs) {
+				if(f.startsWith(ps)) {
+					favs.remove(f)
+					favs.add(newPath.trimEnd('/') + f.substring(ps.length))
+				}
+			}
 			favorites = favs
 		}
 	}
 	fun removeFavorite(path: String) {
-		//TODO Detect fav inside of deleted folder recursively
 		synchronized(this) {
-			if(!favorites.contains(path)) return
-			val favs = HashSet<String>(favorites)
-			favs.remove(path)
+			val ps = path.trimEnd('/')
+			val favs = favorites
+			for(f in favs) if(f.startsWith(ps)) favs.remove(f)
 			favorites = favs
 		}
 	}

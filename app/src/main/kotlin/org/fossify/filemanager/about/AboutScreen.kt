@@ -46,15 +46,8 @@ internal fun HelpUsSection(onRateUsClick: ()->Unit, onInviteClick: ()->Unit, onC
 }
 
 @Composable
-internal fun OtherSection(
-	showMoreApps: Boolean,
-	onMoreAppsClick: ()->Unit,
-	onPrivacyPolicyClick: ()->Unit,
-	onLicenseClick: ()->Unit,
-	versionName: String,
-	packageName: String,
-	onVersionClick: ()->Unit,
-) {
+internal fun OtherSection(showMoreApps: Boolean, onMoreAppsClick: ()->Unit, onPrivacyPolicyClick: ()->Unit,
+	onLicenseClick: ()->Unit, versionName: String, packageName: String, onVersionClick: ()->Unit) {
 	SettingsGroup(title = {
 		SettingsTitleTextComponent(text = stringResource(id = R.string.other), modifier = titleStartPadding)
 	}) {

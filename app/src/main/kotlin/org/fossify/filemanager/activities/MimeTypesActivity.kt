@@ -6,7 +6,6 @@ import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.widget.SearchView
-import androidx.core.view.MenuItemCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.NavigationIcon
@@ -129,7 +128,7 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 	override fun toggleFilenameVisibility() {}
 	override fun finishActMode() {}
 
-	override fun columnCountChanged() {
+	private fun columnCountChanged() {
 		layoutManager.spanCount = fileColumnCnt
 		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
 	}
@@ -258,7 +257,9 @@ class MimeTypesActivity: SimpleActivity(), ItemOperationsListener {
 		}
 	}
 
-	private fun setupListLayoutManager() {layoutManager.spanCount = 1}
+	private fun setupListLayoutManager() {
+		layoutManager.spanCount = 1
+	}
 
 	private fun incColCount(by: Int) {
 		if(currentViewType == VIEW_TYPE_GRID) {

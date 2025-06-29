@@ -348,13 +348,11 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	}
 
 	private fun setupGridLayoutManager() {
-		val layoutManager = binding.searchResultsList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = context?.config?.fileColumnCnt?:3
+		layoutManager!!.spanCount = context?.config?.fileColumnCnt?:3
 	}
 
 	private fun setupListLayoutManager() {
-		val layoutManager = binding.searchResultsList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = 1
+		layoutManager!!.spanCount = 1
 	}
 
 	private fun addItems() {
@@ -395,7 +393,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 
 	private fun showProgressBar() {binding.progressBar.show()}
 	private fun hideProgressBar() {binding.progressBar.hide()}
-	override fun getRecyclerAdapter() = binding.searchResultsList.adapter as? ItemsAdapter
+	override fun getRecyclerView() = binding.searchResultsList
 
 	override fun refreshFragment() {
 		ensureBackgroundThread {
@@ -404,15 +402,4 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		}
 		setupLayoutManager(context!!.config.getFolderViewType(""))
 	}
-
-	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
-	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
-	override fun toggleFilenameVisibility() {getRecyclerAdapter()?.updateDisplayFilenamesInGrid()}
-
-	override fun columnCountChanged() {
-		(binding.searchResultsList.layoutManager as MyGridLayoutManager).spanCount = context!!.config.fileColumnCnt
-		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
-	}
-
-	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 }

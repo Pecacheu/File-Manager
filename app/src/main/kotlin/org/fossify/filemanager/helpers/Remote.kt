@@ -61,6 +61,8 @@ import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.models.ListItem
 import org.json.JSONObject
 import java.io.FileNotFoundException
+import java.io.InputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.security.Key
 import java.security.KeyStore
@@ -364,7 +366,7 @@ class Remote(val ctx: Context, data: JSONObject) {
 		}
 	}
 
-	fun openFile(path: String, write: Boolean, new: Boolean=false): File {
+	fun openFile(path: String, write: Boolean, new: Boolean=false): RemoteFile {
 		if(!mntValid) connect()
 		val p = path.substring(URI_BASE)
 		val mask = mutableSetOf(AccessMask.FILE_READ_DATA)
@@ -374,8 +376,35 @@ class Remote(val ctx: Context, data: JSONObject) {
 		val mode = if(new) SMB2CreateDisposition.FILE_CREATE else SMB2CreateDisposition.FILE_OPEN
 		val cOpt = setOf(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE, SMB2CreateOptions.FILE_RANDOM_ACCESS)
 		val file = mount!!.openFile(p, mask, null, acc, mode, cOpt)
-		return file
+		return RemoteFile(file)
 	}
+}
+
+// ---- AutoClose File Streams ----
+
+class RemoteFile(val smb: File) {
+	val readStream = RemoteInputStream(smb)
+	val writeStream = RemoteOutputStream(smb)
+}
+
+class RemoteInputStream(val smb: File): InputStream() {
+	private val s: InputStream = smb.inputStream
+
+	override fun read() = s.read()
+	override fun read(b: ByteArray) = s.read(b)
+	override fun read(b: ByteArray, off: Int, len: Int) = s.read(b, off, len)
+	override fun skip(n: Long) = s.skip(n)
+	override fun close() {s.close(); smb.close()}
+}
+
+class RemoteOutputStream(val smb: File): OutputStream() {
+	private val s: OutputStream = smb.outputStream
+
+	override fun write(v: Int) = s.write(v)
+	override fun write(b: ByteArray) = s.write(b)
+	override fun write(b: ByteArray, off: Int, len: Int) = s.write(b, off, len)
+	override fun flush() = s.flush()
+	override fun close() {s.close(); smb.close()}
 }
 
 // ---- Service & Proxy ----
@@ -392,9 +421,9 @@ class RemoteService: Service() {
 	override fun onDestroy() {
 		Log.i("test", "-- RemoteService stopped!")
 	}
-	override fun onTimeout(startId: Int, fgsType: Int) {
+	/*override fun onTimeout(startId: Int, fgsType: Int) {
 		stopSelf()
-	}
+	}*/
 
 	override fun onBind(i: Intent): IBinder {
 		clients[i] = true
@@ -428,7 +457,7 @@ class RemoteService: Service() {
 class RemoteProxy(val ctx: Context, val path: String, val write: Boolean, val background: Boolean): ProxyFileDescriptorCallback() {
 	private var remote = ctx.config.getRemoteForPath(path)?:throw FileNotFoundException("No remote")
 	private var conn: Conn? = null
-	private lateinit var file: File
+	private lateinit var file: RemoteFile
 	private var len = 0L
 
 	inner class Conn: ServiceConnection {
@@ -443,7 +472,7 @@ class RemoteProxy(val ctx: Context, val path: String, val write: Boolean, val ba
 			ctx.bindService(Intent(ctx, RemoteService::class.java), conn!!, flags)
 		}
 		file = remote.openFile(path, write)
-		len = file.fileInformation.standardInformation.endOfFile
+		len = file.smb.fileInformation.standardInformation.endOfFile
 		Log.i("test", "Open file $path with size $len")
 	}
 
@@ -463,16 +492,16 @@ class RemoteProxy(val ctx: Context, val path: String, val write: Boolean, val ba
 	override fun onGetSize() = len
 	override fun onRead(ofs: Long, size: Int, data: ByteArray): Int {
 		if(!remote.mntValid) open()
-		return file.read(data, ofs, 0, size)
+		return file.smb.read(data, ofs, 0, size)
 	}
 	override fun onWrite(ofs: Long, size: Int, data: ByteArray): Int {
 		if(!remote.mntValid) open()
-		return file.write(data, ofs, 0, size).toInt()
+		return file.smb.write(data, ofs, 0, size).toInt()
 	}
-	override fun onFsync() = file.flush()
+	override fun onFsync() = file.smb.flush()
 	override fun onRelease() {
 		Log.i("test", "Close file $path")
-		try {file.close()} catch(_: Throwable) {}
+		try {file.smb.close()} catch(_: Throwable) {}
 		if(conn != null) {ctx.unbindService(conn!!); conn = null}
 	}
 }

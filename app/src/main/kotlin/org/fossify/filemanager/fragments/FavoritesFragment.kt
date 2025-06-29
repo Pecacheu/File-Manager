@@ -7,7 +7,6 @@ import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
@@ -46,9 +45,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	}
 
 	private fun addItems(favs: ArrayList<ListItem>, forceRefresh: Boolean) {
-		if(!forceRefresh && favs.hashCode() == (binding.favsList.adapter as? ItemsAdapter)?.listItems.hashCode()) {
-			return
-		}
+		if(!forceRefresh && favs.hashCode() == recyclerAdapter?.listItems.hashCode()) return
 		ItemsAdapter(activity!!, favs, this, binding.favsList, null, false) {
 			val main = activity as MainActivity
 			main.openPath(it.path)
@@ -64,7 +61,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	}
 
 	override fun onResume(textColor: Int) {
-		getRecyclerAdapter()?.apply {
+		recyclerAdapter?.apply {
 			updatePrimaryColor()
 			updateTextColor(textColor)
 			initDrawables()
@@ -76,20 +73,18 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		else setupListLayoutManager()
 		currentViewType = viewType
 
-		val oldItems = (binding.favsList.adapter as? ItemsAdapter)?.listItems?.toMutableList() as ArrayList<ListItem>
+		val oldItems = recyclerAdapter?.listItems?.toMutableList() as ArrayList<ListItem>
 		binding.favsList.adapter = null
-		initZoomListener(binding.favsList.layoutManager as MyGridLayoutManager)
+		initZoomListener()
 		addItems(oldItems, true)
 	}
 
 	private fun setupGridLayoutManager() {
-		val layoutManager = binding.favsList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = context?.config?.fileColumnCnt?:3
+		layoutManager!!.spanCount = context?.config?.fileColumnCnt?:3
 	}
 
 	private fun setupListLayoutManager() {
-		val layoutManager = binding.favsList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = 1
+		layoutManager!!.spanCount = 1
 	}
 
 	private fun getFavs(viewType: Int, callback: (favs: ArrayList<ListItem>)->Unit) {
@@ -104,28 +99,11 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		activity?.runOnUiThread {callback(items)}
 	}
 
-	override fun getRecyclerAdapter() = binding.favsList.adapter as? ItemsAdapter
-
-	override fun toggleFilenameVisibility() {
-		getRecyclerAdapter()?.updateDisplayFilenamesInGrid()
-	}
-
-	override fun columnCountChanged() {
-		(binding.favsList.layoutManager as MyGridLayoutManager).spanCount = context!!.config.fileColumnCnt
-		(activity as? MainActivity)?.refreshMenuItems()
-		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
-	}
-
-	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
-	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
+	override fun getRecyclerView() = binding.favsList
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text
 		val filtered = filesIgnoringSearch.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
-		binding.apply {
-			(favsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)
-		}
+		recyclerAdapter?.updateItems(filtered, text)
 	}
-
-	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 }

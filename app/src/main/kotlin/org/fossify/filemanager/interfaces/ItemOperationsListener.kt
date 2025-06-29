@@ -5,6 +5,5 @@ interface ItemOperationsListener {
 	fun setupDateTimeFormat()
 	fun setupFontSize()
 	fun toggleFilenameVisibility()
-	fun columnCountChanged()
 	fun finishActMode()
 }

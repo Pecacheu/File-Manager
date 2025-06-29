@@ -1,17 +1,15 @@
 package org.fossify.filemanager.dialogs
 
 import android.os.Parcelable
-import android.util.Log
 import android.view.KeyEvent
 import androidx.appcompat.app.AlertDialog
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.fossify.commons.R
-import org.fossify.commons.adapters.FilepickerItemsAdapter
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.models.FileDirItem
 import org.fossify.filemanager.activities.SimpleActivity
+import org.fossify.filemanager.adapters.FilepickerItemsAdapter
 import org.fossify.filemanager.databinding.DialogFilepickerBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
@@ -127,14 +125,14 @@ class FilePickerDialog(
 		}
 	}
 
-	private fun updateItems(items: ArrayList<FileDirItem>) {
-		if(!items.any {it.isDirectory} && !mFirstUpdate && !pickFile && !showFAB) {
+	private fun updateItems(items: ArrayList<ListItem>) {
+		if(!items.any {it.isDir} && !mFirstUpdate && !pickFile && !showFAB) {
 			verifySel()
 			return
 		}
-		val sortedItems = items.sortedWith(compareBy({!it.isDirectory}, {it.name.lowercase()}))
+		val sortedItems = items.sortedWith(compareBy({!it.isDir}, {it.name.lowercase()}))
 		val adapter = FilepickerItemsAdapter(activity, sortedItems, binding.filepickerList) {
-			if((it as FileDirItem).isDirectory) {
+			if((it as ListItem).isDir) {
 				activity.handleLockedFolderOpening(it.path) {success ->
 					if(success) {
 						currPath = it.path
@@ -157,19 +155,18 @@ class FilePickerDialog(
 		mPrevPath = currPath
 	}
 
-	private fun verifySel(fd: FileDirItem?=null) = ensureBackgroundThread {
+	private fun verifySel(item: ListItem? = null) = ensureBackgroundThread {
 		if(currPath != "/") currPath = currPath.trimEnd('/')
-		val ok = if(pickFile) fd?.isDirectory == false else fd?.isDirectory != false
-		if(ok) {
+		if(item == null || item.isDir != pickFile) {
 			mDialog?.dismiss()
-			callback(currPath)
+			callback(item?.path?:currPath)
 		} else {
 			activity.toast(if(pickFile) org.fossify.filemanager.R.string.select_file
 				else org.fossify.filemanager.R.string.select_folder)
 		}
 	}
 
-	private fun getItems(path: String, callback: (ArrayList<FileDirItem>)->Unit) = ensureBackgroundThread {
+	private fun getItems(path: String, callback: (ArrayList<ListItem>)->Unit) = ensureBackgroundThread {
 		val dev = DeviceType.fromPath(activity, path)
 
 		fun loadItems() {
@@ -178,16 +175,15 @@ class FilePickerDialog(
 					currPath != path || mDialog?.isShowing != true
 				}
 				if(items == null) {
-					callback(ArrayList<FileDirItem>(0))
+					callback(ArrayList(0))
 					return
 				}
 				//Send initial items asap, get proper child count asynchronously
-				val fdItems = items.map {it.asFdItem()} as ArrayList<FileDirItem>
-				callback(fdItems)
-				if(dev.type != DeviceType.SAF && dev.type != DeviceType.OTG) getChildren(path, fdItems)
+				callback(items)
+				if(dev.type != DeviceType.SAF && dev.type != DeviceType.OTG) getChildren(path, items)
 			} catch(e: Throwable) {
 				activity.error(e)
-				callback(ArrayList<FileDirItem>(0))
+				callback(ArrayList(0))
 			}
 		}
 
@@ -199,16 +195,16 @@ class FilePickerDialog(
 		} else loadItems()
 	}
 
-	private fun getChildren(path: String, items: ArrayList<FileDirItem>) {
-		for(fd in items.filter {it.isDirectory}) {
+	private fun getChildren(path: String, items: ArrayList<ListItem>) {
+		for(item in items.filter {it.isDir}) {
 			if(currPath != path || mDialog?.isShowing != true) return
-			val cnt = ListItem(activity, fd.path, fd.name, true, 0, 0, 0).getChildCount(showHidden)
-			updateChildCount(fd, cnt)
+			val cnt = item.getChildCount(showHidden)
+			updateChildCount(item, cnt)
 		}
 	}
-	private fun updateChildCount(item: FileDirItem, count: Int) = activity.runOnUiThread {
+	private fun updateChildCount(item: ListItem, count: Int) = activity.runOnUiThread {
 		(binding.filepickerList.adapter as FilepickerItemsAdapter).apply {
-			val pos = fileDirItems.indexOf(item)
+			val pos = listItems.indexOf(item)
 			if(pos == -1) return@apply
 			item.children = count
 			notifyItemChanged(pos, Unit)
@@ -216,9 +212,9 @@ class FilePickerDialog(
 	}
 
 	private fun setupFavorites() {
-		val favs = activity.config.favorites.map {FileDirItem(it, activity.humanizePath(it), true)}
+		val favs = activity.config.favorites.map {ListItem(activity, it, activity.humanizePath(it), true, -2, 0, 0)}
 		FilepickerItemsAdapter(activity, favs, binding.filepickerFavoritesList) {
-			currPath = (it as FileDirItem).path
+			currPath = (it as ListItem).path
 			tryUpdateItems()
 			hideFavorites()
 		}.apply {

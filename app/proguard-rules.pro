@@ -2,3 +2,5 @@
 -dontnote org.apache.http.**
 -keep class org.fossify.** { *; }
 -dontwarn org.fossify.**
+-dontwarn javax.el.*
+-dontwarn org.ietf.jgss.*

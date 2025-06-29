@@ -35,9 +35,6 @@ import com.bumptech.glide.request.RequestOptions
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import com.stericson.RootTools.RootTools
 import org.fossify.filemanager.views.ItemsList
-import net.lingala.zip4j.io.outputstream.ZipOutputStream
-import net.lingala.zip4j.model.ZipParameters
-import net.lingala.zip4j.model.enums.EncryptionMethod
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.applyColorFilter
@@ -247,7 +244,7 @@ class ItemsAdapter(
 
 	override fun getItemCount() = listItems.size
 	private fun getSelectableItemCount() = listItems.filter {!it.isSectionTitle && !it.isGridDivider}.size
-	private fun isOneFileSelected() = isOneItemSelected() && firstItem().isDir == false
+	private fun isOneFileSelected() = isOneItemSelected() && !firstItem().isDir
 	private fun isOneItemSelected() = selected.size == 1
 	private fun firstItem() = selected.first()
 
@@ -262,9 +259,12 @@ class ItemsAdapter(
 	}
 
 	private fun confirmSelection() {
-		if(selected.isEmpty()) finishActMode()
-		else ensureBackgroundThread {
-			try {activity.pickedUris(getFileUris())}
+		if(selected.isEmpty()) {
+			finishActMode(); return
+		}
+		val uris = getFileUris()
+		ensureBackgroundThread {
+			try {activity.pickedUris(uris)}
 			catch(e: Throwable) {activity.error(e)}
 		}
 	}
@@ -284,25 +284,22 @@ class ItemsAdapter(
 	fun showProperties() {
 		activity.error(NotImplementedError())
 		//TODO Fix
-		/*if(selected.size <= 1) {
-			PropertiesDialog(activity, firstUri(), config.shouldShowHidden())
-		} else {
-			val paths = selected.map {it.path}
-			PropertiesDialog(activity, paths, config.shouldShowHidden())
-		}*/
+		//PropertiesDialog(activity, selected, config.shouldShowHidden())
 	}
 
 	fun shareFiles() {
+		val uris = getFileUris()
 		ensureBackgroundThread {
-			try {activity.shareUris(getFileUris())}
+			try {activity.shareUris(uris)}
 			catch(e: Throwable) {activity.error(e)}
 		}
 	}
 
 	private fun setHidden(hide: Boolean) {
+		val sel = ArrayList(selected)
 		ensureBackgroundThread {
 			try {
-				for(f in selected) f.setHidden(hide)
+				for(f in sel) f.setHidden(hide)
 				dataChanged()
 			} catch(e: Throwable) {
 				activity.error(e)
@@ -388,14 +385,15 @@ class ItemsAdapter(
 			activity.handleDeletePasswordProtection {copyMoveTo(false,true)}
 			return
 		}
-		val currPath = selected.last().path.getParentPath()
+		val sel = ArrayList(selected)
+		val currPath = sel.last().path.getParentPath()
 		FilePickerDialog(activity, currPath) {
 			ensureBackgroundThread {
 				try {
 					//TODO Turn this into background async task
 					activity.toast(if(isCopy) org.fossify.commons.R.string.copying
 						else org.fossify.commons.R.string.moving)
-					for(f in selected) f.copyMove("${it.trimEnd('/')}/${f.name}", isCopy, true)
+					for(f in sel) f.copyMove("${it.trimEnd('/')}/${f.name}", isCopy, true)
 					activity.toast(if(isCopy) org.fossify.commons.R.string.copying_success
 						else org.fossify.commons.R.string.moving_success)
 				} catch(e: Throwable) {
@@ -415,44 +413,20 @@ class ItemsAdapter(
 	}
 
 	private fun compress() {
-		val firstPath = firstItem().path
+		val sel = ArrayList(selected)
+		val currPath = sel.last().path
 		handleSAF {
-			CompressAsDialog(activity, firstPath) {dest, pwd ->
+			CompressAsDialog(activity, currPath) {dest, pwd ->
 				activity.toast(R.string.compressing)
-				ensureBackgroundThread {doCompress(dest, pwd)}
+				//TODO Turn this into background async task
+				doCompress(sel, dest, pwd)
 			}
 		}
 	}
 
-	private fun doCompress(dest: String, pwd: String?) {
-		fun zipEntry(name: String) = ZipParameters().also {
-			it.fileNameInZip = name
-			if(pwd != null) {
-				it.isEncryptFiles = true
-				it.encryptionMethod = EncryptionMethod.AES
-			}
-		}
-		fun putFile(zout: ZipOutputStream, f: ListItem, path: String?) {
-			val name = if(path != null) "$path/${f.name}" else f.name
-			zout.putNextEntry(zipEntry(name))
-			ListItem.getInputStream(activity, f.path).use {it.copyTo(zout)}
-			zout.closeEntry()
-		}
-
+	private fun doCompress(items: ArrayList<ListItem>, dest: String, pwd: String?) = ensureBackgroundThread {
 		try {
-			ListItem.getOutputStream(activity, dest).use {fos ->
-				pwd?.let {ZipOutputStream(fos, it.toCharArray())}?:ZipOutputStream(fos).use {zout ->
-					for(f in selected) {
-						if(recyclerView.context == null || !isActMode()) throw OperationCanceledException() //Cancel
-						if(f.isDir) {
-							val pLen = f.path.length+1
-							val dir = ListItem.listDir(activity, f.path, true) {recyclerView.context == null || !isActMode()}
-							if(dir == null) continue
-							for(li in dir) if(!li.isDir) putFile(zout, li, f.path.substring(pLen))
-						} else putFile(zout, f, null)
-					}
-				}
-			}
+			ListItem.compress(items, dest, pwd) {recyclerView.context == null || !isActMode()}
 			activity.toast(R.string.compression_successful)
 			dataChanged()
 		} catch(e: Throwable) {
@@ -464,21 +438,23 @@ class ItemsAdapter(
 	}
 
 	private fun askConfirmDelete() {
-		if(config.skipDeleteConfirmation) deleteFiles()
+		val sel = ArrayList(selected)
+		if(config.skipDeleteConfirmation) deleteFiles(sel)
 		else activity.handleDeletePasswordProtection {
 			val itemsCnt = selected.size
 			val str = if(itemsCnt == 1) "\"${firstItem().name}\""
 				else resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
 			val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), str)
-			ConfirmationDialog(activity, question) {deleteFiles()}
+			ConfirmationDialog(activity, question) {deleteFiles(sel)}
 		}
 	}
 
-	private fun deleteFiles() {
+	private fun deleteFiles(items: ArrayList<ListItem>) {
+		//TODO Turn this into background async task
 		handleSAF {
 			ensureBackgroundThread {
 				try {
-					for(f in selected) f.delete()
+					for(f in items) f.delete()
 					dataChanged()
 				} catch(e: Throwable) {
 					activity.error(e)
@@ -505,8 +481,9 @@ class ItemsAdapter(
 	}
 
 	fun updateItems(newItems: ArrayList<ListItem>, highlightText: String = "") {
-		if(newItems.hashCode() != currentItemsHash) {
-			currentItemsHash = newItems.hashCode()
+		val hash = newItems.hashCode()
+		if(hash != currentItemsHash) {
+			currentItemsHash = hash
 			textToHighlight = highlightText
 			listItems = newItems
 			notifyDataSetChanged()
@@ -534,9 +511,9 @@ class ItemsAdapter(
 		notifyDataSetChanged()
 	}
 
-	fun updateChildCount(item: ListItem, count: Int) {
+	fun updateChildCount(item: ListItem, count: Int) = activity.runOnUiThread {
 		val pos = listItems.indexOf(item)
-		if(pos == -1) return
+		if(pos == -1) return@runOnUiThread
 		item.children = count
 		notifyItemChanged(pos, Unit)
 	}
@@ -623,7 +600,7 @@ class ItemsAdapter(
 
 	override fun onChange(position: Int) = listItems.getOrNull(position)?.getBubbleText(activity, dateFormat, timeFormat)?:""
 
-	private sealed interface Binding {
+	sealed interface Binding {
 		companion object {
 			fun getByItemViewType(viewType: Int, isListViewType: Boolean): Binding {
 				return when(viewType) {
@@ -687,7 +664,7 @@ class ItemsAdapter(
 		}
 	}
 
-	private interface ItemViewBinding: ViewBinding {
+	interface ItemViewBinding: ViewBinding {
 		val itemFrame: FrameLayout
 		val itemName: TextView?
 		val itemIcon: ImageView?
@@ -867,7 +844,7 @@ class ItemsAdapter(
 
 	private fun setupDragListener() {
 		recyclerView.setupDragListener(object: MyRecyclerView.MyDragListener {
-			override fun selectItem(pos: Int) {setSelected(true, pos)}
+			override fun selectItem(position: Int) {setSelected(true, position)}
 			override fun selectRange(initialSelection: Int, lastDraggedIndex: Int, minReached: Int, maxReached: Int) {
 				selectItemRange(initialSelection, 0.coerceAtLeast(lastDraggedIndex - positionOffset),
 					0.coerceAtLeast(minReached - positionOffset), maxReached - positionOffset)

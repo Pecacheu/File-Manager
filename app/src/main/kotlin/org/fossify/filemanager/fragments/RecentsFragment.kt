@@ -14,8 +14,6 @@ import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getStringValue
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.views.MyGridLayoutManager
-import org.fossify.filemanager.activities.MainActivity
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.RecentsFragmentBinding
@@ -61,9 +59,7 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	}
 
 	private fun addItems(recents: ArrayList<ListItem>, forceRefresh: Boolean) {
-		if(!forceRefresh && recents.hashCode() == (binding.recentsList.adapter as? ItemsAdapter)?.listItems.hashCode()) {
-			return
-		}
+		if(!forceRefresh && recents.hashCode() == recyclerAdapter?.listItems.hashCode()) return
 		ItemsAdapter(activity!!, recents, this, binding.recentsList, binding.recentsSwipeRefresh, false).apply {
 			setItemListZoom(zoomListener)
 			binding.recentsList.adapter = this
@@ -75,7 +71,7 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 
 	override fun onResume(textColor: Int) {
 		binding.recentsPlaceholder.setTextColor(textColor)
-		getRecyclerAdapter()?.apply {
+		recyclerAdapter?.apply {
 			updatePrimaryColor()
 			updateTextColor(textColor)
 			initDrawables()
@@ -88,20 +84,18 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		else setupListLayoutManager()
 		currentViewType = viewType
 
-		val oldItems = (binding.recentsList.adapter as? ItemsAdapter)?.listItems?.toMutableList() as ArrayList<ListItem>
+		val oldItems = recyclerAdapter?.listItems?.toMutableList() as ArrayList<ListItem>
 		binding.recentsList.adapter = null
-		initZoomListener(binding.recentsList.layoutManager as MyGridLayoutManager)
+		initZoomListener()
 		addItems(oldItems, true)
 	}
 
 	private fun setupGridLayoutManager() {
-		val layoutManager = binding.recentsList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = context?.config?.fileColumnCnt?:3
+		layoutManager!!.spanCount = context?.config?.fileColumnCnt?:3
 	}
 
 	private fun setupListLayoutManager() {
-		val layoutManager = binding.recentsList.layoutManager as MyGridLayoutManager
-		layoutManager.spanCount = 1
+		layoutManager!!.spanCount = 1
 	}
 
 	private fun getRecents(callback: (recents: ArrayList<ListItem>)->Unit) {
@@ -138,27 +132,15 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		activity?.runOnUiThread {callback(listItems)}
 	}
 
-	override fun getRecyclerAdapter() = binding.recentsList.adapter as? ItemsAdapter
-	override fun toggleFilenameVisibility() {getRecyclerAdapter()?.updateDisplayFilenamesInGrid()}
-
-	override fun columnCountChanged() {
-		(binding.recentsList.layoutManager as MyGridLayoutManager).spanCount = context!!.config.fileColumnCnt
-		(activity as? MainActivity)?.refreshMenuItems()
-		getRecyclerAdapter()?.apply {notifyItemRangeChanged(0, listItems.size)}
-	}
-
-	override fun setupFontSize() {getRecyclerAdapter()?.updateFontSizes()}
-	override fun setupDateTimeFormat() {getRecyclerAdapter()?.updateDateTimeFormat()}
+	override fun getRecyclerView() = binding.recentsList
 
 	override fun searchQueryChanged(text: String) {
 		lastSearchedText = text
 		val filtered = filesIgnoringSearch.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
 		binding.apply {
-			(recentsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)
+			recyclerAdapter?.updateItems(filtered, text)
 			recentsPlaceholder.beVisibleIf(filtered.isEmpty())
 			recentsSwipeRefresh.isEnabled = lastSearchedText.isEmpty() && activity?.config?.enablePullToRefresh != false
 		}
 	}
-
-	override fun finishActMode() {getRecyclerAdapter()?.finishActMode()}
 }

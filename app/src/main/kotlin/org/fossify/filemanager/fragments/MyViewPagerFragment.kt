@@ -57,26 +57,42 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 			context!!.config.fileColumnCnt += by
 			(activity as? MainActivity)?.updateFragmentColumnCounts()
 		}
-		getRecyclerAdapter()?.finishActMode()
+		recyclerAdapter?.finishActMode()
 	}
 
-	protected fun initZoomListener(layoutManager: MyGridLayoutManager) {
+	protected fun initZoomListener() {
 		zoomListener = if(currentViewType == VIEW_TYPE_GRID) {
 			object: MyRecyclerView.MyZoomListener {
 				override fun zoomIn() {
-					if(layoutManager.spanCount > 1) incColCount(-1)
+					if(layoutManager!!.spanCount > 1) incColCount(-1)
 				}
 				override fun zoomOut() {
-					if(layoutManager.spanCount < MAX_COLUMN_COUNT) incColCount(1)
+					if(layoutManager!!.spanCount < MAX_COLUMN_COUNT) incColCount(1)
 				}
 			}
 		} else null
 	}
 
+	override fun toggleFilenameVisibility() {recyclerAdapter?.updateDisplayFilenamesInGrid()}
+	override fun setupFontSize() {recyclerAdapter?.updateFontSizes()}
+	override fun setupDateTimeFormat() {recyclerAdapter?.updateDateTimeFormat()}
+	override fun finishActMode() {recyclerAdapter?.finishActMode()}
+
+	fun columnCountChanged() {
+		if(currentViewType != VIEW_TYPE_GRID) return
+		layoutManager?.spanCount = context!!.config.fileColumnCnt
+		recyclerAdapter?.apply {notifyItemRangeChanged(0, listItems.size)}
+	}
+
+	val recyclerAdapter
+		get() = getRecyclerView()?.adapter as? ItemsAdapter
+	val layoutManager
+		get() = getRecyclerView()?.layoutManager as? MyGridLayoutManager
+
 	abstract fun setupFragment(activity: SimpleActivity)
 	abstract fun onResume(textColor: Int)
 	abstract fun searchQueryChanged(text: String)
-	abstract fun getRecyclerAdapter(): ItemsAdapter?
+	abstract fun getRecyclerView(): MyRecyclerView?
 
 	interface InnerBinding {val itemsFab: MyFloatingActionButton?}
 	open class BaseInnerBinding(val binding: ViewBinding): InnerBinding {override val itemsFab: MyFloatingActionButton? = null}
