@@ -76,6 +76,7 @@ import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
 import org.fossify.filemanager.dialogs.FilePickerDialog
+import org.fossify.filemanager.dialogs.PropertiesDialog
 import org.fossify.filemanager.extensions.pickedUris
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
@@ -90,6 +91,7 @@ import org.fossify.filemanager.extensions.shareUris
 import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.fragments.ItemsFragment
 import org.fossify.filemanager.fragments.MyViewPagerFragment
+import org.fossify.filemanager.fragments.RecentsFragment
 import org.fossify.filemanager.helpers.OPEN_AS_AUDIO
 import org.fossify.filemanager.helpers.OPEN_AS_IMAGE
 import org.fossify.filemanager.helpers.OPEN_AS_OTHER
@@ -146,22 +148,29 @@ class ItemsAdapter(
 		val pager = listener as? MyViewPagerFragment<*>
 		val pickContent = pager?.isGetContentIntent == true || pager?.isCreateDocumentIntent == true
 		val pickMulti = pager?.isPickMultipleIntent == true
-		val isFav = listener is FavoritesFragment
+		val oneItemSel = selected.size == 1
+		val oneFileSel = oneItemSel && !firstItem().isDir
+
+		val isFiles = listener is ItemsFragment
+		val isFavs = listener is FavoritesFragment
+		val isRecents = listener is RecentsFragment
+
 		menu.apply {
-			findItem(R.id.cab_compress).isVisible = !isFav
-			findItem(R.id.cab_decompress).isVisible = isOneFileSelected() && firstItem().name.isZipFile()
+			findItem(R.id.cab_compress).isVisible = isFiles
+			findItem(R.id.cab_decompress).isVisible = !isRecents && oneFileSel && firstItem().name.isZipFile()
 			findItem(R.id.cab_confirm_selection).isVisible = pickMulti
-			findItem(R.id.cab_copy_path).isVisible = isOneItemSelected()
-			findItem(R.id.cab_open_with).isVisible = isOneFileSelected()
-			findItem(R.id.cab_open_as).isVisible = isOneFileSelected()
-			findItem(R.id.cab_set_as).isVisible = isOneFileSelected()
-			findItem(R.id.cab_share).isVisible = !isFav
-			findItem(R.id.cab_copy_to).isVisible = !isFav
-			findItem(R.id.cab_move_to).isVisible = !isFav
-			findItem(R.id.cab_create_shortcut).isVisible = isOneItemSelected()
-			findItem(R.id.cab_delete).isVisible = !isFav && !pickContent && !pickMulti
-			findItem(R.id.cab_rem_fav).isVisible = isFav
-			checkHideBtnVisibility(this, isFav || isOnRemote())
+			findItem(R.id.cab_copy_path).isVisible = oneItemSel
+			findItem(R.id.cab_open_with).isVisible = oneFileSel
+			findItem(R.id.cab_open_as).isVisible = oneFileSel
+			findItem(R.id.cab_set_as).isVisible = oneFileSel
+			findItem(R.id.cab_share).isVisible = !isFavs
+			findItem(R.id.cab_copy_to).isVisible = isFiles
+			findItem(R.id.cab_move_to).isVisible = isFiles
+			findItem(R.id.cab_create_shortcut).isVisible = !isRecents && oneItemSel
+			findItem(R.id.cab_delete).isVisible = isFiles && !pickContent && !pickMulti
+			findItem(R.id.cab_rem_fav).isVisible = isFavs
+			findItem(R.id.cab_open_parent).isVisible = isRecents && oneItemSel
+			checkHideBtnVisibility(this, !isFiles || isOnRemote())
 		}
 	}
 
@@ -191,6 +200,7 @@ class ItemsAdapter(
 			R.id.cab_select_all -> selectAll()
 			R.id.cab_delete -> askConfirmDelete()
 			R.id.cab_rem_fav -> removeFav()
+			R.id.cab_open_parent -> openParent()
 		}
 	}
 
@@ -219,6 +229,11 @@ class ItemsAdapter(
 		(activity as? MainActivity)?.updateFavsList()
 	}
 
+	private fun openParent() {
+		(activity as MainActivity).openPath(firstItem().path.getParentPath())
+		activity.gotoFilesTab()
+	}
+
 	fun selectAll() {
 		if(!actModeCallback.isSelectable) activity.startActionMode(actModeCallback)
 		val cnt = itemCount - positionOffset
@@ -244,8 +259,6 @@ class ItemsAdapter(
 
 	override fun getItemCount() = listItems.size
 	private fun getSelectableItemCount() = listItems.filter {!it.isSectionTitle && !it.isGridDivider}.size
-	private fun isOneFileSelected() = isOneItemSelected() && !firstItem().isDir
-	private fun isOneItemSelected() = selected.size == 1
 	private fun firstItem() = selected.first()
 
 	private fun checkHideBtnVisibility(menu: Menu, noShow: Boolean) {

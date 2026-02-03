@@ -3,16 +3,22 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	tools:ignore="AppCompatResource,AlwaysShowAction">
 	<item
+		android:id="@+id/cab_confirm_selection"
+		android:icon="@drawable/ic_check_vector"
+		android:showAsAction="always"
+		android:title="@string/confirm_selection"
+		app:showAsAction="always"/>
+	<item
 		android:id="@+id/cab_delete"
 		android:icon="@drawable/ic_delete_vector"
 		android:showAsAction="always"
 		android:title="@string/delete"
 		app:showAsAction="always"/>
 	<item
-		android:id="@+id/cab_confirm_selection"
-		android:icon="@drawable/ic_check_vector"
+		android:id="@+id/cab_open_parent"
+		android:icon="@drawable/ic_folder_open_vector"
 		android:showAsAction="always"
-		android:title="@string/confirm_selection"
+		android:title="@string/open_parent"
 		app:showAsAction="always"/>
 	<item
 		android:id="@+id/cab_rem_fav"

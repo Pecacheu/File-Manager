@@ -44,7 +44,6 @@ import org.fossify.commons.extensions.isImageFast
 import org.fossify.commons.extensions.isVideoFast
 import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.storeAndroidTreeUri
-import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.AlphanumericComparator
 import org.fossify.commons.helpers.CONFLICT_KEEP_BOTH
 import org.fossify.commons.helpers.CONFLICT_MERGE
@@ -63,7 +62,6 @@ import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.extensions.blockAsync
 import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.formatErr
 import org.fossify.filemanager.extensions.idFromRemotePath
 import org.fossify.filemanager.extensions.isPathOnOTG
@@ -201,10 +199,10 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			//TODO Root
 			return ctx.getFileInputStreamSync(path)!!
 		}
-		fun getOutputStream(ctx: SimpleActivity, path: String): OutputStream {
-			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, true, true).writeStream
+		fun getOutputStream(ctx: SimpleActivity, path: String, new: Boolean=true): OutputStream {
+			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, true, new).writeStream
 			//TODO Root
-			return getFileOutputStream(ctx, path, true)
+			return getFileOutputStream(ctx, path, new)
 		}
 	}
 
@@ -327,6 +325,7 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 				}
 			}}
 		}
+
 		fun run(hadConflict: Boolean) {
 			try {
 				if(cr == CONFLICT_MERGE) throw NotImplementedError() //TODO Handle dir merge
@@ -371,8 +370,8 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 				cb(ctx.formatErr(R.string.permission_required))
 				return@handleSAFDialog
 			}
-			ctx.handleSAFDialogSdk30(dest) {
-				if(!it) {
+			ctx.handleSAFDialogSdk30(dest) {it2 ->
+				if(!it2) {
 					cb(ctx.formatErr(R.string.permission_required))
 					return@handleSAFDialogSdk30
 				}

@@ -18,6 +18,7 @@
 	<string name="audio_file">Audio file</string>
 	<string name="video_file">Video file</string>
 	<string name="other_file">Other file</string>
+	<string name="open_parent">Open parent folder</string>
 	<!-- Compression -->
 	<string name="compress">Compress</string>
 	<string name="decompress">Decompress</string>
