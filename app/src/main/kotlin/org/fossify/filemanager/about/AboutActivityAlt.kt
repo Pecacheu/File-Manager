@@ -22,6 +22,7 @@ import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.*
 import org.fossify.commons.models.FAQItem
 import org.fossify.filemanager.extensions.config
+import androidx.compose.ui.platform.LocalResources
 
 class AboutActivityAlt: BaseComposeActivity() {
 	private val appName get() = intent.getStringExtra(APP_NAME)?:""
@@ -37,11 +38,11 @@ class AboutActivityAlt: BaseComposeActivity() {
 		super.onCreate(savedInstanceState)
 		enableEdgeToEdgeSimple()
 		setContent {
-			val resources = LocalContext.current.resources
+			val resources = LocalResources.current
 			AppThemeSurface {
 				val showGoogleRelations = remember {!resources.getBoolean(R.bool.hide_google_relations)}
 				val showGithubRelations = showGithubRelations()
-				val showDonationLinks = remember {resources.getBoolean(R.bool.show_donate_in_about)}
+				val showDonationLinks = remember {!isThankYouInstalled() || !showGoogleRelations}
 				AboutScreen(goBack = ::finish, helpUsSection = {
 					HelpUsSection(onRateUsClick = ::onInviteClick, onInviteClick = ::onInviteClick, onContributorsClick = ::onContributorsClick,
 						showDonate = showDonationLinks, onDonateClick = ::onDonateClick, showInvite = showGoogleRelations || showGithubRelations,

@@ -12,6 +12,7 @@ import org.fossify.commons.extensions.getDoesFilePathExist
 import org.fossify.commons.extensions.getFilenameFromPath
 import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getStringValue
+import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.activities.SimpleActivity
@@ -19,6 +20,7 @@ import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.RecentsFragmentBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
+import org.fossify.filemanager.extensions.isPathInHiddenFolder
 import org.fossify.filemanager.models.ListItem
 import java.io.File
 
@@ -119,8 +121,9 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 						val name = cursor.getStringValue(FileColumns.DISPLAY_NAME)?:path.getFilenameFromPath()
 						val size = cursor.getLongValue(FileColumns.SIZE)
 						val modified = cursor.getLongValue(FileColumns.DATE_MODIFIED)*1000
-						val item = ListItem(activity, path, name, false, -2, size, modified)
-						if((showHidden || !name.startsWith('.')) && activity?.getDoesFilePathExist(path) == true) {
+						val shouldShow = showHidden || !(name.startsWith('.') || path.isPathInHiddenFolder())
+						if(shouldShow && activity?.getDoesFilePathExist(path) == true) {
+							val item = ListItem(activity, path, name, false, -2, size, modified)
 							if(wantedMimeTypes.any {isProperMimeType(it, path, false)}) listItems.add(item)
 						}
 					} while(cursor.moveToNext())
@@ -135,8 +138,10 @@ class RecentsFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	override fun getRecyclerView() = binding.recentsList
 
 	override fun searchQueryChanged(text: String) {
+		val normText = text.normalizeString()
 		lastSearchedText = text
-		val filtered = filesIgnoringSearch.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
+		val filtered = filesIgnoringSearch.filter {it.name.normalizeString()
+			.contains(normText, true)}.toMutableList() as ArrayList<ListItem>
 		binding.apply {
 			recyclerAdapter?.updateItems(filtered, text)
 			recentsPlaceholder.beVisibleIf(filtered.isEmpty())

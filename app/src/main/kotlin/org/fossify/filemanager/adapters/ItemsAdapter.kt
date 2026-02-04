@@ -76,7 +76,6 @@ import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
 import org.fossify.filemanager.dialogs.FilePickerDialog
-import org.fossify.filemanager.dialogs.PropertiesDialog
 import org.fossify.filemanager.extensions.pickedUris
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
@@ -127,9 +126,9 @@ class ItemsAdapter(
 	private var timeFormat = ""
 
 	private val config = activity.config
-	private val viewType = if(canHaveIndividualViewType)
-		config.getFolderViewType(listItems.firstOrNull {!it.isSectionTitle}?.path?.getParentPath()?:"")
-		else config.viewType
+	private val viewType = if(canHaveIndividualViewType) config.getFolderViewType(
+		listItems.firstOrNull {!it.isSectionTitle}?.path?.getParentPath()?:"")
+	else config.viewType
 	private val isListViewType = viewType == VIEW_TYPE_LIST
 	private var displayFilenamesInGrid = config.displayFilenames
 
@@ -332,11 +331,8 @@ class ItemsAdapter(
 				i.flags = i.flags or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_HISTORY
 				i.data = Uri.fromFile(File(item.path))
 
-				val shortcut = ShortcutInfo.Builder(activity, item.path)
-					.setShortLabel(item.name)
-					.setIcon(Icon.createWithBitmap(drawable.convertToBitmap()))
-					.setIntent(i)
-					.build()
+				val shortcut = ShortcutInfo.Builder(activity, item.path).setShortLabel(item.name)
+					.setIcon(Icon.createWithBitmap(drawable.convertToBitmap())).setIntent(i).build()
 
 				manager.requestPinShortcut(shortcut, null)
 			}
@@ -387,15 +383,17 @@ class ItemsAdapter(
 
 	private fun openAs() {
 		val res = activity.resources
-		val items = arrayListOf(RadioItem(OPEN_AS_TEXT, res.getString(R.string.text_file)), RadioItem(OPEN_AS_IMAGE, res.getString(R.string.image_file)),
-			RadioItem(OPEN_AS_AUDIO, res.getString(R.string.audio_file)), RadioItem(OPEN_AS_VIDEO, res.getString(R.string.video_file)),
+		val items = arrayListOf(RadioItem(OPEN_AS_TEXT, res.getString(R.string.text_file)),
+			RadioItem(OPEN_AS_IMAGE, res.getString(R.string.image_file)),
+			RadioItem(OPEN_AS_AUDIO, res.getString(R.string.audio_file)),
+			RadioItem(OPEN_AS_VIDEO, res.getString(R.string.video_file)),
 			RadioItem(OPEN_AS_OTHER, res.getString(R.string.other_file)))
 		RadioGroupDialog(activity, items) {activity.launchItem(firstItem(), false, it as Int)}
 	}
 
-	fun copyMoveTo(isCopy: Boolean, confirmed: Boolean=false) {
+	fun copyMoveTo(isCopy: Boolean, confirmed: Boolean = false) {
 		if(!isCopy && !confirmed) {
-			activity.handleDeletePasswordProtection {copyMoveTo(false,true)}
+			activity.handleDeletePasswordProtection {copyMoveTo(false, true)}
 			return
 		}
 		val sel = ArrayList(selected)
@@ -585,19 +583,15 @@ class ItemsAdapter(
 					itemDetails?.text = item.size.formatSize()
 					itemDate?.beVisible()
 					itemDate?.text = item.modified.formatDate(activity, dateFormat, timeFormat)
-
-					val drawable = fileDrawables.getOrElse(item.name.substringAfterLast('.').lowercase(Locale.getDefault())) {fileDrawable}
+					val drawable = fileDrawables.getOrElse(item.name.substringAfterLast('.')
+						.lowercase(Locale.getDefault())) {fileDrawable}
 					val opts = RequestOptions().signature(item.getKey())
-						.diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-						.error(drawable)
+						.diskCacheStrategy(DiskCacheStrategy.RESOURCE).error(drawable)
 						.transform(CenterCrop(), RoundedCorners(10))
 
 					val imgPath = item.previewPath()
-					if(!activity.isDestroyed && itemIcon != null) {
-						Glide.with(activity).load(imgPath)
-							.transition(DrawableTransitionOptions.withCrossFade())
-							.apply(opts).into(itemIcon!!)
-					}
+					if(!activity.isDestroyed && itemIcon != null) Glide.with(activity).load(imgPath)
+						.transition(DrawableTransitionOptions.withCrossFade()).apply(opts).into(itemIcon!!)
 				}
 			}
 		}
@@ -756,20 +750,19 @@ class ItemsAdapter(
 	private var lastLongPressedItem = -1
 
 	init {
-		var statusBarColor = 0
 		actModeCallback = object: MyActionModeCallback() {
 			override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
 				actionItemPressed(item.itemId)
 				return true
 			}
 
-			@SuppressLint("InflateParams")
 			override fun onCreateActionMode(actionMode: ActionMode, menu: Menu?): Boolean {
 				selected.clear()
 				isSelectable = true
 				actMode = actionMode
 				actBarTextView = layoutInflater.inflate(org.fossify.commons.R.layout.actionbar_title, null) as TextView
-				actBarTextView!!.layoutParams = ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
+				actBarTextView!!.layoutParams = ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+					ViewGroup.LayoutParams.MATCH_PARENT)
 				actMode!!.customView = actBarTextView
 				actBarTextView!!.setOnClickListener {
 					if(getSelectableItemCount() == selected.size) finishActMode()
@@ -777,21 +770,20 @@ class ItemsAdapter(
 				}
 
 				activity.menuInflater.inflate(R.menu.cab, menu)
+				val bgColor = if(activity.isDynamicTheme()) resources.getColor(org.fossify
+					.commons.R.color.you_contextual_status_bar_color, activity.theme)
+					else resources.getColor(org.fossify.commons.R.color.dark_grey, activity.theme)
 
-				var actColor = getStatusBarActColor()
-				statusBarColor = activity.window.statusBarColor
-				activity.animateStatusBarColor(actColor, statusBarColor, 300L)
-
-				actBarTextView!!.setTextColor(actColor.getContrastColor())
-				activity.updateMenuItemColors(menu, baseColor = actColor)
+				actBarTextView!!.setTextColor(bgColor.getContrastColor())
+				activity.updateMenuItemColors(menu, baseColor = bgColor)
+				onActionModeCreated()
 
 				if(activity.isDynamicTheme()) {
 					actBarTextView?.onGlobalLayout {
 						val backArrow = activity.findViewById<ImageView>(androidx.appcompat.R.id.action_mode_close_button)
-						backArrow?.applyColorFilter(actColor.getContrastColor())
+						backArrow?.applyColorFilter(bgColor.getContrastColor())
 					}
 				}
-				onActionModeCreated()
 				return true
 			}
 
@@ -807,12 +799,11 @@ class ItemsAdapter(
 					val pos = listItems.indexOf(f)
 					if(pos != -1) setSelected(false, pos, false)
 				}
-				activity.animateStatusBarColor(statusBarColor, activity.window.statusBarColor, 400L)
 				updateTitle()
+				selected.clear()
 				actBarTextView?.text = ""
 				actMode = null
 				lastLongPressedItem = -1
-				selected.clear()
 				onActionModeDestroyed()
 			}
 		}
@@ -891,7 +882,6 @@ class ItemsAdapter(
 
 	fun updateTextColor(textColor: Int) {
 		this.textColor = textColor
-		if(isActMode()) activity.updateStatusbarColor(getStatusBarActColor())
 		notifyDataSetChanged()
 	}
 

@@ -206,6 +206,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 
 	override fun searchQueryChanged(text: String) {
 		Log.i("test", "searchQueryChanged '$text'")
+		val normText = text.normalizeString()
 		lastSearchedText = text
 		if(context == null) return
 		binding.apply {
@@ -231,7 +232,7 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 						var files: ArrayList<ListItem>?
 						try {
 							ListItem.sorting = context.config.getFolderSorting(currentPath)
-							files = ListItem.listDir(activity!!, currentPath, true, text) {res ->
+							files = ListItem.listDir(activity!!, currentPath, true, normText) {res ->
 								if(context == null || lastSearchedText != text) return@listDir true
 								showSearch(text, res, false)
 								false

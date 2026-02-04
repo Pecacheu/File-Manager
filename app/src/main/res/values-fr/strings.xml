@@ -5,9 +5,13 @@
 	<string name="set_as_home_folder">Définir en tant que dossier par défaut</string>
 	<string name="home_folder_updated">Dossier par défaut mis à jour</string>
 	<string name="copy_path">Copier le chemin du fichier dans le presse-papiers</string>
+	<string name="path_copied">Chemin du fichier copié</string>
 	<string name="select_audio_file">Veuillez sélectionner un fichier audio</string>
+	<string name="search_folder">Chercher dans le dossier</string>
 	<string name="rooted_device_only">Cette opération ne fonctionne que sur les périphériques rooté</string>
 	<string name="recents">Récents</string>
+	<string name="show_recents">Afficher les récents</string>
+	<string name="invert_colors">Inverser les couleurs</string>
 	<string name="open_as">Ouvert comme</string>
 	<string name="text_file">Fichier texte</string>
 	<string name="image_file">Fichier image</string>
@@ -21,8 +25,11 @@
 	<string name="decompressing">Décompression…</string>
 	<string name="compression_successful">Compression réussie</string>
 	<string name="decompression_successful">Décompression réussie</string>
-	<string name="compressing_failed">Compression ratée</string>
-	<string name="decompressing_failed">Décompression ratée</string>
+	<string name="compressing_failed">Échec de la compression</string>
+	<string name="decompressing_failed">Échec de la décompression</string>
+	<string name="manage_favorites">Gérer les favoris</string>
+	<string name="go_to_favorite">Aller au favori</string>
+	<string name="favorites_activity_placeholder">Vous pouvez ajouter des dossiers souvent utilisés comme favoris pour y avoir accès rapidement depuis n\'importe où.</string>
 	<string name="file_editor">Éditeur de fichier</string>
 	<string name="storage_analysis">Analyse du stockage</string>
 	<string name="videos">Vidéos</string>

@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.print.PrintAttributes
 import android.print.PrintManager
+import android.util.Base64
 import android.view.inputmethod.EditorInfo
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -49,12 +50,12 @@ class ReadTextActivity: SimpleActivity() {
 	private lateinit var searchNextBtn: ImageView
 	private lateinit var searchClearBtn: ImageView
 
-	override fun onCreate(state: Bundle?) {
-		isMaterialActivity = true
-		super.onCreate(state)
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
 		setupOptionsMenu()
-		binding.apply {setupViews(readTextCoordinator, readTextView, readTextToolbar, readTextHolder)}
+		binding.apply {setupViews(readTextCoordinator, readTextView, readTextAppbar, readTextHolder)}
+
 		searchQueryET = findViewById(org.fossify.commons.R.id.search_query)
 		searchPrevBtn = findViewById(org.fossify.commons.R.id.search_previous)
 		searchNextBtn = findViewById(org.fossify.commons.R.id.search_next)
@@ -74,7 +75,7 @@ class ReadTextActivity: SimpleActivity() {
 		if(filename.isNotEmpty()) binding.readTextToolbar.title = Uri.decode(filename)
 
 		binding.readTextView.onGlobalLayout {
-			ensureBackgroundThread {checkIntent(uri, state)}
+			ensureBackgroundThread {checkIntent(uri, savedInstanceState)}
 		}
 
 		setupSearchButtons()
@@ -82,7 +83,7 @@ class ReadTextActivity: SimpleActivity() {
 
 	override fun onResume() {
 		super.onResume()
-		setupToolbar(binding.readTextToolbar, NavigationIcon.Arrow)
+		setupTopAppBar(binding.readTextAppbar, NavigationIcon.Arrow)
 	}
 
 	override fun onSaveInstanceState(outState: Bundle) {
@@ -97,23 +98,27 @@ class ReadTextActivity: SimpleActivity() {
 		super.onActivityResult(requestCode, resultCode, resultData)
 		if(requestCode == SELECT_SAVE_FILE_INTENT && resultCode == RESULT_OK && resultData != null && resultData.data != null) {
 			val outputStream = contentResolver.openOutputStream(resultData.data!!)
+			val shouldExitAfterSaving = requestCode == SELECT_SAVE_FILE_AND_EXIT_INTENT
 			val selectedFilePath = getRealPathFromURI(intent.data!!)
-			saveTextContent(outputStream, selectedFilePath == filePath)
+			val shouldOverwriteOriginalText = selectedFilePath == filePath
+			saveTextContent(outputStream, shouldExitAfterSaving, shouldOverwriteOriginalText)
 		}
 	}
 
-	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-	override fun onBackPressed() {
+	override fun onBackPressedCompat(): Boolean {
 		val hasUnsavedChanges = originalText != binding.readTextView.text.toString()
-		when {
-			isSearchActive -> closeSearch()
-			hasUnsavedChanges && System.currentTimeMillis() - lastSavePromptTS > SAVE_DISCARD_PROMPT_INTERVAL -> {
+		return when {
+			isSearchActive -> {
+				closeSearch()
+				true
+			} hasUnsavedChanges && System.currentTimeMillis() - lastSavePromptTS > SAVE_DISCARD_PROMPT_INTERVAL -> {
 				lastSavePromptTS = System.currentTimeMillis()
 				ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.save_before_closing,
 						org.fossify.commons.R.string.save, org.fossify.commons.R.string.discard) {
-					if(it) saveText() else super.onBackPressed()
+					if(it) saveText(true) else performDefaultBack()
 				}
-			} else -> super.onBackPressed()
+				true
+			} else -> false
 		}
 	}
 
@@ -122,6 +127,7 @@ class ReadTextActivity: SimpleActivity() {
 			when(menuItem.itemId) {
 				R.id.menu_search -> openSearch()
 				R.id.menu_save -> saveText()
+				R.id.menu_save_as -> saveAsText()
 				R.id.menu_open_with -> launchPath(intent.dataString!!, true)
 				R.id.menu_print -> printText()
 				else -> return@setOnMenuItemClickListener false
@@ -139,8 +145,14 @@ class ReadTextActivity: SimpleActivity() {
 		searchQueryET.postDelayed({searchQueryET.requestFocus()}, 250)
 	}
 
-	@Suppress("DEPRECATION")
-	private fun saveText() {
+	private fun updateFilePath() {
+		if (filePath.isEmpty()) {
+			filePath = getRealPathFromURI(intent.data!!) ?: ""
+		}
+	}
+
+	private fun saveAsText(shouldExitAfterSaving: Boolean=false) {
+		updateFilePath()
 		if(filePath.isEmpty()) filePath = getRealPathFromURI(intent.data!!)?:""
 		SaveAsDialog(this, filePath, true) {path, filename ->
 			if(filePath.isEmpty()) {
@@ -148,24 +160,51 @@ class ReadTextActivity: SimpleActivity() {
 					type = "text/plain"
 					putExtra(Intent.EXTRA_TITLE, filename)
 					addCategory(Intent.CATEGORY_OPENABLE)
-					startActivityForResult(this, SELECT_SAVE_FILE_AND_EXIT_INTENT)
+					val requestCode = if(shouldExitAfterSaving) SELECT_SAVE_FILE_AND_EXIT_INTENT
+						else SELECT_SAVE_FILE_INTENT
+					@Suppress("DEPRECATION")
+					startActivityForResult(this, requestCode)
 				}
-			} else if(hasStoragePermission()) {
-				val file = File(path)
-				getFileOutputStream(file.toFileDirItem(this), true) {saveTextContent(it, path == filePath)}
-			} else toast(org.fossify.commons.R.string.no_storage_permissions)
+			} else SaveAsDialog(this, filePath, false) {path, _ ->
+				if (hasStoragePermission()) {
+					val file = File(path)
+					getFileOutputStream(file.toFileDirItem(this), true) {
+						val shouldOverwriteOriginalText = path == filePath
+						saveTextContent(it, shouldExitAfterSaving, shouldOverwriteOriginalText)
+					}
+				} else {
+					toast(org.fossify.commons.R.string.no_storage_permissions)
+				}
+			}
 		}
 	}
 
-	private fun saveTextContent(outputStream: OutputStream?, shouldOverwriteOriginalText: Boolean) {
+	private fun saveText(shouldExitAfterSaving: Boolean = false) {
+		updateFilePath()
+
+		if (filePath.isEmpty()) {
+			saveAsText(shouldExitAfterSaving)
+		} else if (hasStoragePermission()) {
+			val file = File(filePath)
+			getFileOutputStream(file.toFileDirItem(this), true) {
+				saveTextContent(it, shouldExitAfterSaving, true)
+			}
+		} else {
+			toast(org.fossify.commons.R.string.no_storage_permissions)
+		}
+	}
+
+	private fun saveTextContent(outputStream: OutputStream?, shouldExitAfterSaving: Boolean, shouldOverwriteOriginalText: Boolean) {
 		if(outputStream != null) {
 			val currentText = binding.readTextView.text.toString()
-			outputStream.bufferedWriter().use {it.write(currentText)}
+			outputStream.bufferedWriter().use { it.write(currentText) }
 			toast(org.fossify.commons.R.string.file_saved)
 			hideKeyboard()
 			if(shouldOverwriteOriginalText) originalText = currentText
-			super.onBackPressed()
-		} else toast(org.fossify.commons.R.string.unknown_error_occurred)
+			if(shouldExitAfterSaving) performDefaultBack()
+		} else {
+			toast(org.fossify.commons.R.string.unknown_error_occurred)
+		}
 	}
 
 	private fun printText() {
@@ -175,7 +214,18 @@ class ReadTextActivity: SimpleActivity() {
 				override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = false
 				override fun onPageFinished(view: WebView, url: String) {createWebPrintJob(view)}
 			}
-			webView.loadData(binding.readTextView.text.toString(), "text/plain", "UTF-8")
+
+			val text = binding.readTextView.text.toString()
+			ensureBackgroundThread {
+				try {
+					val base64 = Base64.encodeToString(text.toByteArray(), Base64.DEFAULT)
+					runOnUiThread {
+						webView.loadData(base64, "text/plain", "base64")
+					}
+				} catch (e: Exception) {
+					error(e)
+				}
+			}
 		} catch(e: Throwable) {error(e)}
 	}
 

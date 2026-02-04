@@ -1,26 +1,31 @@
 package org.fossify.filemanager.activities
 
-import android.content.res.Configuration
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Environment
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.Window
 import android.view.WindowManager
-import androidx.appcompat.widget.Toolbar
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.graphics.Insets
 import androidx.core.view.ScrollingView
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
 import androidx.core.widget.NestedScrollView
+import android.provider.Settings
 import org.fossify.commons.activities.BaseSimpleActivity
+import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.helpers.PERMISSION_WRITE_STORAGE
 import org.fossify.commons.helpers.isPiePlus
 import org.fossify.commons.helpers.isRPlus
+import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.R
+import androidx.core.net.toUri
+import org.fossify.commons.views.MyAppBarLayout
 
 open class SimpleActivity: BaseSimpleActivity() {
 	var onConflict = 0
@@ -33,8 +38,49 @@ open class SimpleActivity: BaseSimpleActivity() {
 			R.mipmap.ic_launcher_orange, R.mipmap.ic_launcher_deep_orange, R.mipmap.ic_launcher_brown, R.mipmap.ic_launcher_blue_grey,
 			R.mipmap.ic_launcher_grey_black)
 
+	companion object {
+		private const val MANAGE_STORAGE_RC = 201
+	}
+
 	override fun getAppLauncherName() = getString(R.string.app_launcher_name)
 	override fun getRepositoryName() = "File-Manager"
+
+	@SuppressLint("NewApi")
+	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
+		super.onActivityResult(requestCode, resultCode, resultData)
+		isAskingPermissions = false
+		if(requestCode == MANAGE_STORAGE_RC && isRPlus()) {
+			actionOnPermission?.invoke(Environment.isExternalStorageManager())
+		}
+	}
+
+	@SuppressLint("InlinedApi")
+	fun handleStoragePermission(callback: (granted: Boolean) -> Unit) {
+		actionOnPermission = null
+		if(hasStoragePermission()) callback(true)
+		else if(isRPlus()) {
+			ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt,
+					org.fossify.commons.R.string.ok, 0, false) {
+				if(it) {
+					isAskingPermissions = true
+					actionOnPermission = callback
+					try {
+						val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+						intent.addCategory("android.intent.category.DEFAULT")
+						intent.data = "package:$packageName".toUri()
+						startActivityForResult(intent, MANAGE_STORAGE_RC)
+					} catch(_: android.content.ActivityNotFoundException) {
+						val intent = Intent()
+						intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
+						startActivityForResult(intent, MANAGE_STORAGE_RC)
+					} catch (e: SecurityException) {
+						error(e)
+						finish()
+					}
+				} else finish()
+			}
+		} else handlePermission(PERMISSION_WRITE_STORAGE, callback)
+	}
 
 	fun hasStoragePermission(): Boolean {
 		return if(isRPlus()) Environment.isExternalStorageManager()
@@ -50,38 +96,22 @@ open class SimpleActivity: BaseSimpleActivity() {
 		super.setContentView(view)
 	}
 
-	fun setupViews(main: CoordinatorLayout?, content: View?, toolbar: Toolbar?, scrollView: ScrollingView?,
+	fun setupViews(main: CoordinatorLayout, content: View?, appbar: MyAppBarLayout?, scrollView: ScrollingView?,
 			onInsets: ((iAll: Insets, iNav: Insets)->Unit)?=null) {
-		updateMaterialActivityViews(main, content, false, toolbar == null)
-		if(toolbar != null) setupMaterialScrollListener(scrollView, toolbar)
-
-		fun setTbInsets(iAll: Insets) {
-			toolbar!!.setPadding(iAll.left, iAll.top, iAll.right, 0)
-			toolbar.layoutParams.height = tbHeight + iAll.top
-
-			(scrollView as ViewGroup).setPadding(iAll.left, 0, iAll.right, 0)
-			val sv = scrollView.layoutParams as MarginLayoutParams
-			if(scrollView is NestedScrollView) sv.setMargins(0, tbHeight + iAll.top, 0, 0)
-			else sv.setMargins(0, iAll.top, 0, 0)
-
-			val svc = scrollView.children.lastOrNull()
-			svc?.setPadding(svc.paddingLeft, svc.paddingTop, svc.paddingRight, svc.paddingBottom + iAll.bottom)
-		}
+		if(scrollView != null) setupEdgeToEdge(padBottomSystem = listOf(scrollView as View))
+		if(appbar != null) setupMaterialScrollListener(scrollView, appbar)
 
 		window.decorView.setOnApplyWindowInsetsListener {v, insets ->
 			val ins = WindowInsetsCompat.toWindowInsetsCompat(insets, v)
 			val iAll = ins.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
 			val iNav = ins.getInsets(WindowInsetsCompat.Type.navigationBars())
 
-			if(main != null && content != null) {
-				val mc = main.layoutParams as MarginLayoutParams
-				mc.setMargins(0, 0, 0, 0)
-			}
-			if(toolbar != null && scrollView != null) {
-				if(tbHeight == 0) toolbar.onGlobalLayout {
-					tbHeight = toolbar.measuredHeight
-					setTbInsets(iAll)
-				} else setTbInsets(iAll)
+			val mc = main.layoutParams as MarginLayoutParams
+			mc.setMargins(0, 0, 0, 0)
+
+			if(content != null) {
+				val cc = content.layoutParams as MarginLayoutParams
+				cc.setMargins(iAll.left, cc.topMargin, iAll.right, iAll.bottom)
 			}
 
 			onInsets?.invoke(iAll, iNav)

@@ -42,12 +42,11 @@ class DecompressActivity: SimpleActivity() {
 	private var passwordDialog: EnterPasswordDialog? = null
 	private var filename = ""
 
-	override fun onCreate(state: Bundle?) {
-		isMaterialActivity = true
-		super.onCreate(state)
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
 		setupOptionsMenu()
-		binding.apply {setupViews(decompressCoordinator, decompressList, decompressToolbar, decompressList)}
+		binding.apply {setupViews(decompressCoordinator, decompressList, decompressAppbar, decompressList)}
 
 		uri = intent.data
 		if(uri == null) {
@@ -61,7 +60,7 @@ class DecompressActivity: SimpleActivity() {
 			path = getRealPathFromURI(uri!!)?:Uri.decode(uri.toString())
 		}
 
-		password = state?.getString(PASSWORD, null)
+		password = savedInstanceState?.getString(PASSWORD, null)
 		filename = path.getFilenameFromPath()
 		binding.decompressToolbar.title = filename
 		setupFilesList()
@@ -69,8 +68,7 @@ class DecompressActivity: SimpleActivity() {
 
 	override fun onResume() {
 		super.onResume()
-		setupToolbar(binding.decompressToolbar, NavigationIcon.Arrow)
-		binding.decompressToolbar.setNavigationOnClickListener {onBackPressed()}
+		setupTopAppBar(binding.decompressAppbar, NavigationIcon.Arrow)
 	}
 
 	override fun onSaveInstanceState(outState: Bundle) {
@@ -88,17 +86,18 @@ class DecompressActivity: SimpleActivity() {
 		}
 	}
 
-	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-	override fun onBackPressed() {
-		if(currentPath.isEmpty()) {
-			super.onBackPressed()
+	override fun onBackPressedCompat(): Boolean {
+		return if(currentPath.isEmpty()) {
+			false
 		} else {
 			val newPath = if(currentPath.contains('/')) currentPath.getParentPath() else ""
 			updateCurrentPath(newPath)
+			true
 		}
 	}
 
 	private fun setupFilesList() {
+		allFiles.clear()
 		fillAllListItems {updateCurrentPath("")}
 	}
 

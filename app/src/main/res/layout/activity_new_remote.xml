@@ -3,21 +3,27 @@
 	android:layout_width="match_parent"
 	android:layout_height="match_parent">
 
-	<com.google.android.material.appbar.MaterialToolbar
-		android:id="@+id/toolbar"
+	<org.fossify.commons.views.MyAppBarLayout
+		android:id="@+id/appbar"
 		android:layout_width="match_parent"
-		android:layout_height="?attr/actionBarSize"
-		android:background="@color/color_primary"
-		app:title="@string/new_remote"
-		app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle"/>
+		android:layout_height="wrap_content">
+
+		<com.google.android.material.appbar.MaterialToolbar
+			android:id="@+id/toolbar"
+			android:layout_width="match_parent"
+			android:layout_height="?attr/actionBarSize"
+			android:background="@color/color_primary"
+			app:title="@string/new_remote"
+			app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle"/>
+	</org.fossify.commons.views.MyAppBarLayout>
 
 	<androidx.core.widget.NestedScrollView
 		android:id="@+id/scroller"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:layout_marginTop="?attr/actionBarSize"
 		android:fillViewport="true"
-		android:scrollbars="none">
+		android:scrollbars="none"
+		app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
 		<LinearLayout
 			android:id="@+id/holder"

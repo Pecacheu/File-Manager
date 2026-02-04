@@ -33,11 +33,10 @@ class NewRemoteActivity(): SimpleActivity() {
 	private val binding by viewBinding(ActivityNewRemoteBinding::inflate)
 	private var rEdit: Remote? = null
 
-	override fun onCreate(state: Bundle?) {
-		isMaterialActivity = true
-		super.onCreate(state)
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
-		binding.apply {setupViews(root, holder, toolbar, scroller)}
+		binding.apply {setupViews(root, holder, appbar, scroller)}
 		try {
 			doInit()
 		} catch(e: Throwable) {
@@ -48,7 +47,7 @@ class NewRemoteActivity(): SimpleActivity() {
 
 	override fun onResume() {
 		super.onResume()
-		setupToolbar(binding.toolbar, NavigationIcon.Arrow)
+		setupTopAppBar(binding.appbar, NavigationIcon.Arrow)
 	}
 
 	private fun doInit() {
@@ -86,7 +85,7 @@ class NewRemoteActivity(): SimpleActivity() {
 
 	private fun onSetType(v: View?) {
 		setColors(v)
-		var t = getType(v)
+		val t = getType(v)
 		parent(binding.host).beVisibleIf(t == Remote.SMB)
 		parent(binding.usr).beVisibleIf(t == Remote.SMB)
 		parent(binding.pwd).beVisibleIf(t == Remote.SMB)

@@ -1,12 +1,6 @@
 package org.fossify.filemanager.activities
 
-import android.content.res.Configuration
 import android.os.Bundle
-import android.util.Log
-import android.view.Window
-import android.view.WindowManager
-import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.view.children
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
@@ -25,15 +19,14 @@ class SettingsActivity: SimpleActivity() {
 	private val binding by viewBinding(ActivitySettingsBinding::inflate)
 
 	override fun onCreate(savedInstanceState: Bundle?) {
-		isMaterialActivity = true
 		super.onCreate(savedInstanceState)
 		setContentView(binding.root)
-		binding.apply {setupViews(settingsCoordinator, settingsHolder, settingsToolbar, settingsNestedScrollview)}
+		binding.apply {setupViews(settingsCoordinator, settingsHolder, settingsAppbar, settingsNestedScrollview)}
 	}
 
 	override fun onResume() {
 		super.onResume()
-		setupToolbar(binding.settingsToolbar, NavigationIcon.Arrow)
+		setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow)
 		setupCustomizeColors()
 		setupUseEnglish()
 		setupLanguage()

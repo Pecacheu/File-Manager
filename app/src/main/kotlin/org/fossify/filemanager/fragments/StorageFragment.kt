@@ -27,13 +27,13 @@ import org.fossify.commons.extensions.getLongValue
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getStringValue
+import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.extensions.queryCursor
 import org.fossify.commons.extensions.updateTextColors
 import org.fossify.commons.helpers.LOWER_ALPHA
 import org.fossify.commons.helpers.SHORT_ANIMATION_DURATION
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.commons.views.MyGridLayoutManager
 import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.MimeTypesActivity
 import org.fossify.filemanager.activities.SimpleActivity
@@ -73,9 +73,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 	}
 
 	override fun setupFragment(activity: SimpleActivity) {
-		if(this.activity == null) {
-			this.activity = activity
-		}
+		if(this.activity == null) this.activity = activity
 
 		val volumeNames = activity.getAllVolumeNames()
 		volumeNames.forEach {volumeName ->
@@ -86,7 +84,6 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					else storageName.setText(org.fossify.commons.R.string.sd_card)
 
 				totalSpace.text = String.format(context.getString(R.string.total_storage), '…')
-				getSizes(volumeName)
 
 				if(volumeNames.size > 1) {
 					root.children.forEach {it.beGone()}
@@ -127,7 +124,6 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 
 	override fun onResume(textColor: Int) {
 		context.updateTextColors(binding.root)
-
 		val properPrimaryColor = context.getProperPrimaryColor()
 		val redColor = context.resources.getColor(org.fossify.commons.R.color.md_red_700, null)
 		val greenColor = context.resources.getColor(org.fossify.commons.R.color.md_green_700, null)
@@ -136,8 +132,7 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 		val tealColor = context.resources.getColor(org.fossify.commons.R.color.md_teal_700, null)
 		val pinkColor = context.resources.getColor(org.fossify.commons.R.color.md_pink_700, null)
 
-		volumes.entries.forEach {(it, volumeBinding) ->
-			getSizes(it)
+		volumes.values.forEach {volumeBinding ->
 			volumeBinding.apply {
 				mainStorageUsageProgressbar.setIndicatorColor(properPrimaryColor)
 				mainStorageUsageProgressbar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
@@ -296,12 +291,14 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 					freeSpaceValue.text = freeStorageSpace.formatSizeThousand()
 					totalSpace.text = String.format(context.getString(R.string.total_storage), totalStorageSpace.formatSizeThousand())
 					freeSpaceLabel.beVisible()
+					getSizes(volumeName)
 				}
 			}
 		}
 	}
 
 	override fun searchQueryChanged(text: String) {
+		val normText = text.normalizeString()
 		lastSearchedText = text
 		binding.apply {
 			if(text.isNotEmpty()) {
@@ -324,7 +321,8 @@ class StorageFragment(context: Context, attributeSet: AttributeSet): MyViewPager
 			} else {
 				showProgressBar()
 				ensureBackgroundThread {
-					val filtered = allDeviceListItems.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
+					val filtered = allDeviceListItems.filter {it.name.normalizeString()
+						.contains(normText, true)}.toMutableList() as ArrayList<ListItem>
 					if(lastSearchedText != text) return@ensureBackgroundThread
 					(context as? Activity)?.runOnUiThread {
 						(searchResultsList.adapter as? ItemsAdapter)?.updateItems(filtered, text)

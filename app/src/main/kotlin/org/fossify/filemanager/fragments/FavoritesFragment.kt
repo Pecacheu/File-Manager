@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import org.fossify.commons.extensions.areSystemAnimationsEnabled
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.getFilenameFromPath
+import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.helpers.VIEW_TYPE_GRID
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.activities.MainActivity
@@ -102,8 +103,10 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 	override fun getRecyclerView() = binding.favsList
 
 	override fun searchQueryChanged(text: String) {
+		val normText = text.normalizeString()
 		lastSearchedText = text
-		val filtered = filesIgnoringSearch.filter {it.name.contains(text, true)}.toMutableList() as ArrayList<ListItem>
+		val filtered = filesIgnoringSearch.filter {it.name.normalizeString()
+			.contains(normText, true)}.toMutableList() as ArrayList<ListItem>
 		recyclerAdapter?.updateItems(filtered, text)
 	}
 }

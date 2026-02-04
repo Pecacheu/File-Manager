@@ -133,6 +133,9 @@ android {
 
 detekt {
 	baseline = file("detekt-baseline.xml")
+	config.setFrom("$rootDir/detekt.yml")
+	buildUponDefaultConfig = true
+	allRules = false
 }
 
 dependencies {
@@ -154,4 +157,5 @@ dependencies {
 	implementation(libs.androidx.material3.android)
 	implementation(libs.smbj)
 	debugImplementation(libs.androidx.ui.tooling)
+	detektPlugins(libs.compose.detekt)
 }

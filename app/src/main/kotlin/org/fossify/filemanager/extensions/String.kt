@@ -7,6 +7,18 @@ import java.util.Base64
 
 fun String.isZipFile() = endsWith(".zip", true)
 
+fun String.isPathInHiddenFolder(): Boolean {
+	val parts = split("/")
+	for (i in 1 until parts.size - 1) {
+		val part = parts[i]
+		val isHidden = part.startsWith(".") && part != "." && part != ".." && part.isNotEmpty()
+		if (isHidden) {
+			return true
+		}
+	}
+	return false
+}
+
 fun String.getBasePath(context: Context): String {
 	return when {
 		startsWith(REMOTE_URI) -> substring(0, Remote.URI_BASE)

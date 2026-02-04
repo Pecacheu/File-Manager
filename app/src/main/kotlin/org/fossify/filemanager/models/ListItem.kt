@@ -132,7 +132,8 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 				if(recurse) es += "\n$path"
 				throw if(es != null) Error(es, e) else e
 			}
-			val dir = (if(search == null) dirAll.clone() else dirAll.filter {it.name.contains(search, true)}) as ArrayList<ListItem>
+			val dir = (if(search == null) dirAll.clone() else dirAll.filter {it.name
+				.normalizeString().contains(search, true)}) as ArrayList<ListItem>
 			if(cancel(dir)) return dir
 			if(recurse) for(li in dirAll) if(li.isDir) dir.addAll(listDir(ctx, li.path, true, search, d, cancel)?:return null)
 			return dir
@@ -140,8 +141,9 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 
 		fun compress(items: ArrayList<ListItem>, dest: String, pwd: String?, cancel: ()->Boolean) {
 			val ctx = items[0].ctx!!
-			fun zipEntry(name: String) = ZipParameters().also {
+			fun zipEntry(name: String, modified: Long) = ZipParameters().also {
 				it.fileNameInZip = name
+				it.lastModifiedFileTime = modified
 				if(pwd != null) {
 					it.isEncryptFiles = true
 					it.encryptionMethod = EncryptionMethod.AES
@@ -149,7 +151,7 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			}
 			fun putFile(zout: ZipOutputStream, f: ListItem, path: String?) {
 				val name = if(path != null) "$path/${f.name}" else f.name
-				zout.putNextEntry(zipEntry(name))
+				zout.putNextEntry(zipEntry(name, f.modified))
 				getInputStream(ctx, f.path).use {it.copyTo(zout)}
 				zout.closeEntry()
 			}

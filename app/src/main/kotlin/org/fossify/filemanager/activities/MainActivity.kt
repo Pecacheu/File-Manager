@@ -5,10 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.media.RingtoneManager
 import android.os.Bundle
-import android.os.Environment
 import android.os.Handler
-import android.os.Looper
-import android.provider.Settings
 import android.util.AttributeSet
 import android.util.Xml
 import android.view.KeyEvent
@@ -17,7 +14,6 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContextView
 import com.stericson.RootTools.RootTools
 import me.grantland.widget.AutofitHelper
-import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.models.FAQItem
@@ -36,7 +32,6 @@ import org.fossify.filemanager.fragments.RecentsFragment
 import org.fossify.filemanager.fragments.FavoritesFragment
 import org.fossify.filemanager.fragments.StorageFragment
 import java.io.File
-import androidx.core.net.toUri
 import androidx.viewpager2.widget.ViewPager2
 import org.fossify.commons.helpers.*
 import org.fossify.commons.views.MySearchMenu
@@ -49,9 +44,10 @@ import java.util.Timer
 import kotlin.concurrent.fixedRateTimer
 
 class MainActivity: SimpleActivity() {
+	override var isSearchBarEnabled = true
+
 	companion object {
 		private const val BACK_PRESS_TIMEOUT = 5000
-		private const val MANAGE_STORAGE_RC = 201
 		const val NEW_REMOTE_RC = 202
 		private const val LAST_SEARCH = "last_search"
 	}
@@ -69,7 +65,6 @@ class MainActivity: SimpleActivity() {
 
 	@SuppressLint("RestrictedApi")
 	override fun onCreate(savedInstanceState: Bundle?) {
-		isMaterialActivity = true
 		super.onCreate(savedInstanceState)
 		if(config.lastVersion < 4) {
 			if(config.showTabs and TAB_STORAGE_ANALYSIS == 0) config.showTabs += TAB_STORAGE_ANALYSIS
@@ -85,16 +80,13 @@ class MainActivity: SimpleActivity() {
 		setupTabs(getTabsToShow())
 
 		setupViews(binding.mainCoordinator, null, null, null) {iAll, iNav ->
-			val mc = binding.mainCoordinator.layoutParams as MarginLayoutParams
-			mc.setMargins(0, iAll.top, 0, 0)
-
 			val mm = mainMenu.layoutParams as MarginLayoutParams
 			mm.setMargins(iAll.left, 0, iAll.right, 0)
 
 			for(frag in getAllFragments()) frag?.recyclerAdapter?.actMode?.let {
 				val tb = it.customView.parent as ActionBarContextView
 				tb.setPadding(iAll.left, iAll.top, iAll.right, 0)
-				tb.contentHeight = iAll.top + mainMenu.measuredHeight
+				tb.contentHeight = mainMenu.measuredHeight
 				(tb.layoutParams as MarginLayoutParams).setMargins(iNav.left, 0, iNav.right, 0)
 			}
 
@@ -162,26 +154,29 @@ class MainActivity: SimpleActivity() {
 		}
 	}
 
-	@Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-	override fun onBackPressed() {
+	override fun onBackPressedCompat(): Boolean {
 		val fragment = getCurrentFragment()
 		if(mainMenu.isSearchOpen) {
 			mainMenu.closeSearch()
+			return true
 		} else if(fragment !is ItemsFragment) {
-			super.onBackPressed()
+			return false
 		} else if(fragment.getBreadcrumbs().getItemCount() <= 1) {
-			if(!wasBackJustPressed && config.pressBackTwice) {
+			if (!wasBackJustPressed && config.pressBackTwice) {
 				wasBackJustPressed = true
 				toast(R.string.press_back_again)
-				Handler(Looper.getMainLooper()).postDelayed({wasBackJustPressed = false},
+				Handler().postDelayed({wasBackJustPressed = false},
 					BACK_PRESS_TIMEOUT.toLong())
+				return true
 			} else {
 				appLockManager.lock()
 				finish()
+				return true
 			}
 		} else {
 			fragment.getBreadcrumbs().removeBreadcrumb()
 			openPath(fragment.getBreadcrumbs().getLastItem().path)
+			return true
 		}
 	}
 
@@ -264,7 +259,7 @@ class MainActivity: SimpleActivity() {
 		val isFav = config.favorites.contains(path)
 		val home = config.getHome(path)
 
-		mainMenu.getToolbar().menu.apply {
+		mainMenu.toolbar?.menu?.apply {
 			findItem(R.id.sort).isVisible = fragment is ItemsFragment
 			findItem(R.id.change_view_type).isVisible = fragment !is StorageFragment
 
@@ -288,7 +283,7 @@ class MainActivity: SimpleActivity() {
 
 	private fun setupOptionsMenu() {
 		mainMenu.apply {
-			getToolbar().inflateMenu(R.menu.menu)
+			toolbar?.inflateMenu(R.menu.menu)
 			toggleHideOnScroll(false)
 			setupMenu()
 
@@ -299,7 +294,7 @@ class MainActivity: SimpleActivity() {
 				getCurrentFragment()?.searchQueryChanged(text)
 			}
 
-			getToolbar().setOnMenuItemClickListener {menuItem ->
+			toolbar?.setOnMenuItemClickListener {menuItem ->
 				when(menuItem.itemId) {
 					R.id.go_home -> goHome()
 					R.id.sort -> showSortingDialog()
@@ -337,20 +332,15 @@ class MainActivity: SimpleActivity() {
 		if(search.isNotEmpty()) mainMenu.binding.topToolbarSearch.setText(search)
 	}
 
-	@Deprecated("")
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
 		super.onActivityResult(requestCode, resultCode, resultData)
-		isAskingPermissions = false
-		if(requestCode == MANAGE_STORAGE_RC && isRPlus()) {
-			actionOnPermission?.invoke(Environment.isExternalStorageManager())
-		} else if(requestCode == NEW_REMOTE_RC && resultCode == 1) {
+		if(requestCode == NEW_REMOTE_RC && resultCode == 1) {
 			config.getRemotes(true) //Force reload
 			resultData?.getStringExtra(REAL_FILE_PATH)?.let {openPath(it)}
 		}
 	}
 
 	private fun updateMenuColors() {
-		updateStatusbarColor(getProperBackgroundColor())
 		mainMenu.updateColors()
 	}
 
@@ -374,31 +364,6 @@ class MainActivity: SimpleActivity() {
 				finish()
 			}
 		}
-	}
-
-	@Suppress("DEPRECATION")
-	private fun handleStoragePermission(callback: (granted: Boolean)->Unit) {
-		actionOnPermission = null
-		if(hasStoragePermission()) callback(true)
-		else if(isRPlus()) {
-			ConfirmationAdvancedDialog(this, "", org.fossify.commons.R.string.access_storage_prompt, org.fossify.commons.R.string.ok, 0, false) {
-				if(it) {
-					isAskingPermissions = true
-					actionOnPermission = callback
-					try {
-						val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-						intent.addCategory("android.intent.category.DEFAULT")
-						intent.data = "package:$packageName".toUri()
-						startActivityForResult(intent, MANAGE_STORAGE_RC)
-					} catch(e: Throwable) {
-						error(e)
-						val intent = Intent()
-						intent.action = Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
-						startActivityForResult(intent, MANAGE_STORAGE_RC)
-					}
-				} else finish()
-			}
-		} else handlePermission(PERMISSION_WRITE_STORAGE, callback)
 	}
 
 	private fun initFileManager(refreshRecents: Boolean) {
@@ -490,7 +455,6 @@ class MainActivity: SimpleActivity() {
 			}
 
 			val bottomBarColor = getBottomNavigationBackgroundColor()
-			updateNavigationBarColor(bottomBarColor)
 			mainTabsHolder.setBackgroundColor(bottomBarColor)
 		}
 	}
