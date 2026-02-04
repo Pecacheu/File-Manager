@@ -83,7 +83,6 @@ class StoragePickerDialog(val activity: SimpleActivity, val path: String, val ca
 			R.string.select_storage) {dialog = it}
 	}
 
-	@Suppress("unused")
 	private fun onEdit(v: View) {
 		if(!isRemotePath(path)) {
 			activity.toast(org.fossify.filemanager.R.string.remote_edit_err)
@@ -93,7 +92,6 @@ class StoragePickerDialog(val activity: SimpleActivity, val path: String, val ca
 		if(r != null) launchRemote(r)
 		else activity.toast(org.fossify.filemanager.R.string.no_remote_err)
 	}
-	@Suppress("unused")
 	private fun onNew(v: View) = launchRemote(null)
 
 	@Suppress("DEPRECATION")

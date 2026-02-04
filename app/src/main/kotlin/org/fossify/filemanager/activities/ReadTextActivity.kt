@@ -28,6 +28,7 @@ import java.io.File
 import java.io.OutputStream
 
 //TODO Remote?
+//TODO Replace with latest pull from main and check diff
 
 class ReadTextActivity: SimpleActivity() {
 	companion object {
@@ -96,7 +97,8 @@ class ReadTextActivity: SimpleActivity() {
 	@Deprecated("")
 	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
 		super.onActivityResult(requestCode, resultCode, resultData)
-		if(requestCode == SELECT_SAVE_FILE_INTENT && resultCode == RESULT_OK && resultData != null && resultData.data != null) {
+		if((requestCode == SELECT_SAVE_FILE_INTENT || requestCode == SELECT_SAVE_FILE_AND_EXIT_INTENT)
+				&& resultCode == RESULT_OK && resultData != null && resultData.data != null) {
 			val outputStream = contentResolver.openOutputStream(resultData.data!!)
 			val shouldExitAfterSaving = requestCode == SELECT_SAVE_FILE_AND_EXIT_INTENT
 			val selectedFilePath = getRealPathFromURI(intent.data!!)

@@ -5,13 +5,9 @@
 	<string name="set_as_home_folder">عيّن كمجلد المنزل</string>
 	<string name="home_folder_updated">حُدِّث مجلد المنزل</string>
 	<string name="copy_path">انسخ المسار إلى الحافظة</string>
-	<string name="path_copied">نُسخ المسار</string>
 	<string name="select_audio_file">الرجاء تحديد ملف صوتي</string>
-	<string name="search_folder">مجلد البحث</string>
 	<string name="rooted_device_only">تعمل هذه العملية فقط على الأجهزة المتجذرة</string>
 	<string name="recents">الأحدث</string>
-	<string name="show_recents">أظهر الأحدث</string>
-	<string name="invert_colors">اعكس الألوان</string>
 	<string name="compress">اضغط</string>
 	<string name="decompress">فك الضغط</string>
 	<string name="compress_as">اضغط كَ</string>
@@ -21,9 +17,6 @@
 	<string name="decompression_successful">نجح فك ضغط</string>
 	<string name="compressing_failed">فشل الضغط</string>
 	<string name="decompressing_failed">فشل فك الضغط</string>
-	<string name="manage_favorites">أدر المفضلة</string>
-	<string name="go_to_favorite">اذهب الى المفضلة</string>
-	<string name="favorites_activity_placeholder">يمكنك إضافة المجلدات المستخدمة بشكل متكرر إلى المفضلة لسهولة الوصول إليها من أي مكان.</string>
 	<string name="file_editor">محرّر الملفات</string>
 	<string name="storage_analysis">تحليل التخزين</string>
 	<string name="images">الصور</string>

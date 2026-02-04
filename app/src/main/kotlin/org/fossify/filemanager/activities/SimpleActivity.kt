@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Environment
 import android.view.View
-import android.view.ViewGroup
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.Window
 import android.view.WindowManager
@@ -12,13 +11,10 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.graphics.Insets
 import androidx.core.view.ScrollingView
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.children
-import androidx.core.widget.NestedScrollView
 import android.provider.Settings
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
 import org.fossify.commons.extensions.hasPermission
-import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.helpers.PERMISSION_WRITE_STORAGE
 import org.fossify.commons.helpers.isPiePlus
 import org.fossify.commons.helpers.isRPlus
@@ -29,7 +25,6 @@ import org.fossify.commons.views.MyAppBarLayout
 
 open class SimpleActivity: BaseSimpleActivity() {
 	var onConflict = 0
-	private var tbHeight = 0
 
 	override fun getAppIconIDs() =
 		arrayListOf(R.mipmap.ic_launcher_red, R.mipmap.ic_launcher_pink, R.mipmap.ic_launcher_purple, R.mipmap.ic_launcher_deep_purple,

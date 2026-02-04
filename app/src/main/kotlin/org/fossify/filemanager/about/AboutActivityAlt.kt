@@ -8,7 +8,6 @@ import android.os.Looper
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import org.fossify.commons.R
 import org.fossify.commons.activities.BaseComposeActivity

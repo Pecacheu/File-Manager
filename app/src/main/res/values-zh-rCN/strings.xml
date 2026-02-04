@@ -5,13 +5,9 @@
 	<string name="set_as_home_folder">设为主文件夹</string>
 	<string name="home_folder_updated">主文件夹已更新</string>
 	<string name="copy_path">复制路径至剪贴板</string>
-	<string name="path_copied">路径已复制</string>
 	<string name="select_audio_file">请选择一个音频文件</string>
-	<string name="search_folder">搜索文件夹</string>
 	<string name="rooted_device_only">仅在拥有 Root 权限时生效</string>
 	<string name="recents">最近文件</string>
-	<string name="show_recents">显示最近文件</string>
-	<string name="invert_colors">恢复颜色</string>
 	<string name="open_as">打开为</string>
 	<string name="text_file">文本文件</string>
 	<string name="image_file">图片文件</string>
@@ -27,9 +23,6 @@
 	<string name="decompression_successful">解压缩成功</string>
 	<string name="compressing_failed">压缩失败</string>
 	<string name="decompressing_failed">解压缩失败</string>
-	<string name="manage_favorites">管理收藏</string>
-	<string name="go_to_favorite">前往收藏</string>
-	<string name="favorites_activity_placeholder">您可以将经常访问的文件夹添加至收藏便于从任意位置快速访问。</string>
 	<string name="file_editor">文件编辑器</string>
 	<string name="storage_analysis">存储分析</string>
 	<string name="images">图片</string>

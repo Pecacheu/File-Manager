@@ -244,7 +244,7 @@ class Remote(val ctx: Context, data: JSONObject) {
 		val hidden = act.config.shouldShowHidden()
 		val files = ArrayList<ListItem>()
 		val p = path.trimEnd('/')
-		val ls = mount!!.list(p.substring(URI_BASE)) //TODO Support searchPattern for better performance?
+		val ls = mount!!.list(p.substring(URI_BASE))
 		for(f in ls) {
 			if(f.fileName == "." || f.fileName == "..") continue
 			val attr = f.fileAttributes

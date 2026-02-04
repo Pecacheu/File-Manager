@@ -22,6 +22,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.ActionBar
+import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewbinding.ViewBinding
@@ -319,12 +320,11 @@ class ItemsAdapter(
 		}
 	}
 
-	@SuppressLint("UseCompatLoadingForDrawables")
 	private fun createShortcut() {
 		val manager = activity.getSystemService(ShortcutManager::class.java)
 		if(manager.isRequestPinShortcutSupported) {
 			val item = firstItem()
-			val drawable = resources.getDrawable(R.drawable.shortcut_folder, null).mutate()
+			val drawable = ResourcesCompat.getDrawable(resources, R.drawable.shortcut_folder, null)!!.mutate()
 			getShortcutImage(item, drawable) {
 				val i = Intent(activity, SplashActivity::class.java)
 				i.action = Intent.ACTION_VIEW
@@ -874,11 +874,6 @@ class ItemsAdapter(
 	}
 
 	fun finishActMode() = actMode?.finish()
-
-	private fun getStatusBarActColor() = when {
-		activity.isDynamicTheme() -> resources.getColor(org.fossify.commons.R.color.you_contextual_status_bar_color, activity.theme)
-		else -> resources.getColor(org.fossify.commons.R.color.dark_grey, activity.theme)
-	}
 
 	fun updateTextColor(textColor: Int) {
 		this.textColor = textColor

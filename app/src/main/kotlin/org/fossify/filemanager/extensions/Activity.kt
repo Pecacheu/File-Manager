@@ -34,7 +34,7 @@ import org.fossify.filemanager.models.ListItem
 private const val GENERIC_PERM_HANDLER = 100
 
 fun Activity.shareUris(uris: ArrayList<Uri>) = getStreamPerms {
-	var mimeType = uris.map {it.path!!}.getMimeType()
+	val mimeType = uris.map {it.path!!}.getMimeType()
 	val multi = uris.size > 1
 
 	Intent().apply {
@@ -56,7 +56,7 @@ fun Activity.shareUris(uris: ArrayList<Uri>) = getStreamPerms {
 }
 
 fun Activity.pickedUris(uris: ArrayList<Uri>) = getStreamPerms {
-	var mimeType = uris.map {it.path!!}.getMimeType()
+	val mimeType = uris.map {it.path!!}.getMimeType()
 	Intent().apply {
 		if(uris.size > 1) {
 			val cd = ClipData("Attachment", arrayOf(mimeType), ClipData.Item(uris.removeAt(0)))

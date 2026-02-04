@@ -24,7 +24,7 @@ import org.fossify.commons.compose.theme.SimpleTheme
 import org.fossify.filemanager.R
 
 //TODO Resource strings?
-private val hints = arrayListOf<String>(
+private val hints = arrayListOf(
 	"Down Arrow: Scroll down",
 	"Up Arrow: Scroll up",
 	"CTRL + A: Select All",

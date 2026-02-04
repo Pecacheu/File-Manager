@@ -24,7 +24,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String,
 				else org.fossify.commons.R.string.create_new
 			activity.setupDialogStuff(binding.root, this, title) {alertDialog ->
 				alertDialog.showKeyboard(binding.itemTitle)
-				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+				alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
 					val name = binding.itemTitle.value
 					if(name.isEmpty()) {
 						activity.toast(org.fossify.commons.R.string.empty_name)
@@ -40,7 +40,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String,
 							}
 						}
 					} else activity.toast(org.fossify.commons.R.string.invalid_name)
-				})
+				}
 			}
 		}
 	}

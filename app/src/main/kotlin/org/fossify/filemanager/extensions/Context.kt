@@ -133,11 +133,9 @@ fun Activity.alert(title: String, msg: String, cb: ((res: Boolean)->Unit)?=null)
 		val diag = getAlertDialogBuilder().create()
 		diag.setTitle(title)
 		diag.setMessage(msg)
-		val clk = object: DialogInterface.OnClickListener {
-			override fun onClick(dialog: DialogInterface, which: Int) {
-				diag.dismiss()
-				cb?.invoke(which == AlertDialog.BUTTON_POSITIVE)
-			}
+		val clk = DialogInterface.OnClickListener {dialog, which ->
+			diag.dismiss()
+			cb?.invoke(which == AlertDialog.BUTTON_POSITIVE)
 		}
 		diag.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), clk)
 		if(cb != null) diag.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel), clk)

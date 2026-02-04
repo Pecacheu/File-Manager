@@ -5,7 +5,6 @@ import org.fossify.commons.helpers.TAB_FAVORITES
 import org.fossify.commons.helpers.TAB_FILES
 import org.fossify.commons.helpers.TAB_RECENT_FILES
 import org.fossify.commons.helpers.TAB_STORAGE_ANALYSIS
-import org.fossify.commons.helpers.isOnMainThread
 
 const val MAX_COLUMN_COUNT = 15
 

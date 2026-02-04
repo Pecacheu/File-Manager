@@ -348,10 +348,10 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 						return
 					}
 				}
-				if(hadConflict || pathExists(ctx, dPath)) { //Conflict
-					if(cr == CONFLICT_OVERWRITE) ListItem(ctx, dPath, "", false, 0, 0, 0).delete()
-					else if(cr == CONFLICT_KEEP_BOTH) dPath = getAltFilename(ctx, dPath)
-					else {onConflict(); return}
+				if(hadConflict || pathExists(ctx, dPath)) when(cr) { //Conflict
+					CONFLICT_OVERWRITE -> ListItem(ctx, dPath, "", false, 0, 0, 0).delete()
+					CONFLICT_KEEP_BOTH -> dPath = getAltFilename(ctx, dPath)
+					else -> {onConflict(); return}
 				}
 				if((sDev.type == DeviceType.ROOT && dDev.type != DeviceType.REMOTE) ||
 					(dDev.type == DeviceType.ROOT && sDev.type != DeviceType.REMOTE)) { //Root required

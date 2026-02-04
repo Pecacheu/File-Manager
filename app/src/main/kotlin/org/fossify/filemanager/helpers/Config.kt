@@ -161,7 +161,7 @@ class Config(context: Context): BaseConfig(context) {
 			if(removeBad || remotes == null) {
 				val rSet = prefs.getStringSet(REMOTES, HashSet())!! as HashSet<String>
 				var changed = false //Haha like the game
-				remotes = HashMap<String, Remote>(rSet.size)
+				remotes = HashMap(rSet.size)
 				var r: Remote?
 				for(rs in rSet) {
 					r = null
