@@ -59,6 +59,7 @@ import org.fossify.commons.extensions.isDynamicTheme
 import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.extensions.setupViewBackground
 import org.fossify.commons.extensions.toast
+import org.fossify.commons.helpers.REAL_FILE_PATH
 import org.fossify.commons.helpers.VIEW_TYPE_LIST
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.getFilePlaceholderDrawables
@@ -419,7 +420,7 @@ class ItemsAdapter(
 
 	private fun decompress(li: ListItem) {
 		val i = Intent(activity, DecompressActivity::class.java)
-		i.putExtra(DecompressActivity.PATH, li.path)
+		i.putExtra(REAL_FILE_PATH, li.path)
 		activity.startActivity(i)
 	}
 

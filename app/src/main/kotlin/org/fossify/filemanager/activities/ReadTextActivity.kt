@@ -1,6 +1,5 @@
 package org.fossify.filemanager.activities
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.print.PrintAttributes
@@ -24,22 +23,17 @@ import org.fossify.filemanager.databinding.ActivityReadTextBinding
 import org.fossify.filemanager.dialogs.SaveAsDialog
 import org.fossify.filemanager.extensions.error
 import org.fossify.filemanager.extensions.launchPath
-import java.io.File
-import java.io.OutputStream
-
-//TODO Remote?
-//TODO Replace with latest pull from main and check diff
+import org.fossify.filemanager.models.ListItem
 
 class ReadTextActivity: SimpleActivity() {
 	companion object {
-		private const val SELECT_SAVE_FILE_INTENT = 1
-		private const val SELECT_SAVE_FILE_AND_EXIT_INTENT = 2
 		private const val KEY_UNSAVED_TEXT = "KEY_UNSAVED_TEXT"
 	}
 
 	private val binding by viewBinding(ActivityReadTextBinding::inflate)
 
-	private var filePath = ""
+	private var uri: Uri? = null
+	private var path: String? = null
 	private var originalText = ""
 	private var searchIndex = 0
 	private var lastSavePromptTS = 0L
@@ -63,22 +57,19 @@ class ReadTextActivity: SimpleActivity() {
 		searchClearBtn = findViewById(org.fossify.commons.R.id.search_clear)
 		if(checkAppSideloading()) return
 
-		val uri = if(intent.extras?.containsKey(REAL_FILE_PATH) == true)
-			Uri.fromFile(File(intent.extras?.getString(REAL_FILE_PATH).toString()))
-		else intent.data
-
-		if(uri == null) {
+		uri = intent.data
+		val sp = intent.getStringExtra(REAL_FILE_PATH)
+		path = sp?:uri?.let {getRealPathFromURI(it)}
+		if(uri == null && path == null) {
+			toast(org.fossify.commons.R.string.unknown_error_occurred)
 			finish()
 			return
 		}
 
-		val filename = getFilenameFromUri(uri)
-		if(filename.isNotEmpty()) binding.readTextToolbar.title = Uri.decode(filename)
+		val filename = (path?:uri?.path?:"").getFilenameFromPath()
+		if(filename.isNotEmpty()) binding.readTextToolbar.title = filename
 
-		binding.readTextView.onGlobalLayout {
-			ensureBackgroundThread {checkIntent(uri, savedInstanceState)}
-		}
-
+		binding.readTextView.onGlobalLayout {checkIntent(savedInstanceState)}
 		setupSearchButtons()
 	}
 
@@ -91,19 +82,6 @@ class ReadTextActivity: SimpleActivity() {
 		super.onSaveInstanceState(outState)
 		if(originalText != binding.readTextView.text.toString()) {
 			outState.putString(KEY_UNSAVED_TEXT, binding.readTextView.text.toString())
-		}
-	}
-
-	@Deprecated("")
-	override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-		super.onActivityResult(requestCode, resultCode, resultData)
-		if((requestCode == SELECT_SAVE_FILE_INTENT || requestCode == SELECT_SAVE_FILE_AND_EXIT_INTENT)
-				&& resultCode == RESULT_OK && resultData != null && resultData.data != null) {
-			val outputStream = contentResolver.openOutputStream(resultData.data!!)
-			val shouldExitAfterSaving = requestCode == SELECT_SAVE_FILE_AND_EXIT_INTENT
-			val selectedFilePath = getRealPathFromURI(intent.data!!)
-			val shouldOverwriteOriginalText = selectedFilePath == filePath
-			saveTextContent(outputStream, shouldExitAfterSaving, shouldOverwriteOriginalText)
 		}
 	}
 
@@ -147,66 +125,30 @@ class ReadTextActivity: SimpleActivity() {
 		searchQueryET.postDelayed({searchQueryET.requestFocus()}, 250)
 	}
 
-	private fun updateFilePath() {
-		if (filePath.isEmpty()) {
-			filePath = getRealPathFromURI(intent.data!!) ?: ""
+	private fun saveAsText(exitAfterSaving: Boolean = false) {
+		SaveAsDialog(this, path?:"", false) {path, _ ->
+			val overwriteText = path == this.path
+			if(hasStoragePermission()) writeFile(path, exitAfterSaving, overwriteText)
+			else toast(org.fossify.commons.R.string.no_storage_permissions)
 		}
 	}
 
-	private fun saveAsText(shouldExitAfterSaving: Boolean=false) {
-		updateFilePath()
-		if(filePath.isEmpty()) filePath = getRealPathFromURI(intent.data!!)?:""
-		SaveAsDialog(this, filePath, true) {path, filename ->
-			if(filePath.isEmpty()) {
-				Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-					type = "text/plain"
-					putExtra(Intent.EXTRA_TITLE, filename)
-					addCategory(Intent.CATEGORY_OPENABLE)
-					val requestCode = if(shouldExitAfterSaving) SELECT_SAVE_FILE_AND_EXIT_INTENT
-						else SELECT_SAVE_FILE_INTENT
-					@Suppress("DEPRECATION")
-					startActivityForResult(this, requestCode)
-				}
-			} else SaveAsDialog(this, filePath, false) {path, _ ->
-				if (hasStoragePermission()) {
-					val file = File(path)
-					getFileOutputStream(file.toFileDirItem(this), true) {
-						val shouldOverwriteOriginalText = path == filePath
-						saveTextContent(it, shouldExitAfterSaving, shouldOverwriteOriginalText)
-					}
-				} else {
-					toast(org.fossify.commons.R.string.no_storage_permissions)
-				}
-			}
-		}
+	private fun saveText(exitAfterSaving: Boolean = false) {
+		if(path == null) saveAsText(exitAfterSaving)
+		else if(hasStoragePermission()) writeFile(path!!, exitAfterSaving, true)
+		else toast(org.fossify.commons.R.string.no_storage_permissions)
 	}
 
-	private fun saveText(shouldExitAfterSaving: Boolean = false) {
-		updateFilePath()
-
-		if (filePath.isEmpty()) {
-			saveAsText(shouldExitAfterSaving)
-		} else if (hasStoragePermission()) {
-			val file = File(filePath)
-			getFileOutputStream(file.toFileDirItem(this), true) {
-				saveTextContent(it, shouldExitAfterSaving, true)
-			}
-		} else {
-			toast(org.fossify.commons.R.string.no_storage_permissions)
-		}
-	}
-
-	private fun saveTextContent(outputStream: OutputStream?, shouldExitAfterSaving: Boolean, shouldOverwriteOriginalText: Boolean) {
-		if(outputStream != null) {
-			val currentText = binding.readTextView.text.toString()
-			outputStream.bufferedWriter().use { it.write(currentText) }
+	private fun writeFile(path: String, exitAfterSaving: Boolean, overwriteText: Boolean) = ensureBackgroundThread {
+		try {
+			val os = ListItem.getOutputStream(this, path)
+			val text = binding.readTextView.text.toString()
+			os.bufferedWriter().use {it.write(text)}
 			toast(org.fossify.commons.R.string.file_saved)
 			hideKeyboard()
-			if(shouldOverwriteOriginalText) originalText = currentText
-			if(shouldExitAfterSaving) performDefaultBack()
-		} else {
-			toast(org.fossify.commons.R.string.unknown_error_occurred)
-		}
+			if(overwriteText) originalText = text
+			if(exitAfterSaving) performDefaultBack()
+		} catch(e: Throwable) {error(e)}
 	}
 
 	private fun printText() {
@@ -216,47 +158,34 @@ class ReadTextActivity: SimpleActivity() {
 				override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = false
 				override fun onPageFinished(view: WebView, url: String) {createWebPrintJob(view)}
 			}
-
 			val text = binding.readTextView.text.toString()
 			ensureBackgroundThread {
 				try {
 					val base64 = Base64.encodeToString(text.toByteArray(), Base64.DEFAULT)
-					runOnUiThread {
-						webView.loadData(base64, "text/plain", "base64")
-					}
-				} catch (e: Exception) {
-					error(e)
-				}
+					runOnUiThread {webView.loadData(base64, "text/plain", "base64")}
+				} catch(e: Throwable) {error(e)}
 			}
 		} catch(e: Throwable) {error(e)}
 	}
 
 	private fun createWebPrintJob(webView: WebView) {
-		val jobName = if(filePath.isNotEmpty()) filePath.getFilenameFromPath()
-		else getString(R.string.app_name)
+		val jobName = binding.readTextToolbar.title.toString()
 		val printAdapter = webView.createPrintDocumentAdapter(jobName)
 		(getSystemService(PRINT_SERVICE) as? PrintManager)?.apply {
 			print(jobName, printAdapter, PrintAttributes.Builder().build())
 		}
 	}
 
-	private fun checkIntent(uri: Uri, state: Bundle?) {
-		originalText = if(uri.scheme == "file") {
-			filePath = uri.path!!
-			val file = File(filePath)
-			if(file.exists()) {
-				try {file.readText()} catch(e: Throwable) {error(e); ""}
-			} else {
-				toast(org.fossify.commons.R.string.unknown_error_occurred); ""
-			}
-		} else {
-			try {
-				contentResolver.openInputStream(uri)!!.bufferedReader().use {it.readText()}
-			} catch(e: Throwable) {
-				this.error(e)
-				if(e !is OutOfMemoryError) finish()
-				return
-			}
+	private fun openInputStream() = if(path != null) ListItem.getInputStream(this, path!!)
+		else contentResolver.openInputStream(uri!!)
+
+	private fun checkIntent(state: Bundle?) = ensureBackgroundThread {
+		try {
+			originalText = openInputStream()!!.bufferedReader().use {it.readText()}
+		} catch(e: Throwable) {
+			error(e)
+			finish()
+			return@ensureBackgroundThread
 		}
 		runOnUiThread {
 			val text = if(state == null) originalText

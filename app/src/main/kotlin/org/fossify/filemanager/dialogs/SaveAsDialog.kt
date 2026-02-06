@@ -10,7 +10,6 @@ import org.fossify.filemanager.databinding.DialogSaveAsBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.models.ListItem
 
-//TODO Test
 class SaveAsDialog(val activity: SimpleActivity, var path: String,
 	private val hidePath: Boolean, val callback: (path: String, filename: String)->Unit) {
 

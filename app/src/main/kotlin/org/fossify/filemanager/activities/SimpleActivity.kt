@@ -10,7 +10,8 @@ import android.view.WindowManager
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.graphics.Insets
 import androidx.core.view.ScrollingView
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsCompat.toWindowInsetsCompat
+import androidx.core.view.WindowInsetsCompat.Type
 import android.provider.Settings
 import org.fossify.commons.activities.BaseSimpleActivity
 import org.fossify.commons.dialogs.ConfirmationAdvancedDialog
@@ -91,15 +92,14 @@ open class SimpleActivity: BaseSimpleActivity() {
 		super.setContentView(view)
 	}
 
-	fun setupViews(main: CoordinatorLayout, content: View?, appbar: MyAppBarLayout?, scrollView: ScrollingView?,
-			onInsets: ((iAll: Insets, iNav: Insets)->Unit)?=null) {
-		if(scrollView != null) setupEdgeToEdge(padBottomSystem = listOf(scrollView as View))
+	fun setupViews(main: CoordinatorLayout, content: View?, appbar: MyAppBarLayout?,
+			scrollView: ScrollingView?, onInsets: ((iAll: Insets, iNav: Insets)->Unit)?=null) {
 		if(appbar != null) setupMaterialScrollListener(scrollView, appbar)
 
 		window.decorView.setOnApplyWindowInsetsListener {v, insets ->
-			val ins = WindowInsetsCompat.toWindowInsetsCompat(insets, v)
-			val iAll = ins.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
-			val iNav = ins.getInsets(WindowInsetsCompat.Type.navigationBars())
+			val ins = toWindowInsetsCompat(insets, v)
+			val iAll = ins.getInsets(Type.ime() or Type.systemBars() or Type.displayCutout())
+			val iNav = ins.getInsets(Type.systemBars())
 
 			val mc = main.layoutParams as MarginLayoutParams
 			mc.setMargins(0, 0, 0, 0)

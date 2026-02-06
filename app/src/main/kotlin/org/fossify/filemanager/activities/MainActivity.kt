@@ -4,12 +4,15 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.Configuration
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.provider.MediaStore.MediaColumns
 import android.util.AttributeSet
 import android.util.Xml
 import android.view.KeyEvent
 import android.view.ViewGroup.MarginLayoutParams
+import android.webkit.MimeTypeMap
 import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContextView
 import com.stericson.RootTools.RootTools
@@ -36,6 +39,8 @@ import androidx.viewpager2.widget.ViewPager2
 import org.fossify.commons.helpers.*
 import org.fossify.commons.views.MySearchMenu
 import org.fossify.filemanager.about.AboutActivityAlt
+import org.fossify.filemanager.dialogs.FilePickerDialog
+import org.fossify.filemanager.dialogs.SaveAsDialog
 import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.helpers.*
 import org.fossify.filemanager.models.ListItem
@@ -92,7 +97,7 @@ class MainActivity: SimpleActivity() {
 
 			binding.mainViewPager.setPadding(iAll.left, 0, iAll.right, 0)
 
-			binding.mainTabsHolder.setPadding(0, 0, 0, iAll.bottom)
+			binding.mainTabsHolder.setPadding(0, 0, 0, iNav.bottom)
 			val mt = binding.mainTabsHolder.layoutParams as MarginLayoutParams
 			mt.setMargins(iNav.left, 0, iNav.right, 0)
 		}
@@ -387,6 +392,54 @@ class MainActivity: SimpleActivity() {
 			binding.mainViewPager.currentItem = 0
 		} else openPath(path)
 		if(refreshRecents) getRecentsFragment()?.refreshFragment()
+		//Check send intent
+		if(intent.action == Intent.ACTION_SEND) {
+			val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+			val uris = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let {listOf(it)}
+			handleSendIntent(intent.type, text, uris)
+		} else if(intent.action == Intent.ACTION_SEND_MULTIPLE) {
+			val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+			handleSendIntent(intent.type, null, uris)
+		}
+	}
+
+	fun handleSendIntent(mimeType: String?, text: String?, uris: List<Uri>?) {
+		val root = getItemsFragment()?.currentPath?:""
+		if(text != null) SaveAsDialog(this, "$root/${getCurrentFormattedDateTime()}.txt", false) {path, _ ->
+			//TODO Run as task
+			ensureBackgroundThread {
+				try {
+					//TODO Note: Text can be a web URL to download
+					val oStr = ListItem.getOutputStream(this, path)
+					oStr.use {it.bufferedWriter().write(text)}
+					toast(org.fossify.commons.R.string.copying_success)
+					finish()
+				} catch(e: Throwable) {error(e)}
+			}
+		} else if(uris != null) FilePickerDialog(this, root, false, true) {dir ->
+			//TODO Run as task
+			ensureBackgroundThread {
+				try {
+					for(uri in uris) {
+						//Get name from content query, uri, then date
+						val cursor = contentResolver.query(uri, arrayOf(MediaColumns.DISPLAY_NAME), null, null, null)
+						cursor?.moveToFirst()
+						var name = cursor?.getString(0)?:uri.path?.getFilenameFromPath()?:getCurrentFormattedDateTime()
+						//Append ext from mimeType if none present
+						if(name.getFilenameExtension().isEmpty()) {
+							val ext = mimeType?.let {MimeTypeMap.getSingleton().getExtensionFromMimeType(it)}
+							if(ext != null) name += ".$ext"
+						}
+						//Copy data
+						val iStr = contentResolver.openInputStream(uri)
+						val oStr = ListItem.getOutputStream(this, "$dir/$name")
+						oStr.use {iStr?.use {it.copyTo(oStr)}}
+					}
+					toast(org.fossify.commons.R.string.copying_success)
+					finish()
+				} catch(e: Throwable) {error(e)}
+			}
+		}
 	}
 
 	private fun initFragments() {
@@ -410,12 +463,11 @@ class MainActivity: SimpleActivity() {
 
 	private fun getTabsToShow(): ArrayList<Int> {
 		val action = intent.action
-		if(action == Intent.ACTION_CREATE_DOCUMENT) return arrayListOf(TAB_FILES)
-
 		val tabs = arrayListOf(TAB_FILES, TAB_FAVORITES, TAB_RECENT_FILES, TAB_STORAGE_ANALYSIS)
 		if(config.favorites.isEmpty()) tabs.remove(TAB_FAVORITES)
-		if(action == RingtoneManager.ACTION_RINGTONE_PICKER || action == Intent.ACTION_GET_CONTENT
-			|| action == Intent.ACTION_PICK) tabs.remove(TAB_STORAGE_ANALYSIS) //Pick Document
+		if(action == Intent.ACTION_CREATE_DOCUMENT) tabs.remove(TAB_RECENT_FILES)
+		if(action == Intent.ACTION_CREATE_DOCUMENT || action == RingtoneManager.ACTION_RINGTONE_PICKER
+			|| action == Intent.ACTION_GET_CONTENT || action == Intent.ACTION_PICK) tabs.remove(TAB_STORAGE_ANALYSIS)
 		tabs.removeAll {it != TAB_FILES && config.showTabs and it == 0}
 		return tabs
 	}

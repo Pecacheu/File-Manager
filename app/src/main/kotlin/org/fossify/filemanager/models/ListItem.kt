@@ -197,14 +197,14 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			return ctx.getDoesFilePathExist(path) && !ctx.getIsPathDirectory(path)
 		}
 		fun getInputStream(ctx: SimpleActivity, path: String): InputStream {
-			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, false).readStream
+			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path, true)!!.openFile(path, false).readStream
 			//TODO Root
 			return ctx.getFileInputStreamSync(path)!!
 		}
-		fun getOutputStream(ctx: SimpleActivity, path: String, new: Boolean=true): OutputStream {
-			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path,true)!!.openFile(path, true, new).writeStream
+		fun getOutputStream(ctx: SimpleActivity, path: String): OutputStream {
+			if(isRemotePath(path)) return ctx.config.getRemoteForPath(path, true)!!.openFile(path, true).writeStream
 			//TODO Root
-			return getFileOutputStream(ctx, path, new)
+			return getFileOutputStream(ctx, path)
 		}
 	}
 
@@ -423,11 +423,9 @@ data class DeviceType(val type: Int, val id: String?) {
 	}
 }
 
-private fun getFileOutputStream(ctx: Context, path: String, reqNew: Boolean): OutputStream {
+private fun getFileOutputStream(ctx: Context, path: String): OutputStream {
 	val target = File(path)
 	val exists = ctx.getDoesFilePathExist(path)
-	if(exists && reqNew) throw FileAlreadyExistsException(target)
-
 	val os = when {
 		ctx.isRestrictedSAFOnlyRoot(path) -> {
 			val uri = ctx.getAndroidSAFUri(path)
@@ -564,7 +562,7 @@ private fun doCopyMove(src: ListItem, dest: String, isCopy: Boolean, remote: Rem
 	} else {
 		ListItem.getInputStream(src.ctx!!, src.path).use {iStr ->
 			ListItem.getOutputStream(src.ctx, dest).use {oStr ->
-				iStr.copyTo(oStr, DEFAULT_BUFFER_SIZE)
+				iStr.copyTo(oStr)
 			}
 		}
 	}

@@ -2,6 +2,7 @@ package org.fossify.filemanager.activities
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.exception.ZipException.Type
 import net.lingala.zip4j.io.inputstream.ZipInputStream
@@ -14,6 +15,7 @@ import org.fossify.commons.extensions.isGone
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.NavigationIcon
+import org.fossify.commons.helpers.REAL_FILE_PATH
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.R
 import org.fossify.filemanager.adapters.DecompressItemsAdapter
@@ -29,7 +31,6 @@ import java.io.InputStream
 
 class DecompressActivity: SimpleActivity() {
 	companion object {
-		const val PATH = "fm-path"
 		private const val PASSWORD = "password"
 	}
 
@@ -37,10 +38,10 @@ class DecompressActivity: SimpleActivity() {
 	private val allFiles = ArrayList<ListItem>()
 	private var currentPath = ""
 	private var uri: Uri? = null
-	private lateinit var path: String
+	private var path: String? = null
 	private var password: String? = null
 	private var passwordDialog: EnterPasswordDialog? = null
-	private var filename = ""
+	private lateinit var filename: String
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -49,19 +50,16 @@ class DecompressActivity: SimpleActivity() {
 		binding.apply {setupViews(decompressCoordinator, decompressList, decompressAppbar, decompressList)}
 
 		uri = intent.data
-		if(uri == null) {
-			val sp = intent.getStringExtra(PATH)
-			if(sp == null) {
-				toast(org.fossify.commons.R.string.unknown_error_occurred)
-				return
-			}
-			path = sp
-		} else {
-			path = getRealPathFromURI(uri!!)?:Uri.decode(uri.toString())
+		val sp = intent.getStringExtra(REAL_FILE_PATH)
+		path = sp?:uri?.let {getRealPathFromURI(it)}
+		if(uri == null && path == null) {
+			toast(org.fossify.commons.R.string.unknown_error_occurred)
+			finish()
+			return
 		}
 
+		filename = (path?:uri?.path?:"").getFilenameFromPath()
 		password = savedInstanceState?.getString(PASSWORD, null)
-		filename = path.getFilenameFromPath()
 		binding.decompressToolbar.title = filename
 		setupFilesList()
 	}
@@ -116,18 +114,20 @@ class DecompressActivity: SimpleActivity() {
 	}
 
 	private fun decompressFiles() {
-		FilePickerDialog(this, path) {dest ->
+		FilePickerDialog(this, path?.getParentPath()?:"") {dest ->
 			handleSAFDialog(dest) {if(it) decompressTo(dest)}
 		}
 	}
+
+	private fun openInputStream() = if(path != null) ListItem.getInputStream(this, path!!)
+		else contentResolver.openInputStream(uri!!)
 
 	private fun decompressTo(dest: String) = ensureBackgroundThread {
 		config.reloadPath = true
 		var inStream: InputStream? = null
 		var zipStream: ZipInputStream? = null
 		try {
-			inStream = if(uri != null) contentResolver.openInputStream(uri!!)
-				else ListItem.getInputStream(this, path)
+			inStream = openInputStream()
 			zipStream = ZipInputStream(BufferedInputStream(inStream))
 			if(password != null) zipStream.setPassword(password?.toCharArray())
 			val buffer = ByteArray(1024)
@@ -173,8 +173,7 @@ class DecompressActivity: SimpleActivity() {
 		var inStream: InputStream? = null
 		var zipStream: ZipInputStream? = null
 		try {
-			inStream = if(uri != null) contentResolver.openInputStream(uri!!)
-				else ListItem.getInputStream(this, path)
+			inStream = openInputStream()
 			zipStream = ZipInputStream(BufferedInputStream(inStream))
 			if(password != null) zipStream.setPassword(password?.toCharArray())
 			var zipEntry: LocalFileHeader?

@@ -366,14 +366,14 @@ class Remote(val ctx: Context, data: JSONObject) {
 		}
 	}
 
-	fun openFile(path: String, write: Boolean, new: Boolean=false): RemoteFile {
+	fun openFile(path: String, write: Boolean): RemoteFile {
 		if(!mntValid) connect()
 		val p = path.substring(URI_BASE)
 		val mask = mutableSetOf(AccessMask.FILE_READ_DATA)
 		if(write) mask.add(AccessMask.FILE_WRITE_DATA)
 		val acc = mutableSetOf(SMB2ShareAccess.FILE_SHARE_READ)
 		if(write) acc.add(SMB2ShareAccess.FILE_SHARE_WRITE)
-		val mode = if(new) SMB2CreateDisposition.FILE_CREATE else SMB2CreateDisposition.FILE_OPEN
+		val mode = if(write) SMB2CreateDisposition.FILE_OVERWRITE_IF else SMB2CreateDisposition.FILE_OPEN
 		val cOpt = setOf(SMB2CreateOptions.FILE_NON_DIRECTORY_FILE, SMB2CreateOptions.FILE_RANDOM_ACCESS)
 		val file = mount!!.openFile(p, mask, null, acc, mode, cOpt)
 		return RemoteFile(file)

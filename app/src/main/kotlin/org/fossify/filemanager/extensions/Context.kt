@@ -9,6 +9,7 @@ import androidx.appcompat.app.AlertDialog
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
 import org.fossify.commons.R
+import org.fossify.commons.compose.extensions.getActivity
 import org.fossify.commons.extensions.DIRS_ACCESSIBLE_ONLY_WITH_SAF
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.helpers.isRPlus
@@ -139,7 +140,7 @@ fun Activity.alert(title: String, msg: String, cb: ((res: Boolean)->Unit)?=null)
 		}
 		diag.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), clk)
 		if(cb != null) diag.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel), clk)
-		diag.show()
+		try {diag.show()} catch(_: Throwable) {}
 	}
 }
 
