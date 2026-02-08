@@ -1,12 +1,24 @@
 package org.fossify.filemanager.models
 
+import android.app.Notification
+import android.app.PendingIntent
+import android.app.job.JobInfo
+import android.app.job.JobParameters
+import android.app.job.JobScheduler
+import android.app.job.JobService
+import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.OperationCanceledException
+import android.os.PersistableBundle
 import android.os.Process
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
+import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
@@ -43,7 +55,9 @@ import org.fossify.commons.extensions.isAccessibleWithSAFSdk30
 import org.fossify.commons.extensions.isImageFast
 import org.fossify.commons.extensions.isVideoFast
 import org.fossify.commons.extensions.normalizeString
+import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.storeAndroidTreeUri
+import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.AlphanumericComparator
 import org.fossify.commons.helpers.CONFLICT_KEEP_BOTH
 import org.fossify.commons.helpers.CONFLICT_MERGE
@@ -57,6 +71,9 @@ import org.fossify.commons.helpers.SORT_BY_SIZE
 import org.fossify.commons.helpers.SORT_DESCENDING
 import org.fossify.commons.helpers.SORT_USE_NUMERIC_VALUE
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.commons.helpers.isSPlus
+import org.fossify.commons.helpers.isTiramisuPlus
+import org.fossify.commons.helpers.isUpsideDownCakePlus
 import org.fossify.commons.models.FileDirItem
 import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.activities.SimpleActivity
@@ -71,20 +88,25 @@ import org.fossify.filemanager.extensions.isRestrictedSAFOnlyRoot
 import org.fossify.filemanager.helpers.Remote
 import org.fossify.filemanager.helpers.RemoteProvider
 import org.fossify.filemanager.helpers.RootHelpers
+import org.fossify.filemanager.helpers.getNotifCh
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.URLDecoder
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.concurrent.CancellationException
+import kotlin.io.path.Path
 
 const val FILE_AUTH = "${BuildConfig.APPLICATION_ID}.provider"
 
 @Suppress("UNCHECKED_CAST", "LocalVariableName")
 data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String, val isDir: Boolean, var children: Int,
 		var size: Long, var modified: Long, val isSectionTitle: Boolean=false, val isGridDivider: Boolean=false): Comparable<ListItem> {
-	val isRemote = isRemotePath(path) //TODO Might be better to only calc this when needed
-	val isHidden: Boolean get() = name.startsWith('.')
+	val isRemote = isRemotePath(path)
+	val isHidden = name.startsWith('.')
 
 	companion object {
 		var sorting = 0
@@ -98,7 +120,6 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			return ListItem(ctx, file.absolutePath, name, isDir, -1, size, lastMod?:file.lastModified())
 		}
 
-		//TODO Make this async load search results, maybe multithreaded?
 		fun listDir(ctx: SimpleActivity, path: String, recurse: Boolean, search: String?=null,
 				_d: DeviceType?=null, cancel: (res: ArrayList<ListItem>?)->Boolean): ArrayList<ListItem>? {
 			val showHidden = ctx.config.shouldShowHidden()
@@ -113,8 +134,7 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 				DeviceType.OTG -> getOTGItems(ctx, path, showHidden, getSize, search == null)
 				DeviceType.ROOT -> blockAsync {RootHelpers(ctx).getFiles(path) {_, li -> it.invoke(li)}}
 				else -> {
-					val files = File(path).listFiles()
-					if(files == null) throw FileNotFoundException()
+					val files = File(path).listFiles()?:throw FileNotFoundException()
 					val items = ArrayList<ListItem>(files.size)
 					for(f in files) {
 						val li = fromFile(ctx, f, getSize, showHidden)
@@ -135,11 +155,12 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			val dir = (if(search == null) dirAll.clone() else dirAll.filter {it.name
 				.normalizeString().contains(search, true)}) as ArrayList<ListItem>
 			if(cancel(dir)) return dir
+			//TODO Maybe multithreaded w/ thread pool?
 			if(recurse) for(li in dirAll) if(li.isDir) dir.addAll(listDir(ctx, li.path, true, search, d, cancel)?:return null)
 			return dir
 		}
 
-		fun compress(items: ArrayList<ListItem>, dest: String, pwd: String?, cancel: ()->Boolean) {
+		fun compress(items: List<ListItem>, dest: String, pwd: String?, cancel: ()->Boolean) {
 			val ctx = items[0].ctx!!
 			fun zipEntry(name: String, modified: Long) = ZipParameters().also {
 				it.fileNameInZip = name
@@ -152,7 +173,7 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			fun putFile(zout: ZipOutputStream, f: ListItem, path: String?) {
 				val name = if(path != null) "$path/${f.name}" else f.name
 				zout.putNextEntry(zipEntry(name, f.modified))
-				getInputStream(ctx, f.path).use {it.copyTo(zout)}
+				getInputStream(ctx, f.path).use {it.copyToInter(zout, cancel)}
 				zout.closeEntry()
 			}
 
@@ -217,6 +238,12 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 		sorting and SORT_BY_DATE_MODIFIED != 0 -> modified.formatDate(context, dateFormat, timeFormat)
 		sorting and SORT_BY_EXTENSION != 0 -> getExt().lowercase()
 		else -> name
+	}
+	fun getCreationTime(): Long {
+		return when {
+			isRemote -> ctx!!.config.getRemoteForPath(path, true)!!.getCreationTime(path)
+			else -> Files.readAttributes(Path(path), BasicFileAttributes::class.java).creationTime().toMillis()
+		}
 	}
 
 	override fun compareTo(other: ListItem): Int {
@@ -290,13 +317,14 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 	fun setHidden(hide: Boolean) {
 		if(hide == isHidden) return
 		val newName = if(hide) ".$name" else name.substring(1)
-		copyMove("${path.getParentPath()}/$newName", false)
+		copyMove("${path.getParentPath()}/$newName", false) {false}
 	}
 
-	fun copyMove(toPath: String, isCopy: Boolean, multi: Boolean=false) {
+	fun copyMove(toPath: String, isCopy: Boolean, multi: Boolean=false, cancel: ()->Boolean) {
 		try {
+			if(cancel()) throw OperationCanceledException()
 			if(!isCopy && toPath == path) throw ctx!!.formatErr(R.string.source_and_destination_same)
-			val e = blockAsync {runCopyMove(toPath, isCopy, multi, it)}
+			val e = blockAsync {runCopyMove(toPath, isCopy, multi, cancel, it)}
 			if(e != null) throw e
 			ctx!!.config.moveFavorite(path, toPath)
 		} finally {
@@ -304,7 +332,8 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 		}
 	}
 
-	private fun runCopyMove(dest: String, isCopy: Boolean, multi: Boolean, cb: (e: Throwable?)->Unit) {
+	private fun runCopyMove(dest: String, isCopy: Boolean, multi: Boolean,
+			cancel: ()->Boolean, cb: (e: Throwable?)->Unit) {
 		Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
 		val sDev = DeviceType.fromPath(ctx!!, path)
 		val dDev = DeviceType.fromPath(ctx, dest)
@@ -318,12 +347,13 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			ctx.runOnUiThread {FileConflictDialog(ctx, asFdItem(), multi) {res, all ->
 				cr = res
 				if(all) ctx.onConflict = res
-				if(cr == CONFLICT_SKIP) cb(null)
-				else if(cr == CONFLICT_OVERWRITE && dest == path)
-					cb(ctx.formatErr(R.string.source_and_destination_same))
-				else ensureBackgroundThread {
-					Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
-					doRun!!(true)
+				when(cr) {
+					CONFLICT_SKIP -> cb(null)
+					CONFLICT_OVERWRITE if dest == path -> cb(ctx.formatErr(R.string.source_and_destination_same))
+					else -> ensureBackgroundThread {
+						Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
+						doRun!!(true)
+					}
 				}
 			}}
 		}
@@ -342,14 +372,14 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 							else remote.copyFile(path, dPath, cr == CONFLICT_OVERWRITE) //Remote copy
 						if(res) cb(null) else onConflict()*/
 						if(!remote.copyFile(path, dPath, cr == CONFLICT_OVERWRITE)) onConflict() else {
-							if(!isCopy) delete()
+							if(!isCopy) delete(cancel)
 							cb(null)
 						}
 						return
 					}
 				}
 				if(hadConflict || pathExists(ctx, dPath)) when(cr) { //Conflict
-					CONFLICT_OVERWRITE -> ListItem(ctx, dPath, "", false, 0, 0, 0).delete()
+					CONFLICT_OVERWRITE -> ListItem(ctx, dPath, "", false, 0, 0, 0).delete(cancel)
 					CONFLICT_KEEP_BOTH -> dPath = getAltFilename(ctx, dPath)
 					else -> {onConflict(); return}
 				}
@@ -360,7 +390,7 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 				} else if(!isCopy && sDev.type == DeviceType.DEV && sDev == dDev) { //Both internal
 					if(!File(path).renameTo(File(dPath))) throw ctx.formatErr(R.string.copy_move_failed)
 				} //TODO Fast rename on OTG / SAF
-				else doCopyMove(this, dPath, isCopy, remote) //The long method
+				else doCopyMove(this, dPath, isCopy, remote, null, cancel) //The long method
 				cb(null)
 			} catch(e: Throwable) {cb(e)}
 		}
@@ -382,7 +412,8 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 		}
 	}
 
-	fun delete() {
+	fun delete(cancel: ()->Boolean) {
+		if(cancel()) throw OperationCanceledException()
 		ctx!!.config.removeFavorite(path)
 		when {
 			isRemote -> ctx.config.getRemoteForPath(path,true)!!.delete(path)
@@ -390,8 +421,8 @@ data class ListItem(val ctx: SimpleActivity?, val path: String, val name: String
 			//TODO Delete isRestrictedSAFOnlyRoot
 			else -> {
 				if(isDir) {
-					val dir = listDir(ctx, path, false) {false}!!
-					for(f in dir) f.delete()
+					val dir = listDir(ctx, path, false) {cancel()}?:throw OperationCanceledException()
+					for(f in dir) f.delete(cancel)
 				}
 				if(!File(path).delete()) throw ctx.formatErr(R.string.unknown_error_occurred)
 			}
@@ -522,12 +553,12 @@ private val RE_ALT_NAME = Regex("\\(\\d+\\)$")
 
 private fun getAltFilename(ctx: SimpleActivity, dest: String): String {
 	var name = dest.getFilenameFromPath()
-	val par = dest.substring(0, dest.length-name.length-1)
+	val par = dest.take(dest.length-name.length-1)
 	val extIdx = name.lastIndexOf('.')
 	val ext = if(extIdx != -1) name.substring(extIdx) else ""
-	if(extIdx != -1) name = name.substring(0, extIdx)
+	if(extIdx != -1) name = name.take(extIdx)
 	val m = RE_ALT_NAME.find(name)
-	if(m != null) name = name.substring(0, m.range.first)
+	if(m != null) name = name.take(m.range.first)
 	var newDest: String
 	var i = 1
 	do {
@@ -537,12 +568,14 @@ private fun getAltFilename(ctx: SimpleActivity, dest: String): String {
 	return newDest
 }
 
-private fun doCopyMove(src: ListItem, dest: String, isCopy: Boolean, remote: Remote?, _dirs: ArrayList<String>?=null) {
+private fun doCopyMove(src: ListItem, dest: String, isCopy: Boolean, remote: Remote?,
+		_dirs: ArrayList<String>?=null, cancel: ()->Boolean) {
 	if(src.isDir) {
 		val dirs = _dirs?:ArrayList()
 		val items = ListItem.listDir(src.ctx!!, src.path, true) {false}!!
 		val pLen = src.path.trimEnd('/').length+1
 		for(li in items) {
+			if(cancel()) throw OperationCanceledException()
 			val newDest = "$dest/${li.path.substring(pLen)}"
 			if(li.isDir) {
 				if(!dirs.contains(newDest)) {
@@ -556,15 +589,106 @@ private fun doCopyMove(src: ListItem, dest: String, isCopy: Boolean, remote: Rem
 					dirs.add(newPar)
 				}
 				if(remote != null) remote.copyFile(li.path, newDest, false)
-				else doCopyMove(li, newDest, true, null, dirs)
+				else doCopyMove(li, newDest, true, null, dirs, cancel)
 			}
 		}
 	} else {
 		ListItem.getInputStream(src.ctx!!, src.path).use {iStr ->
 			ListItem.getOutputStream(src.ctx, dest).use {oStr ->
-				iStr.copyTo(oStr)
+				iStr.copyToInter(oStr, cancel)
 			}
 		}
 	}
-	if(!isCopy) src.delete()
+	if(!isCopy) src.delete(cancel)
+}
+
+fun InputStream.copyToInter(out: OutputStream, cancel: ()->Boolean) {
+	val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+	var bytes = read(buffer)
+	while(bytes >= 0) {
+		if(cancel()) throw CancellationException()
+		out.write(buffer, 0, bytes)
+		bytes = read(buffer)
+	}
+}
+
+// ---- User-Initiated Data Transfer ----
+
+private val FileJobs = HashMap<Int, FileJob>()
+
+fun runFileJob(ctx: Context, desc: String, netJob: Boolean, task: (cancel: ()->Boolean)->Unit) {
+	val id = System.currentTimeMillis().toInt()
+	val info = JobInfo.Builder(id, ComponentName(ctx.applicationContext, FileService::class.java))
+	if(isSPlus()) info.setExpedited(true)
+	if(isTiramisuPlus()) info.setPriority(JobInfo.PRIORITY_MAX)
+	if(netJob) info.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+	val extra = PersistableBundle()
+	extra.putString(FileJobNotify.EXTRA_DESC, desc)
+	info.setExtras(extra)
+	FileJobs[id] = FileJob(task)
+	val jSch = ctx.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+	jSch.schedule(info.build())
+	/*TODO val myWorkRequest = OneTimeWorkRequest.from(DownloadWorker::class.java)
+	WorkManager.getInstance(context).enqueue(myWorkRequest)*/
+}
+
+data class FileJob(val task: (cancel: ()->Boolean)->Unit) {
+	var job: FileService? = null
+}
+
+class FileService: JobService() {
+	@Volatile var cancel = false
+
+	private fun getNotif(params: JobParameters): Notification {
+		val stopIntent = Intent(this, FileJobNotify::class.java).apply {
+			action = FileJobNotify.ACTION_STOP_JOB
+			putExtra(Notification.EXTRA_NOTIFICATION_ID, params.jobId)
+		}
+		getNotifCh(this)
+		return NotificationCompat.Builder(this, BuildConfig.APPLICATION_ID)
+			.setSmallIcon(R.drawable.ic_folder_vector)
+			.setContentTitle(getString(org.fossify.filemanager.R.string.transfer))
+			.setContentText(params.extras.getString(FileJobNotify.EXTRA_DESC))
+			.setSilent(true)
+			.setOngoing(true)
+			.addAction(R.drawable.ic_stop_vector, getString(org.fossify.filemanager.R.string.stop),
+				PendingIntent.getBroadcast(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE))
+			.setProgress(100, 0, true).build()
+	}
+
+	override fun onStartJob(params: JobParameters): Boolean {
+		val job = FileJobs.get(params.jobId)?:return false
+		if(isUpsideDownCakePlus()) setNotification(params, params.jobId,
+			getNotif(params), JOB_END_NOTIFICATION_POLICY_DETACH)
+		job.job = this
+		Thread {
+			Log.i("test", "-- JOB START ${params.jobId} --")
+			job.task.invoke {cancel}
+			Log.i("test", "-- JOB END ${params.jobId} --")
+			jobFinished(params, false)
+			FileJobs.remove(params.jobId)
+			notificationManager.cancel(params.jobId)
+		}.start()
+		return true
+	}
+
+	override fun onStopJob(params: JobParameters): Boolean {
+		return false
+	}
+}
+
+class FileJobNotify: BroadcastReceiver() {
+	companion object {
+		const val ACTION_STOP_JOB = "ActionStopJob"
+		const val EXTRA_DESC = "desc"
+	}
+
+	override fun onReceive(ctx: Context, intent: Intent) {
+		if(intent.action == ACTION_STOP_JOB) {
+			val nId = intent.getIntExtra(Notification.EXTRA_NOTIFICATION_ID, 0)
+			Log.i("test", "STOPPING JOB $nId")
+			FileJobs[nId]?.job?.cancel = true
+			ctx.toast(org.fossify.filemanager.R.string.job_cancelled)
+		}
+	}
 }

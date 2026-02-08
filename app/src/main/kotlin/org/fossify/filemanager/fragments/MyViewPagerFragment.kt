@@ -15,6 +15,7 @@ import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.ItemsFragmentBinding
 import org.fossify.filemanager.extensions.config
+import org.fossify.filemanager.extensions.getMimeTypeExt
 import org.fossify.filemanager.helpers.MAX_COLUMN_COUNT
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 
@@ -46,7 +47,7 @@ abstract class MyViewPagerFragment<BINDING: MyViewPagerFragment.InnerBinding>(co
 		return if(wantedMimeType.isEmpty() || wantedMimeType == "*/*" || isDirectory) {
 			true
 		} else {
-			val mimeType = path.getMimeType()
+			val mimeType = path.getMimeTypeExt()
 			if(wantedMimeType.endsWith("/*")) mimeType.substringBefore("/").equals(wantedMimeType.substringBefore("/"), true)
 				else mimeType.equals(wantedMimeType, true)
 		}

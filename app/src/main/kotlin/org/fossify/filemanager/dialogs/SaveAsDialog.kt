@@ -5,7 +5,7 @@ import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.filemanager.activities.SimpleActivity
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.databinding.DialogSaveAsBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.models.ListItem
@@ -23,14 +23,14 @@ class SaveAsDialog(val activity: SimpleActivity, var path: String,
 		if(extIdx != -1) name = name.substring(0, extIdx)
 
 		val binding = DialogSaveAsBinding.inflate(activity.layoutInflater).apply {
-			folderValue.setText(activity.humanizePath(parPath))
+			folderValue.setText(activity.readablePath(parPath))
 			filenameValue.setText(name)
 			extensionValue.setText(ext)
 
 			if(hidePath) folderHint.beGone() else {
 				folderValue.setOnClickListener {
 					FilePickerDialog(activity, parPath) {
-						folderValue.setText(activity.humanizePath(it))
+						folderValue.setText(activity.readablePath(it))
 						parPath = it
 					}
 				}

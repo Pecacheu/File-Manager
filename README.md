@@ -1,10 +1,29 @@
 # About this fork
 
-**The plan is to add network file sharing (SMB/SFTP)**. The official maintainers do not approve of the app containing any networking functionality. That is, perhaps, understandable, but also sadly makes the app mostly useless for my purposes.
+This fork adds **network file sharing via SMB** *(more protocols eg. SFTP/FTPS may be added in the future)*, among many other new features and improvements! Don't expect this to get merged into the base branch any time soon. The official maintainers take a stance against the app offering any networking functionality whatsoever.
 
-There's a **BIG** difference between an app connecting to some Big Data cloud you don't control, and connecting to your *own* network shares (local or remote). This app's advantage over similar open-source options like Amaze is its simplicity and the clean interface, which I do enjoy, but sometimes, things can be a little *too* simple.
+### Other features/improvements include
+- Favorites have their own tab instead of a tiny menu bar option
+- Favorites can be removed easily from the tab instead of via `Menu -> Settings -> Manage Favorites`
+- Improved sharing support to more apps and MIME type detection (eg. HEIC images don't share correctly on main branch)
+- Reverse sharing supported too! Share **TO** File Explore as a destination, allowing you to import images and files in from other apps/instant messengers instantly and choose where to save them.
+- Improved thumbnail performance, also fully supports **thumbnails on remote shares!** (A very rare feature in file manager apps I've tried)
+- **Vastly** improved search performance, searches show results asynchronously and can be cancelled at any time w/ back button
+- Bulk jobs (copy/move/delete/etc) run in background and show a progress notification that allows cancelling them at any time
+- Runs faster, many methods are more optimized
+- Cleaner edge-to-edge UI w/ full display notch/cutout support
+- Better touch keyboard handling (doesn't move tab bar up and block UI)
+- Physical keyboard shortcuts (tested with Samsung DeX/Desktop Mode!)
+- Stays in selection mode when rotating screen
+- And more!
 
-While I'm at it, I'm also making tweaks and improvements, and merging any other good forks I see to make this the comprehensive best version of the app. In the future, network file syncing is a possibility. There are other options for that, but having both a great file manager and sync client in one app would be convenient.
+### TODO
+- Fix file rename on remote
+- Fix "Open with" in ReadTextActivity (MainActivity "Open with" works fine)
+- Fix clicking "cancel" in overwrite dialog breaking the transfer (use the "skip" option for now)
+- Add recycle bin if that gets pushed to main
+- Add support for more protocols
+- Various bugfixes
 
 # Fossify File Manager (Chu Edition :3)
 

@@ -108,7 +108,7 @@ class ReadTextActivity: SimpleActivity() {
 				R.id.menu_search -> openSearch()
 				R.id.menu_save -> saveText()
 				R.id.menu_save_as -> saveAsText()
-				R.id.menu_open_with -> launchPath(intent.dataString!!, true)
+				R.id.menu_open_with -> launchPath(intent.dataString!!, true) //TODO Doesn't work w/ remote files
 				R.id.menu_print -> printText()
 				else -> return@setOnMenuItemClickListener false
 			}

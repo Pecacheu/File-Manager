@@ -17,7 +17,7 @@ import org.fossify.filemanager.dialogs.CreateNewItemDialog
 import org.fossify.filemanager.dialogs.StoragePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.extensions.isNotFoundErr
 import org.fossify.filemanager.helpers.REMOTE_URI
 import org.fossify.filemanager.models.DeviceType
@@ -256,11 +256,11 @@ class ItemsFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFr
 			for(li in files) {
 				val parent = li.path.getParentPath()
 				if(!li.isDir && parent != prevParent && context != null) {
-					items.add(ListItem.sectionTitle(parent, context.humanizePath(parent)))
+					items.add(ListItem.sectionTitle(parent, context.readablePath(parent)))
 					prevParent = parent
 				}
 				if(li.isDir) {
-					items.add(ListItem.sectionTitle(li.path, context.humanizePath(li.path)))
+					items.add(ListItem.sectionTitle(li.path, context.readablePath(li.path)))
 					prevParent = parent
 				} else items.add(li)
 			}

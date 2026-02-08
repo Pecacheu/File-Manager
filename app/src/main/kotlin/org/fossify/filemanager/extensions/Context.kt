@@ -3,13 +3,13 @@ package org.fossify.filemanager.extensions
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
+import android.os.OperationCanceledException
 import android.os.storage.StorageManager
 import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.mssmb2.SMBApiException
 import org.fossify.commons.R
-import org.fossify.commons.compose.extensions.getActivity
 import org.fossify.commons.extensions.DIRS_ACCESSIBLE_ONLY_WITH_SAF
 import org.fossify.commons.extensions.getAlertDialogBuilder
 import org.fossify.commons.helpers.isRPlus
@@ -45,7 +45,7 @@ class UUID(val id: ByteArray) {
 		fun from(id: String) = UUID(id.fromBase64())
 		fun genUUID(): UUID {
 			val uid = ByteBuffer.allocate(8).order(LITTLE_ENDIAN)
-			uid.put(Random.Default.nextBytes(2))
+			uid.put(Random.nextBytes(2))
 			uid.put(System.currentTimeMillis().toUByte().toByte())
 			uid.put(IDCount.toByte())
 			uid.putInt((Instant.now().toEpochMilli()/10000L).toUInt().toInt())
@@ -61,7 +61,7 @@ class UUID(val id: ByteArray) {
 
 	override fun toString(): String = id.toBase64()
 	override fun hashCode() = id.contentHashCode()
-	override operator fun equals(other: Any?) = id == (other as? UUID)?.id
+	override operator fun equals(other: Any?) = id.contentEquals((other as? UUID)?.id)
 }
 
 fun Context.isPathOnRoot(path: String) = !(path.startsWith(config.internalStoragePath) || isPathOnOTG(path) || isPathOnSD(path))
@@ -78,7 +78,7 @@ private fun humanBasePath(ctx: Context, path: String): String {
 	}
 }
 
-fun Context.humanizePath(path: String): String {
+fun Context.readablePath(path: String): String {
 	val trimPath = path.trimEnd('/')
 	val basePath = path.getBasePath(this)
 	val repPath = humanBasePath(this, basePath)
@@ -114,7 +114,10 @@ fun Activity.error(e: Throwable, prompt: String?=null, title: String?=null, cb: 
 		ps = getString(org.fossify.filemanager.R.string.clear_keys)
 		fn = {if(it) Remote.clearKeys(this)}
 	} else e2 = when(e) { //Common errors
-		is UnknownHostException -> formatErr(org.fossify.filemanager.R.string.host_err, e, e.message)
+		is OperationCanceledException -> {
+			Log.e("files", "Cancelled", e)
+			return
+		} is UnknownHostException -> formatErr(org.fossify.filemanager.R.string.host_err, e, e.message)
 		is SMBApiException -> when(e.status) {
 			NtStatus.STATUS_LOGON_FAILURE -> formatErr(org.fossify.filemanager.R.string.login_err, e)
 			NtStatus.STATUS_OBJECT_NAME_INVALID -> formatErr(R.string.invalid_name, e)
@@ -134,7 +137,7 @@ fun Activity.alert(title: String, msg: String, cb: ((res: Boolean)->Unit)?=null)
 		val diag = getAlertDialogBuilder().create()
 		diag.setTitle(title)
 		diag.setMessage(msg)
-		val clk = DialogInterface.OnClickListener {dialog, which ->
+		val clk = DialogInterface.OnClickListener {_, which ->
 			diag.dismiss()
 			cb?.invoke(which == AlertDialog.BUTTON_POSITIVE)
 		}

@@ -1,6 +1,5 @@
 package org.fossify.filemanager.dialogs
 
-import android.view.View
 import androidx.appcompat.app.AlertDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -8,7 +7,7 @@ import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.DialogCreateNewBinding
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.models.ListItem
 
 class CreateNewItemDialog(val activity: SimpleActivity, val path: String,
@@ -60,7 +59,7 @@ class CreateNewItemDialog(val activity: SimpleActivity, val path: String,
 		} else {
 			val eRes = if(dir) org.fossify.commons.R.string.could_not_create_folder
 				else org.fossify.commons.R.string.could_not_create_file
-			activity.error(err, null, activity.getString(eRes, activity.humanizePath(path)))
+			activity.error(err, null, activity.getString(eRes, activity.readablePath(path)))
 		}
 		return false
 	}

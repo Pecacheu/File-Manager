@@ -39,8 +39,10 @@ import com.bumptech.glide.load.model.MultiModelLoaderFactory
 import com.bumptech.glide.module.AppGlideModule
 import com.bumptech.glide.signature.ObjectKey
 import com.hierynomus.msdtyp.AccessMask
+import com.hierynomus.msdtyp.FileTime
 import com.hierynomus.mserref.NtStatus
 import com.hierynomus.msfscc.FileAttributes.*
+import com.hierynomus.msfscc.fileinformation.FileBasicInformation
 import com.hierynomus.mssmb2.SMB2CreateDisposition
 import com.hierynomus.mssmb2.SMB2CreateOptions
 import com.hierynomus.mssmb2.SMB2ShareAccess
@@ -52,7 +54,6 @@ import com.hierynomus.smbj.connection.Connection
 import com.hierynomus.smbj.share.DiskShare
 import com.hierynomus.smbj.share.File
 import org.fossify.commons.extensions.getFilenameFromPath
-import org.fossify.commons.extensions.getMimeType
 import org.fossify.commons.extensions.getParentPath
 import org.fossify.filemanager.BuildConfig
 import org.fossify.filemanager.R
@@ -256,6 +257,26 @@ class Remote(val ctx: Context, data: JSONObject) {
 		return files
 	}
 
+	fun getCreationTime(path: String): Long {
+		if(!mntValid) connect()
+		val p = path.substring(URI_BASE)
+		mount!!.open(p, setOf(AccessMask.FILE_READ_ATTRIBUTES), null, SMB2ShareAccess.ALL,
+				SMB2CreateDisposition.FILE_OPEN, null).use {
+			return it.fileInformation.basicInformation.creationTime.toEpochMillis()
+		}
+	}
+
+	fun setLastModified(path: String, mod: Long) {
+		if(!mntValid) connect()
+		val p = path.substring(URI_BASE)
+		mount!!.open(p, setOf(AccessMask.FILE_WRITE_ATTRIBUTES), null, SMB2ShareAccess.ALL,
+				SMB2CreateDisposition.FILE_OPEN, null).use {
+			val old = it.fileInformation.basicInformation
+			it.setFileInformation<FileBasicInformation>(FileBasicInformation(old.creationTime,
+				old.lastAccessTime, FileTime(mod), old.changeTime, old.fileAttributes))
+		}
+	}
+
 	fun getChildCount(path: String, hidden: Boolean): Int {
 		val p = path.substring(URI_BASE)
 		var cnt = 0
@@ -409,6 +430,14 @@ class RemoteOutputStream(val smb: File): OutputStream() {
 
 // ---- Service & Proxy ----
 
+fun getNotifCh(ctx: Context) {
+	val nMan = ctx.getSystemService(NotificationManager::class.java)
+	val ch = NotificationChannel(BuildConfig.APPLICATION_ID,
+		ctx.getString(org.fossify.commons.R.string.notifications),
+		NotificationManager.IMPORTANCE_HIGH)
+	nMan.createNotificationChannel(ch)
+}
+
 class RemoteService: Service() {
 	val bind = Bind()
 	val clients = HashMap<Intent, Boolean>()
@@ -421,9 +450,6 @@ class RemoteService: Service() {
 	override fun onDestroy() {
 		Log.i("test", "-- RemoteService stopped!")
 	}
-	/*override fun onTimeout(startId: Int, fgsType: Int) {
-		stopSelf()
-	}*/
 
 	override fun onBind(i: Intent): IBinder {
 		clients[i] = true
@@ -435,16 +461,8 @@ class RemoteService: Service() {
 		return true
 	}
 
-	private fun createNotifCh() {
-		val nMan = getSystemService(NotificationManager::class.java)
-		val ch = NotificationChannel(BuildConfig.APPLICATION_ID,
-			getString(org.fossify.commons.R.string.notifications),
-			NotificationManager.IMPORTANCE_HIGH)
-		nMan.createNotificationChannel(ch)
-	}
-
 	private fun getNotif(): Notification {
-		createNotifCh()
+		getNotifCh(this)
 		return NotificationCompat.Builder(this, BuildConfig.APPLICATION_ID)
 			.setSmallIcon(org.fossify.commons.R.drawable.ic_folder_vector)
 			.setContentText(getString(R.string.stream_in_bg))
@@ -535,7 +553,7 @@ class RemoteProvider: ContentProvider() {
 		return RemoteProxy(context!!, path, write, true).getFd()
 	}
 
-	override fun getType(uri: Uri) = uri.path?.getMimeType()?:"application/octet-stream"
+	override fun getType(uri: Uri) = uri.path?.getMimeTypeExt()?:"application/octet-stream"
 	override fun insert(u: Uri, v: ContentValues?) = throw UnsupportedOperationException()
 	override fun update(u: Uri, v: ContentValues?, s: String?, a: Array<String>?) = throw UnsupportedOperationException()
 	override fun delete(u: Uri, s: String?, a: Array<String>?) = throw UnsupportedOperationException()

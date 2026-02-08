@@ -13,7 +13,7 @@ import org.fossify.filemanager.adapters.FilepickerItemsAdapter
 import org.fossify.filemanager.databinding.DialogFilepickerBinding
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.models.DeviceType
 import org.fossify.filemanager.models.ListItem
 import org.fossify.filemanager.views.Breadcrumbs
@@ -39,7 +39,7 @@ class FilePickerDialog(
 	private var mPrevPath = ""
 	private var mScrollStates = HashMap<String, Parcelable>()
 	private var mDialog: AlertDialog? = null
-	private var showHidden = activity.config.shouldShowHidden()
+	private val showHidden = activity.config.shouldShowHidden()
 
 	init {
 		ensureBackgroundThread {
@@ -83,17 +83,6 @@ class FilePickerDialog(
 
 		binding.filepickerPlaceholder.setTextColor(activity.getProperTextColor())
 		binding.filepickerFastscroller.updateColors(activity.getProperPrimaryColor())
-		binding.filepickerFabShowHidden.apply {
-			beVisibleIf(!showHidden)
-			setOnClickListener {
-				activity.handleHiddenFolderPasswordProtection {
-					beGone()
-					showHidden = true
-					tryUpdateItems()
-				}
-			}
-		}
-
 		binding.filepickerFabShowFavorites.apply {
 			beVisibleIf(context.config.favorites.isNotEmpty())
 			setOnClickListener {
@@ -212,7 +201,7 @@ class FilePickerDialog(
 	}
 
 	private fun setupFavorites() {
-		val favs = activity.config.favorites.map {ListItem(activity, it, activity.humanizePath(it), true, -2, 0, 0)}
+		val favs = activity.config.favorites.map {ListItem(activity, it, activity.readablePath(it), true, -2, 0, 0)}
 		FilepickerItemsAdapter(activity, favs, binding.filepickerFavoritesList) {
 			currPath = (it as ListItem).path
 			tryUpdateItems()
@@ -225,7 +214,6 @@ class FilePickerDialog(
 	private fun showFavorites() {
 		mDialog?.setTitle(R.string.favorites)
 		binding.apply {
-			filepickerFabShowHidden.beGone()
 			filepickerFavoritesHolder.beVisible()
 			filepickerFilesHolder.beGone()
 			val drawable = activity.resources.getColoredDrawableWithColor(R.drawable.ic_folder_vector,
@@ -237,7 +225,6 @@ class FilePickerDialog(
 	private fun hideFavorites() {
 		mDialog?.setTitle(getTitle())
 		binding.apply {
-			filepickerFabShowHidden.beVisibleIf(!showHidden)
 			filepickerFavoritesHolder.beGone()
 			filepickerFilesHolder.beVisible()
 			val drawable = activity.resources.getColoredDrawableWithColor(R.drawable.ic_star_vector,

@@ -35,7 +35,6 @@ android {
 		versionCode = project.property("VERSION_CODE").toString().toInt()
 		multiDexEnabled = true
 		vectorDrawables.useSupportLibrary = true
-		setProperty("archivesBaseName", "file-manager-$versionCode")
 	}
 
 	signingConfigs {

@@ -13,7 +13,7 @@ import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.adapters.ItemsAdapter
 import org.fossify.filemanager.databinding.FavoritesFragmentBinding
 import org.fossify.filemanager.extensions.config
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.models.ListItem
 
 class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPagerFragment<MyViewPagerFragment.BaseInnerBinding>(context, attributeSet) {
@@ -92,7 +92,7 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet): MyViewPag
 		val favorites = activity!!.config.favorites
 		val items = ArrayList<ListItem>(favorites.size)
 		favorites.forEach {path ->
-			var name = activity!!.humanizePath(path)
+			var name = activity!!.readablePath(path)
 			if(viewType == VIEW_TYPE_GRID) name = name.getFilenameFromPath()
 			val itm = ListItem(activity, path, name, true, -2, 0, 0)
 			items.add(itm)

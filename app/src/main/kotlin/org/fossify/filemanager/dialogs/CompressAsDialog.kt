@@ -4,7 +4,7 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import org.fossify.commons.extensions.*
 import org.fossify.commons.helpers.ensureBackgroundThread
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.R
 import org.fossify.filemanager.activities.SimpleActivity
 import org.fossify.filemanager.databinding.DialogCompressAsBinding
@@ -21,10 +21,10 @@ class CompressAsDialog(val activity: SimpleActivity, val path: String, val callb
 
 		binding.apply {
 			filenameValue.setText(name)
-			folder.setText(activity.humanizePath(parPath))
+			folder.setText(activity.readablePath(parPath))
 			folder.setOnClickListener {
 				FilePickerDialog(activity, parPath) {
-					folder.setText(activity.humanizePath(it))
+					folder.setText(activity.readablePath(it))
 					parPath = it
 				}
 			}

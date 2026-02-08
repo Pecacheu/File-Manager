@@ -80,14 +80,6 @@
 		android:orientation="vertical">
 
 		<org.fossify.commons.views.MyFloatingActionButton
-			android:id="@+id/filepicker_fab_show_hidden"
-			android:layout_width="@dimen/fab_size"
-			android:layout_height="@dimen/fab_size"
-			android:layout_marginEnd="@dimen/activity_margin"
-			android:layout_marginBottom="@dimen/activity_margin"
-			android:src="@drawable/ic_unhide_vector"/>
-
-		<org.fossify.commons.views.MyFloatingActionButton
 			android:id="@+id/filepicker_fab_show_favorites"
 			android:layout_width="@dimen/fab_size"
 			android:layout_height="@dimen/fab_size"

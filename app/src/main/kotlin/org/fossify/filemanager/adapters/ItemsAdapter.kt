@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
-import android.os.OperationCanceledException
 import android.util.TypedValue
 import android.view.ActionMode
 import android.view.LayoutInflater
@@ -38,6 +37,9 @@ import com.stericson.RootTools.RootTools
 import org.fossify.filemanager.views.ItemsList
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
+import org.fossify.commons.dialogs.RenameDialog
+import org.fossify.commons.dialogs.RenameItemDialog
+import org.fossify.commons.dialogs.RenameItemsDialog
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
@@ -78,10 +80,11 @@ import org.fossify.filemanager.databinding.ItemFileGridBinding
 import org.fossify.filemanager.databinding.ItemSectionBinding
 import org.fossify.filemanager.dialogs.CompressAsDialog
 import org.fossify.filemanager.dialogs.FilePickerDialog
+import org.fossify.filemanager.dialogs.PropertiesDialog
 import org.fossify.filemanager.extensions.pickedUris
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.extensions.isPathOnRoot
 import org.fossify.filemanager.extensions.isRemotePath
 import org.fossify.filemanager.extensions.isZipFile
@@ -100,6 +103,7 @@ import org.fossify.filemanager.helpers.OPEN_AS_TEXT
 import org.fossify.filemanager.helpers.OPEN_AS_VIDEO
 import org.fossify.filemanager.interfaces.ItemOperationsListener
 import org.fossify.filemanager.models.ListItem
+import org.fossify.filemanager.models.runFileJob
 import java.io.File
 import java.util.Locale
 import kotlin.math.max
@@ -176,6 +180,7 @@ class ItemsAdapter(
 	}
 
 	private fun isOnRemote(): Boolean {
+		//TODO Cache this result and only update when dataChanged
 		if(listener !is ItemsFragment) return false
 		return selected.any {isRemotePath(it.path)}
 	}
@@ -284,21 +289,22 @@ class ItemsAdapter(
 	}
 
 	fun displayRenameDialog() {
-		activity.error(NotImplementedError())
-		//TODO Fix
-		/*val items = selected
+		//TODO Fix for remote
+		if(isOnRemote()) {
+			activity.error(NotImplementedError())
+			return
+		}
+		val items = selected
 		val paths = items.asSequence().map {it.path}.toMutableList() as ArrayList<String>
 		when {
-			paths.size == 1 -> RenameItemDialog(activity, paths.first(), ::dataChanged)
+			paths.size == 1 -> RenameItemDialog(activity, paths.first()) {dataChanged()}
 			items.any {it.isDir} -> RenameItemsDialog(activity, paths, ::dataChanged)
 			else -> RenameDialog(activity, paths, false, ::dataChanged)
-		}*/
+		}
 	}
 
 	fun showProperties() {
-		activity.error(NotImplementedError())
-		//TODO Fix
-		//PropertiesDialog(activity, selected, config.shouldShowHidden())
+		PropertiesDialog(activity, selected)
 	}
 
 	fun shareFiles() {
@@ -310,10 +316,9 @@ class ItemsAdapter(
 	}
 
 	private fun setHidden(hide: Boolean) {
-		val sel = ArrayList(selected)
 		ensureBackgroundThread {
 			try {
-				for(f in sel) f.setHidden(hide)
+				for(f in selected) f.setHidden(hide)
 				dataChanged()
 			} catch(e: Throwable) {
 				activity.error(e)
@@ -373,7 +378,7 @@ class ItemsAdapter(
 	}
 
 	private fun copyPath() {
-		val text = activity.humanizePath(firstItem().path)
+		val text = activity.readablePath(firstItem().path)
 		val clip = ClipData.newPlainText(activity.getString(R.string.app_name), text)
 		activity.getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
 		finishActMode()
@@ -397,15 +402,15 @@ class ItemsAdapter(
 			activity.handleDeletePasswordProtection {copyMoveTo(false, true)}
 			return
 		}
-		val sel = ArrayList(selected)
-		val currPath = sel.last().path.getParentPath()
+		val currPath = selected.last().path.getParentPath()
 		FilePickerDialog(activity, currPath) {
-			ensureBackgroundThread {
+			val base = it.trimEnd('/')
+			val desc = activity.getString(if(isCopy) R.string.job_copy else R.string.job_move)
+			runFileJob(activity, desc.format(activity.readablePath(base)), isOnRemote() || isRemotePath(currPath)) {cancel ->
 				try {
-					//TODO Turn this into background async task
 					activity.toast(if(isCopy) org.fossify.commons.R.string.copying
 						else org.fossify.commons.R.string.moving)
-					for(f in sel) f.copyMove("${it.trimEnd('/')}/${f.name}", isCopy, true)
+					for(f in selected) f.copyMove("${base}/${f.name}", isCopy, true, cancel)
 					activity.toast(if(isCopy) org.fossify.commons.R.string.copying_success
 						else org.fossify.commons.R.string.moving_success)
 				} catch(e: Throwable) {
@@ -425,48 +430,42 @@ class ItemsAdapter(
 	}
 
 	private fun compress() {
-		val sel = ArrayList(selected)
-		val currPath = sel.last().path
+		val currPath = selected.last().path
 		handleSAF {
 			CompressAsDialog(activity, currPath) {dest, pwd ->
 				activity.toast(R.string.compressing)
-				//TODO Turn this into background async task
-				doCompress(sel, dest, pwd)
+				runFileJob(activity, activity.getString(R.string.job_compress).format(activity.readablePath(dest)),
+						isOnRemote() || isRemotePath(dest)) {cancel ->
+					try {
+						ListItem.compress(selected, dest, pwd, cancel)
+						activity.toast(R.string.compression_successful)
+						dataChanged()
+					} catch(e: Throwable) {
+						activity.error(e)
+						try {ListItem(activity, dest, "", false, 0, 0, 0).delete {false}}
+						catch(_: Throwable) {}
+					}
+				}
 			}
 		}
 	}
 
-	private fun doCompress(items: ArrayList<ListItem>, dest: String, pwd: String?) = ensureBackgroundThread {
-		try {
-			ListItem.compress(items, dest, pwd) {recyclerView.context == null || !isActMode()}
-			activity.toast(R.string.compression_successful)
-			dataChanged()
-		} catch(e: Throwable) {
-			if(e is OperationCanceledException) activity.toast(R.string.compressing_failed)
-			else activity.error(e)
-			try {ListItem(activity, dest, "", false, 0, 0, 0).delete()}
-			catch(_: Throwable) {}
-		}
-	}
-
 	private fun askConfirmDelete() {
-		val sel = ArrayList(selected)
-		if(config.skipDeleteConfirmation) deleteFiles(sel)
+		if(config.skipDeleteConfirmation) deleteFiles(selected)
 		else activity.handleDeletePasswordProtection {
 			val itemsCnt = selected.size
 			val str = if(itemsCnt == 1) "\"${firstItem().name}\""
 				else resources.getQuantityString(org.fossify.commons.R.plurals.delete_items, itemsCnt, itemsCnt)
 			val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), str)
-			ConfirmationDialog(activity, question) {deleteFiles(sel)}
+			ConfirmationDialog(activity, question) {deleteFiles(selected)}
 		}
 	}
 
-	private fun deleteFiles(items: ArrayList<ListItem>) {
-		//TODO Turn this into background async task
+	private fun deleteFiles(items: List<ListItem>) {
 		handleSAF {
-			ensureBackgroundThread {
+			runFileJob(activity, activity.getString(R.string.job_delete), items.any {it.isRemote}) {cancel ->
 				try {
-					for(f in items) f.delete()
+					for(f in items) f.delete(cancel)
 					dataChanged()
 				} catch(e: Throwable) {
 					activity.error(e)
@@ -477,7 +476,7 @@ class ItemsAdapter(
 
 	private fun handleSAF(cb: ()->Unit) {
 		val safPath = firstItem().path
-		if(!isRemotePath(safPath) && activity.isPathOnRoot(safPath) && !RootTools.isRootAvailable()) {
+		if(!isOnRemote() && activity.isPathOnRoot(safPath) && !RootTools.isRootAvailable()) {
 			activity.toast(R.string.rooted_device_only)
 			return
 		}
@@ -732,7 +731,7 @@ class ItemsAdapter(
 		override val itemIcon: ImageView = binding.itemIcon
 		override val itemDetails: TextView? = null
 		override val itemDate: TextView? = null
-		override val itemCheck: ImageView? = binding.itemCheck
+		override val itemCheck: ImageView = binding.itemCheck
 		override val itemSection: TextView? = null
 		override fun getRoot(): View = binding.root
 	}
@@ -757,6 +756,7 @@ class ItemsAdapter(
 				return true
 			}
 
+			@SuppressLint("InflateParams")
 			override fun onCreateActionMode(actionMode: ActionMode, menu: Menu?): Boolean {
 				selected.clear()
 				isSelectable = true

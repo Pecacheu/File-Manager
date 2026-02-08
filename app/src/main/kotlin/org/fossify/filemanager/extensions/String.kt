@@ -1,6 +1,9 @@
 package org.fossify.filemanager.extensions
 
 import android.content.Context
+import android.webkit.MimeTypeMap
+import org.fossify.commons.extensions.getFilenameExtension
+import org.fossify.commons.extensions.getMimeType
 import org.fossify.filemanager.helpers.REMOTE_URI
 import org.fossify.filemanager.helpers.Remote
 import java.util.Base64
@@ -31,3 +34,9 @@ fun String.getBasePath(context: Context): String {
 
 fun ByteArray.toBase64(): String = Base64.getUrlEncoder().withoutPadding().encodeToString(this)
 fun String.fromBase64(): ByteArray = Base64.getUrlDecoder().decode(this)
+
+fun String.getMimeTypeExt(): String {
+	val type = this.getMimeType()
+	if(type.isEmpty()) return MimeTypeMap.getSingleton().getMimeTypeFromExtension(this.getFilenameExtension())?:""
+	return type
+}

@@ -25,7 +25,7 @@ import org.fossify.commons.helpers.MEDIUM_ALPHA
 import androidx.core.view.isNotEmpty
 import org.fossify.commons.views.MyTextView
 import org.fossify.filemanager.extensions.getBasePath
-import org.fossify.filemanager.extensions.humanizePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.models.ListItem
 
 class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(context, attrs) {
@@ -130,7 +130,7 @@ class Breadcrumbs(context: Context, attrs: AttributeSet): HorizontalScrollView(c
 		lastPath = fullPath
 		val basePath = fullPath.getBasePath(context)
 		var currPath = basePath
-		val tempPath = context.humanizePath(fullPath)
+		val tempPath = context.readablePath(fullPath)
 
 		itemsLayout.removeAllViews()
 		tempPath.split('/').dropLastWhile(String::isEmpty).forEachIndexed {i, dir ->

@@ -10,6 +10,7 @@ import android.content.Intent.EXTRA_STREAM
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.TransactionTooLargeException
+import android.util.Log
 import org.fossify.commons.R
 import org.fossify.commons.extensions.getMimeType
 import org.fossify.commons.extensions.hasPermission
@@ -74,7 +75,7 @@ fun Activity.pickedUris(uris: ArrayList<Uri>) = getStreamPerms {
 fun Activity.pickedRingtone(li: ListItem) = getStreamPerms {
 	val uri = li.getUri()
 	Intent().apply {
-		setDataAndType(uri, li.path.getMimeType())
+		setDataAndType(uri, li.path.getMimeTypeExt())
 		flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 		putExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, uri)
 		setResult(RESULT_OK, this)
@@ -89,7 +90,8 @@ fun Activity.launchPath(path: String, forceChooser: Boolean,
 }
 fun Activity.launchItem(li: ListItem, forceChooser: Boolean,
 		openAs: Int=OPEN_AS_DEFAULT, finishActivity: Boolean=false) = getStreamPerms {
-	val mimeType = getMimeType(openAs)?:li.path.getMimeType()
+	val mimeType = getMimeType(openAs)?:li.path.getMimeTypeExt()
+	Log.i("test", "MIME TYPE: $mimeType")
 	val uri = li.getUri()
 	Intent().apply {
 		action = Intent.ACTION_VIEW
@@ -99,8 +101,7 @@ fun Activity.launchItem(li: ListItem, forceChooser: Boolean,
 
 		if(!forceChooser && li.path.endsWith(".apk", true)) launchActivityIntent(this)
 		else try {
-			val chooser = Intent.createChooser(this, getString(R.string.open_with))
-			startActivity(if(forceChooser) chooser else this)
+			startActivity(if(forceChooser) Intent.createChooser(this, getString(R.string.open_with)) else this)
 		} catch(_: ActivityNotFoundException) {
 			if(!tryGenericMimeType(this, mimeType, uri)) toast(R.string.no_app_found)
 		} catch(e: Throwable) {error(e)}
@@ -139,7 +140,7 @@ private fun getMimeType(type: Int) = when(type) {
 fun Activity.setAs(li: ListItem) {
 	Intent().apply {
 		action = Intent.ACTION_ATTACH_DATA
-		setDataAndType(li.getUri(), li.path.getMimeType())
+		setDataAndType(li.getUri(), li.path.getMimeTypeExt())
 		addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 		val chooser = Intent.createChooser(this, getString(R.string.set_as))
 

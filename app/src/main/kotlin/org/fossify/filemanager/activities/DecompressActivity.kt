@@ -2,7 +2,6 @@ package org.fossify.filemanager.activities
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import net.lingala.zip4j.exception.ZipException
 import net.lingala.zip4j.exception.ZipException.Type
 import net.lingala.zip4j.io.inputstream.ZipInputStream
@@ -23,8 +22,11 @@ import org.fossify.filemanager.databinding.ActivityDecompressBinding
 import org.fossify.filemanager.dialogs.FilePickerDialog
 import org.fossify.filemanager.extensions.config
 import org.fossify.filemanager.extensions.error
-import org.fossify.filemanager.extensions.setLastModified
+import org.fossify.filemanager.extensions.isRemotePath
+import org.fossify.filemanager.extensions.readablePath
 import org.fossify.filemanager.models.ListItem
+import org.fossify.filemanager.models.copyToInter
+import org.fossify.filemanager.models.runFileJob
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.InputStream
@@ -122,43 +124,45 @@ class DecompressActivity: SimpleActivity() {
 	private fun openInputStream() = if(path != null) ListItem.getInputStream(this, path!!)
 		else contentResolver.openInputStream(uri!!)
 
-	private fun decompressTo(dest: String) = ensureBackgroundThread {
-		config.reloadPath = true
-		var inStream: InputStream? = null
-		var zipStream: ZipInputStream? = null
-		try {
-			inStream = openInputStream()
-			zipStream = ZipInputStream(BufferedInputStream(inStream))
-			if(password != null) zipStream.setPassword(password?.toCharArray())
-			val buffer = ByteArray(1024)
-			while(true) {
-				val entry = zipStream.nextEntry?:break
-				val parent = "$dest/${filename.substringBeforeLast('.')}"
-				val newPath = "$parent/${entry.fileName.trimEnd('/')}"
+	private fun decompressTo(dest: String) {
+		val remoteDest = if(isRemotePath(dest)) config.getRemoteForPath(dest) else null
+		runFileJob(this, getString(R.string.job_decompress).format(readablePath(dest)),
+				remoteDest != null || path?.let {isRemotePath(it)} == true) {cancel ->
+			config.reloadPath = true
+			var inStream: InputStream? = null
+			var zipStream: ZipInputStream? = null
+			try {
+				inStream = openInputStream()
+				zipStream = ZipInputStream(BufferedInputStream(inStream))
+				if(password != null) zipStream.setPassword(password?.toCharArray())
+				while(true) {
+					val entry = zipStream.nextEntry?:break
+					val parent = "$dest/${filename.substringBeforeLast('.')}"
+					val newPath = "$parent/${entry.fileName.trimEnd('/')}"
 
-				ListItem.mkDir(this, parent, true)
-				if(entry.isDirectory) continue
-				//Check if vulnerable for ZIP path traversal
-				val outFile = File(newPath)
-				if(!outFile.canonicalPath.startsWith(parent)) continue //TODO Test if works with remote
+					ListItem.mkDir(this, parent, true)
+					if(entry.isDirectory) continue
+					//Check if vulnerable for ZIP path traversal
+					val outFile = File(newPath)
+					//TODO Doesn't work with remote
+					// if(!outFile.canonicalPath.startsWith(parent)) continue
 
-				ListItem.getOutputStream(this, newPath).use {
-					var count: Int
-					while(true) {
-						count = zipStream.read(buffer)
-						if(count == -1) break
-						it.write(buffer, 0, count)
+					ListItem.getOutputStream(this, newPath).use {zipStream.copyToInter(it, cancel)}
+
+					//Set mod time
+					if(entry.lastModifiedTimeEpoch != 0L) {
+						if(remoteDest != null) remoteDest.setLastModified(newPath, entry.lastModifiedTimeEpoch)
+						else outFile.setLastModified(entry.lastModifiedTimeEpoch)
 					}
 				}
-				outFile.setLastModified(entry) //TODO Won't work with remote, needs fix
+				toast(R.string.decompression_successful)
+				finish()
+			} catch(e: Throwable) {
+				error(e)
+			} finally {
+				zipStream?.close()
+				inStream?.close()
 			}
-			toast(R.string.decompression_successful)
-			finish()
-		} catch(e: Throwable) {
-			error(e)
-		} finally {
-			zipStream?.close()
-			inStream?.close()
 		}
 	}
 

@@ -1,7 +1,7 @@
 [versions]
 #jetbrains
 kotlin = "2.3.0"
-ksp = "2.3.0"
+ksp = "2.3.2"
 #Detekt
 detekt = "1.23.8"
 detektCompose = "0.4.28"
@@ -19,7 +19,7 @@ roottools = "965c154e20"
 smbj = "0.14.0"
 zip4j = "2.11.5"
 #Gradle
-gradlePlugins-agp = "8.11.1"
+gradlePlugins-agp = "9.0.0"
 #build
 app-build-compileSDKVersion = "36"
 app-build-targetSDK = "36"

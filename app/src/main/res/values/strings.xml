@@ -71,6 +71,17 @@
 	<string name="unknown_type">Unknown type %s</string>
 	<string name="not_found">Path not found</string>
 	<string name="not_a_dir">Path %s is not a directory</string>
+	<!-- File Transfer -->
+	<string name="transfer">File Transfer</string>
+	<string name="job_copy">Copying files to %s</string>
+	<string name="job_move">Moving files to %s</string>
+	<string name="job_delete">Deleting files</string>
+	<string name="job_compress">Compressing files to %s</string>
+	<string name="job_decompress">Decompressing files to %s</string>
+	<string name="job_share">Saving shared files to %s</string>
+	<string name="job_text">Saving shared text to %s</string>
+	<string name="stop">Stop</string>
+	<string name="job_cancelled">The running job was cancelled</string>
 	<!-- Background -->
 	<string name="stream_in_bg">Running in the background to stream a file</string>
 	<string name="notif_required">Notifications permission required</string>

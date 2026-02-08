@@ -7,6 +7,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore.MediaColumns
 import android.util.AttributeSet
 import android.util.Xml
@@ -44,6 +45,8 @@ import org.fossify.filemanager.dialogs.SaveAsDialog
 import org.fossify.filemanager.extensions.*
 import org.fossify.filemanager.helpers.*
 import org.fossify.filemanager.models.ListItem
+import org.fossify.filemanager.models.copyToInter
+import org.fossify.filemanager.models.runFileJob
 import java.util.Date
 import java.util.Timer
 import kotlin.concurrent.fixedRateTimer
@@ -170,7 +173,7 @@ class MainActivity: SimpleActivity() {
 			if (!wasBackJustPressed && config.pressBackTwice) {
 				wasBackJustPressed = true
 				toast(R.string.press_back_again)
-				Handler().postDelayed({wasBackJustPressed = false},
+				Handler(Looper.getMainLooper()).postDelayed({wasBackJustPressed = false},
 					BACK_PRESS_TIMEOUT.toLong())
 				return true
 			} else {
@@ -406,10 +409,10 @@ class MainActivity: SimpleActivity() {
 	fun handleSendIntent(mimeType: String?, text: String?, uris: List<Uri>?) {
 		val root = getItemsFragment()?.currentPath?:""
 		if(text != null) SaveAsDialog(this, "$root/${getCurrentFormattedDateTime()}.txt", false) {path, _ ->
-			//TODO Run as task
-			ensureBackgroundThread {
+			runFileJob(this, getString(R.string.job_text).format(readablePath(path)), isRemotePath(path)) {cancel ->
 				try {
 					//TODO Note: Text can be a web URL to download
+					//TODO Make cancellable
 					val oStr = ListItem.getOutputStream(this, path)
 					oStr.use {it.bufferedWriter().write(text)}
 					toast(org.fossify.commons.R.string.copying_success)
@@ -417,8 +420,7 @@ class MainActivity: SimpleActivity() {
 				} catch(e: Throwable) {error(e)}
 			}
 		} else if(uris != null) FilePickerDialog(this, root, false, true) {dir ->
-			//TODO Run as task
-			ensureBackgroundThread {
+			runFileJob(this, getString(R.string.job_share).format(readablePath(dir)), isRemotePath(dir)) {cancel ->
 				try {
 					for(uri in uris) {
 						//Get name from content query, uri, then date
@@ -433,7 +435,7 @@ class MainActivity: SimpleActivity() {
 						//Copy data
 						val iStr = contentResolver.openInputStream(uri)
 						val oStr = ListItem.getOutputStream(this, "$dir/$name")
-						oStr.use {iStr?.use {it.copyTo(oStr)}}
+						oStr.use {iStr?.use {it.copyToInter(oStr, cancel)}}
 					}
 					toast(org.fossify.commons.R.string.copying_success)
 					finish()
@@ -700,7 +702,7 @@ class MainActivity: SimpleActivity() {
 	private fun finishCreateDocumentIntent(path: String, filename: String) {
 		val resultIntent = Intent()
 		val uri = getFilePublicUri(File(path, filename), BuildConfig.APPLICATION_ID)
-		val type = path.getMimeType()
+		val type = path.getMimeTypeExt()
 		resultIntent.setDataAndType(uri, type)
 		resultIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
 			Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
